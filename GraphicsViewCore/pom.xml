@@ -1,0 +1,31 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<parent>
+		<groupId>de.sos</groupId>
+		<artifactId>GraphicsView</artifactId>
+		<version>0.0.1-SNAPSHOT</version>
+	</parent>
+	<artifactId>GraphicsViewCore</artifactId>
+
+	<dependencies>
+		<dependency>
+			<groupId>org.slf4j</groupId>
+			<artifactId>slf4j-log4j12</artifactId>
+			<version>1.7.25</version>
+		</dependency>
+
+
+		
+
+	</dependencies>
+
+	<repositories>
+		<repository>
+			<id>jsi.sourceforge.net</id>
+			<name>sourceforge jsi repository</name>
+			<url>http://sourceforge.net/projects/jsi/files/m2_repo</url>
+		</repository>
+	</repositories>
+</project>
