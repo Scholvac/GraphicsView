@@ -2,6 +2,7 @@ package de.sos.gvc.drawables;
 
 import java.awt.BasicStroke;
 import java.awt.Canvas;
+import java.awt.Color;
 import java.awt.Font;
 import java.awt.FontMetrics;
 import java.awt.Graphics;
@@ -25,10 +26,17 @@ public class DrawableStyle {
 	
 	private Font	font = null;
 	
-	public DrawableStyle() {  }
+	public DrawableStyle() { this(null); }
 	
 	public DrawableStyle(String name) {
+		this(name, null, null, null);
+	}
+
+	public DrawableStyle(String name, Paint linePaint, Stroke lineStroke, Paint fillPaint) {
 		this.name = name;
+		this.linePaint = linePaint;
+		this.lineStroke = lineStroke;
+		this.fillPaint = fillPaint;
 	}
 
 	public String getName() {

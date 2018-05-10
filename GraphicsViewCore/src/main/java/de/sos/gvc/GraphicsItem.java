@@ -220,19 +220,34 @@ public class GraphicsItem {
 		mParent = mPropertyContext.getProperty(PROP_PARENT, null);
 		
 		mCenterX = mPropertyContext.getProperty(PROP_CENTER_X, 0.0);
-		mCenterX.addPropertyChangeListener(pcl -> { mInvalidLocalTransform = true; });
+		mCenterX.addPropertyChangeListener(pcl -> {
+			_mCenterX = (double) pcl.getNewValue();
+			mInvalidLocalTransform = true; 
+		});
 		
 		mCenterY = mPropertyContext.getProperty(PROP_CENTER_Y, 0.0);
-		mCenterY.addPropertyChangeListener(pcl -> { mInvalidLocalTransform = true; });
+		mCenterY.addPropertyChangeListener(pcl -> {
+			_mCenterY = (double) pcl.getNewValue();
+			mInvalidLocalTransform = true; 
+		});
 		
 		mRotation = mPropertyContext.getProperty(PROP_ROTATION, 0.0);
-		mRotation.addPropertyChangeListener(pcl -> { mInvalidLocalTransform = true; });
+		mRotation.addPropertyChangeListener(pcl -> {
+			_mRotation = (double)pcl.getNewValue();
+			mInvalidLocalTransform = true; 
+		});
 		
 		mScaleX = mPropertyContext.getProperty(PROP_SCALE_X, 1.0);
-		mScaleX.addPropertyChangeListener(pcl -> mInvalidLocalTransform = true );
+		mScaleX.addPropertyChangeListener(pcl -> {
+			_mScaleX = (double) pcl.getNewValue();
+			mInvalidLocalTransform = true;	
+		} );
 		
 		mScaleY = mPropertyContext.getProperty(PROP_SCALE_Y, 1.0);
-		mScaleY.addPropertyChangeListener(pcl -> mInvalidLocalTransform = true );
+		mScaleY.addPropertyChangeListener(pcl ->{
+			_mScaleY = (double)pcl.getNewValue();
+			mInvalidLocalTransform = true; 
+		});
 
 		mShape = mPropertyContext.getProperty(PROP_SHAPE, null);
 		mShape.addPropertyChangeListener(pcl->{ 
@@ -244,25 +259,24 @@ public class GraphicsItem {
 		
 		propertyContext.registerListener(mChildListener);
 		
-		//for those variables / properties that are high fequently used, we use shadow variables, that represent 
+		//for those variables / properties that are high frequently used, we use shadow variables, that represent 
 		//the value as simple value. This way we may consume more memory but have a faster access
-		_mVisible = mVisible.get();
-		mVisible.addPropertyChangeListener(pcl->_mVisible = mVisible.get());
-		_mZOrder = mZOrder.get();
+		// note: 	do not use two propertyChangeListener for shadow variables if they do modify two values (see for example _mCenterX) 
+		// 			otherwise we may get some threading errors
+		
+		mVisible.addPropertyChangeListener(pcl->_mVisible = mVisible.get());		
 		mZOrder.addPropertyChangeListener(pcl -> _mZOrder = mZOrder.get());
 		mLocalBounds.addPropertyChangeListener(pcl -> _mLocalBounds = null);
-		_mParent = mParent.get();
 		mParent.addPropertyChangeListener(pcl -> _mParent = mParent.get());
+		
+		_mVisible = mVisible.get();
+		_mZOrder = mZOrder.get();
+		_mParent = mParent.get();
 		_mCenterX = mCenterX.get();
-		mCenterX.addPropertyChangeListener(pcl -> _mCenterX = mCenterX.get());
 		_mCenterY = mCenterY.get();
-		mCenterY.addPropertyChangeListener(pcl -> _mCenterY = mCenterY.get());
 		_mRotation = mRotation.get();
-		mRotation.addPropertyChangeListener(pcl -> _mRotation = mRotation.get());
 		_mScaleX = mScaleX.get();
-		mScaleX.addPropertyChangeListener(pcl -> _mScaleX = mScaleX.get());
 		_mScaleY = mScaleY.get();
-		mScaleY.addPropertyChangeListener(pcl -> _mScaleY = mScaleY.get());
 	}
 
 
@@ -291,15 +305,15 @@ public class GraphicsItem {
 	
 	public AffineTransform getLocalTransform() {
 		if (mInvalidLocalTransform || mLocalTransform == null) {
+			mInvalidLocalTransform = false;
 			double x = _mCenterX, y = _mCenterY, r = getRotationRadians();
 			double sx = _mScaleX, sy = _mScaleY;
 			AffineTransform t = new AffineTransform();	
 			
-			t.translate(getCenterX(), getCenterY());
+			t.translate(x, y);
 			t.rotate(-r);
-			t.scale(getScaleX(), getScaleY());			
+			t.scale(sx, sy);			
 			mLocalTransform = t;
-			mInvalidLocalTransform = false;
 		}
 		return mLocalTransform;
 	}

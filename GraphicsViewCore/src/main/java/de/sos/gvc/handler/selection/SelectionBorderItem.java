@@ -21,6 +21,8 @@ import java.awt.geom.Rectangle2D;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 import de.sos.gvc.GraphicsItem;
 import de.sos.gvc.IDrawContext;
@@ -285,8 +287,10 @@ public class SelectionBorderItem extends GraphicsItem {
 			public void mouseDragged(MouseEvent e) {
 				if (mCallbackManager.hasMoveCallbacks() && mMouseMode == MouseMode.MOVE) {
 					if (e.isConsumed() == false) {
-						ItemMoveEvent evt = mCallbackManager.createMoveEvent(e);
-						mCallbackManager.fireMoveEvent(evt);
+						Point2D loc = getView().getSceneLocation(e.getPoint());
+						setSceneLocation(loc);
+//						ItemMoveEvent evt = mCallbackManager.createMoveEvent(e);						
+//						mCallbackManager.fireMoveEvent(evt);
 						e.consume();
 					}
 				}
@@ -302,6 +306,16 @@ public class SelectionBorderItem extends GraphicsItem {
 			}
 			@Override
 			public void mouseReleased(MouseEvent e) {
+				if (mMouseMode == MouseMode.MOVE && mCallbackManager.hasMoveCallbacks()) {
+					List<GraphicsItem> items = Arrays.asList(mSelectedItem);
+					Point2D ol = mSelectedItem.getSceneLocation();
+					List<Point2D> oldLoc = Arrays.asList(new Point2D.Double(ol.getX(), ol.getY()));
+					List<Point2D> newLoc = Arrays.asList(getView().getSceneLocation(e.getPoint()));
+					ItemMoveEvent evt = new ItemMoveEvent(items, oldLoc, newLoc);
+											
+					mCallbackManager.fireMoveEvent(evt);
+					setSceneLocation(newLoc.get(0));
+				}
 				mMouseMode = MouseMode.NONE;
 			}
 			@Override
@@ -418,11 +432,11 @@ public class SelectionBorderItem extends GraphicsItem {
 
 	@Override
 	public void draw(Graphics2D g, IDrawContext ctx) {
-		Stroke dashed = new BasicStroke((float)(ctx.getScale()*3.0f), BasicStroke.CAP_BUTT, BasicStroke.JOIN_BEVEL, 0, new float[]{9}, 0);
-		getStyle().setLineStroke(dashed);
+//		Stroke dashed = new BasicStroke((float)(ctx.getScale()*3.0f), BasicStroke.CAP_BUTT, BasicStroke.JOIN_BEVEL, 0, new float[]{9}, 0);
+		getStyle().setLineStroke(new BasicStroke((float) (1.0f * ctx.getScale())));
 		super.draw(g, ctx);
-		g.setColor(Color.red);
-		g.fill(new Arc2D.Double(getCenterX()-5, getCenterY()-5, 10, 10, 0, 360, Arc2D.CHORD));
+//		g.setColor(Color.red);
+//		g.fill(new Arc2D.Double(getCenterX()-5, getCenterY()-5, 10, 10, 0, 360, Arc2D.CHORD));
 	}
 	
 }

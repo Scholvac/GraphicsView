@@ -188,8 +188,17 @@ public class SelectionHandler implements IGraphicsViewHandler, MouseListener {
 		mSelectionMarker.setVisible(true);
 		mView.getScene().addItem(mSelectionMarker);
 		item.setSelected(true);		
+		onItemSelected(item); //notify subclasses
+	}
+	/**
+	 * 	This method may be overwritten by subclasses, to get notified if an item has been selected
+	 * @param item
+	 */
+	protected void onItemSelected(GraphicsItem item) {
+		// This method may be overwritten by subclasses, to get notified if an item has been selected
 	}
 	private void uninstallSelectionMarker() {
+		onItemDeselected(mLastSelectedItem);
 		mLastSelectedItem.setSelected(false);
 		mLastSelectedItem = null;
 		mSelectionMarker.setSelectedItem(null);
@@ -197,6 +206,13 @@ public class SelectionHandler implements IGraphicsViewHandler, MouseListener {
 		mView.getScene().removeItem(mSelectionMarker);
 	}
 	
+	/**
+	 * This method may be overwritten by subclasses, to get notified if an item has been deselected
+	 * @param item
+	 */
+	protected void onItemDeselected(GraphicsItem item) {
+		// This method may be overwritten by subclasses, to get notified if an item has been deselected
+	}
 	private GraphicsItem getBestFit(Point point) {
 		List<GraphicsItem> items = mView.getAllItemsAt(point, mEpsilon.get(), mEpsilon.get(), mSelectableFilter);
 		if (items != null && items.isEmpty() == false)
@@ -236,7 +252,7 @@ public class SelectionHandler implements IGraphicsViewHandler, MouseListener {
 		List<GraphicsItem> items = Arrays.asList(mLastSelectedItem);
 		Point2D ol = mLastSelectedItem.getSceneLocation();
 		List<Point2D> oldLoc = Arrays.asList(new Point2D.Double(ol.getX(), ol.getY()));
-		List<Point2D> newLoc = Arrays.asList(mView.getSceneLocation(e.getPoint()));
+		List<Point2D> newLoc = Arrays.asList(mSelectionMarker.getSceneLocation());
 		ItemMoveEvent evt = new ItemMoveEvent(items, oldLoc, newLoc);
 		return evt;
 	}
