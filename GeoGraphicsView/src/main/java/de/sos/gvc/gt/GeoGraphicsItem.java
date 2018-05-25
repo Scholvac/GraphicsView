@@ -50,7 +50,7 @@ public class GeoGraphicsItem extends GraphicsItem {
 		}
 		return _getLocalTransform();
 	}
-	protected double getScaleCorrection(double y) {
+	public static double getScaleCorrection(double y) {
 		LatLonPoint llp = GeoUtils.getLatLon(0, y);
 		y = llp.getLatitude();
 		if (Math.abs(y) > 85) y = 85;

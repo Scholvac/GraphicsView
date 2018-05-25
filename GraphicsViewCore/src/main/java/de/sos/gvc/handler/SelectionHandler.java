@@ -7,7 +7,9 @@ import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
 
 import de.sos.gvc.GraphicsItem;
 import de.sos.gvc.GraphicsScene.IItemFilter;
@@ -214,9 +216,14 @@ public class SelectionHandler implements IGraphicsViewHandler, MouseListener {
 		// This method may be overwritten by subclasses, to get notified if an item has been deselected
 	}
 	private GraphicsItem getBestFit(Point point) {
-		List<GraphicsItem> items = mView.getAllItemsAt(point, mEpsilon.get(), mEpsilon.get(), mSelectableFilter);
-		if (items != null && items.isEmpty() == false)
-			return items.get(0);
+		List<GraphicsItem> items = mView.getAllItemsAt(point, mEpsilon.get(), mEpsilon.get(), null);
+		Optional<GraphicsItem> optItem = items.stream().filter(p -> mSelectableFilter.accept(p)).sorted(new Comparator<GraphicsItem>() {
+			public int compare(GraphicsItem o1, GraphicsItem o2) {
+				return Float.compare(o1.getZOrder(), o2.getZOrder());
+			}
+		}).findFirst();
+		if (optItem != null && optItem.isPresent())
+			return optItem.get();
 		return null;
 	}
 

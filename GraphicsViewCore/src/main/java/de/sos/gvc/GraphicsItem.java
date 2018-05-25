@@ -491,10 +491,40 @@ public class GraphicsItem {
 	public void setRotation(double rot_deg) { mRotation.set(rot_deg);}
 	public double getRotation() { return mRotation.get(); }
 	
-	public void setScaleX(double scaleX) { mScaleX.set(scaleX); }
-	public void setScaleY(double scaleY) { mScaleY.set(scaleY); }
-	public void setScale(double x, double y) { setScaleX(x); setScaleY(y); }
-	public void setScale(double xAndy) { setScale(xAndy, xAndy); }
+	public void setLocalScaleX(double scaleX) { mScaleX.set(scaleX); }
+	public void setLocalScaleY(double scaleY) { mScaleY.set(scaleY); }
+	public void setLocalScale(double x, double y) { setScaleX(x); setScaleY(y); }
+	public void setLocalScale(double xAndy) { setScale(xAndy, xAndy); }
+	
+	public void setScaleX(double scaleX) { setLocalScaleX(scaleX); }
+	public void setScaleY(double scaleY) { setLocalScaleY(scaleY); }
+	public void setScale(double x, double y) { setLocalScale(x,y); }
+	public void setScale(double xAndy) { setLocalScale(xAndy, xAndy); }
+	
+	public double getSceneScaleX() { 
+		if (getParent() != null) return getParent().getSceneScaleX() * getScaleX();
+		return getScaleX();
+	}
+	public double getSceneScaleY() {
+		if (getParent() != null) return getParent().getSceneScaleY() * getScaleY();
+		return getScaleY();
+	}
+	
+	public void setSceneScaleX(double scaleX) { 
+		if (getParent() != null)
+			mScaleX.set(scaleX / getParent().getSceneScaleX());
+		else
+			mScaleX.set(scaleX);
+	}
+	public void setSceneScaleY(double scaleY) {
+		if (getParent() != null)
+			mScaleY.set(scaleY / getParent().getSceneScaleY());
+		else
+			mScaleY.set(scaleY); 
+	}
+	public void setSceneScale(double x, double y) { setSceneScaleX(x); setSceneScaleY(y); }
+	public void setSceneScale(double xAndy) { setSceneScale(xAndy, xAndy); }
+	
 	
 	public Point2D getSceneLocation() {
 		if (getParent() != null)

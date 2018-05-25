@@ -21,10 +21,15 @@ public class GeoUtils {
 	public static LatLonPoint getLatLon(double x, double y) {
 		return mMercator.inverse(x, y);
 	}
+	public static LatLonPoint getLatLon(Point2D p) {
+		return getLatLon(p.getX(), p.getY());
+	}
+
 
 	public static Point2D getPosition(LatLonPoint llp) {
 		return mMercator.forward(llp);
 	}
+	
 	public static Point2D getPosition(double lat, double lon) {
 		return mMercator.forward(lat, lon);
 	}
@@ -45,6 +50,7 @@ public class GeoUtils {
 	public static void setGeoPosition(GraphicsItem item, double lat, double lon) {
 		item.setCenter(getPosition(lat, lon));
 	}
+
 
 	
 	

@@ -290,7 +290,7 @@ public class GraphicsView extends JPanel {
 	
 	/**
 	 * returns a list of all items that intersect the rectangle defined by point and +/- epsilon
-	 * this method also returns child items, if they do pass the filter (if not null) 
+	 * this method also returns child items, if the parent and the child do pass the filter (if not null) 
 	 * @param point
 	 * @param epsilonX
 	 * @param epsilonX
