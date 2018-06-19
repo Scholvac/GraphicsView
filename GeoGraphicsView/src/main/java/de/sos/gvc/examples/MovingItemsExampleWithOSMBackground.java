@@ -15,7 +15,6 @@ import org.slf4j.Logger;
 import de.sos.gvc.GraphicsItem;
 import de.sos.gvc.GraphicsScene;
 import de.sos.gvc.GraphicsView;
-import de.sos.gvc.drawables.DrawableStyle;
 import de.sos.gvc.gt.GeoUtils;
 import de.sos.gvc.gt.TileHandler;
 import de.sos.gvc.gt.proj.LatLonPoint;
@@ -31,6 +30,7 @@ import de.sos.gvc.handler.MouseDelegateHandler;
 import de.sos.gvc.log.GVLog;
 import de.sos.gvc.param.ParameterContext;
 import de.sos.gvc.storage.QuadTreeStorage;
+import de.sos.gvc.styles.DrawableStyle;
 
 /**
  * 

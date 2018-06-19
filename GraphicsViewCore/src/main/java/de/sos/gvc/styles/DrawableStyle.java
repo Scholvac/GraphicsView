@@ -1,4 +1,4 @@
-package de.sos.gvc.drawables;
+package de.sos.gvc.styles;
 
 import java.awt.BasicStroke;
 import java.awt.Canvas;

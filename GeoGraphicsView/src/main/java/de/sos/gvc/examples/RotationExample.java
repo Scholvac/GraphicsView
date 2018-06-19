@@ -17,9 +17,9 @@ import de.sos.gvc.GraphicsItem;
 import de.sos.gvc.GraphicsScene;
 import de.sos.gvc.GraphicsView;
 import de.sos.gvc.IDrawContext;
-import de.sos.gvc.drawables.DrawableStyle;
 import de.sos.gvc.handler.DefaultViewDragHandler;
 import de.sos.gvc.handler.MouseDelegateHandler;
+import de.sos.gvc.styles.DrawableStyle;
 
 
 /**

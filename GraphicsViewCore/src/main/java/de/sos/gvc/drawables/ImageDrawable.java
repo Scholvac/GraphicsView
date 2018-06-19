@@ -5,6 +5,7 @@ import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;
 
 import de.sos.gvc.IDrawContext;
+import de.sos.gvc.styles.DrawableStyle;
 
 public class ImageDrawable extends AbstractDrawable {
 

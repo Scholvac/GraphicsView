@@ -10,8 +10,8 @@ import java.util.Random;
 import de.sos.gvc.GraphicsItem;
 import de.sos.gvc.IDrawContext;
 import de.sos.gvc.drawables.AbstractDrawable;
-import de.sos.gvc.drawables.DrawableStyle;
 import de.sos.gvc.gt.proj.MercatorMeterGCT;
+import de.sos.gvc.styles.DrawableStyle;
 
 /**
  * 

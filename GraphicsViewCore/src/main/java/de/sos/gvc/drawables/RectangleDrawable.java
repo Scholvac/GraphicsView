@@ -5,6 +5,7 @@ import java.awt.geom.Rectangle2D;
 
 import de.sos.gvc.IDrawContext;
 import de.sos.gvc.IDrawable;
+import de.sos.gvc.styles.DrawableStyle;
 
 
 /**

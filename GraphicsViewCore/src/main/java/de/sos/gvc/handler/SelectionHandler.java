@@ -1,8 +1,11 @@
 package de.sos.gvc.handler;
 
 import java.awt.Point;
+import java.awt.Shape;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
+import java.awt.geom.AffineTransform;
+import java.awt.geom.NoninvertibleTransformException;
 import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
 import java.util.ArrayList;
@@ -216,11 +219,26 @@ public class SelectionHandler implements IGraphicsViewHandler, MouseListener {
 		// This method may be overwritten by subclasses, to get notified if an item has been deselected
 	}
 	private GraphicsItem getBestFit(Point point) {
+		Point2D scene = mView.getSceneLocation(point, null);
 		List<GraphicsItem> items = mView.getAllItemsAt(point, mEpsilon.get(), mEpsilon.get(), null);
 		Optional<GraphicsItem> optItem = items.stream().filter(p -> mSelectableFilter.accept(p)).sorted(new Comparator<GraphicsItem>() {
 			public int compare(GraphicsItem o1, GraphicsItem o2) {
 				return Float.compare(o1.getZOrder(), o2.getZOrder());
 			}
+		}).filter(predicate -> {
+			Shape s = predicate.getShape();
+			AffineTransform wt = predicate.getWorldTransform();
+			try {
+				Point2D localScene = wt.inverseTransform(scene, null);
+				Rectangle2D r = new Rectangle2D.Double(localScene.getX(), localScene.getY(), 3*mEpsilon.get(), 3*mEpsilon.get());
+				boolean res = s.contains(r);
+				if (!res)
+					res = s.intersects(r);
+				return res;
+			} catch (NoninvertibleTransformException e) {
+				e.printStackTrace();
+			}
+			return false;
 		}).findFirst();
 		if (optItem != null && optItem.isPresent())
 			return optItem.get();

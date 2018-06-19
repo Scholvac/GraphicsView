@@ -9,6 +9,7 @@ import de.sos.gvc.IDrawContext;
 import de.sos.gvc.IDrawable;
 import de.sos.gvc.param.IParameter;
 import de.sos.gvc.param.Parameter;
+import de.sos.gvc.styles.DrawableStyle;
 
 
 /**

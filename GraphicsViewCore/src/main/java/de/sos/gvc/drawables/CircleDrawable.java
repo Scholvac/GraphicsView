@@ -5,6 +5,7 @@ import java.awt.geom.Arc2D;
 import java.awt.geom.Rectangle2D;
 
 import de.sos.gvc.IDrawContext;
+import de.sos.gvc.styles.DrawableStyle;
 
 public class CircleDrawable extends AbstractDrawable {
 

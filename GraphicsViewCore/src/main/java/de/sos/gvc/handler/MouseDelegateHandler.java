@@ -11,6 +11,7 @@ import java.util.List;
 
 import de.sos.gvc.GraphicsItem;
 import de.sos.gvc.GraphicsScene.IItemFilter;
+import de.sos.gvc.GraphicsScene.ShapeSelectionFilter;
 import de.sos.gvc.GraphicsView;
 import de.sos.gvc.IGraphicsViewHandler;
 
@@ -128,11 +129,13 @@ public class MouseDelegateHandler implements IGraphicsViewHandler, MouseListener
 
 	@Override
 	public void mouseClicked(MouseEvent e) {
-		List<GraphicsItem> items = mView.getAllItemsAt(e.getPoint(), 2, 2, mMouseSupportFilter);
+		List<GraphicsItem> items = mView.getAllItemsAt(e.getPoint(), 2, 2, null);
 		if (items != null && !items.isEmpty()) {
-			for (GraphicsItem item : items) {
-				item.getMouseSupport().mouseClicked(e);
-			}
+			ShapeSelectionFilter ssf = new ShapeSelectionFilter(mView.getSceneLocation(e.getPoint()), 2, true);
+			items.stream()
+				.filter(pred -> mMouseSupportFilter.accept(pred))
+				.filter(pred -> ssf.accept(pred))
+				.forEach(cons -> cons.getMouseSupport().mouseClicked(e));
 		}
 	}
 

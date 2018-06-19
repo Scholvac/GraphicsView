@@ -2,7 +2,7 @@ package de.sos.gvc;
 
 import java.awt.Graphics2D;
 
-import de.sos.gvc.drawables.DrawableStyle;
+import de.sos.gvc.styles.DrawableStyle;
 
 /**
  * 

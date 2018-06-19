@@ -1,5 +1,6 @@
 package de.sos.gvc;
 
+import java.awt.Color;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Point;
@@ -37,7 +38,7 @@ public class GraphicsView extends JPanel {
 	public static final String PROP_VIEW_CENTER_Y = "VIEW_CENTER_Y";
 	public static final String PROP_VIEW_SCALE_X = "VIEW_SCALE_X";
 	public static final String PROP_VIEW_SCALE_Y = "VIEW_SCALE_Y";
-
+	public static final String PROP_VIEW_ROTATE = "VIEW_ROTATE";
 	
 
 
@@ -46,11 +47,12 @@ public class GraphicsView extends JPanel {
 
 
 	private GraphicsScene 					mScene;
-	private ParameterContext					mPropertyContext = null;
+	private ParameterContext				mPropertyContext = null;
 	protected IParameter<Double> 			mCenterX;
 	protected IParameter<Double> 			mCenterY;
 	protected IParameter<Double> 			mScaleX;
 	protected IParameter<Double> 			mScaleY;
+	protected IParameter<Double> 			mRotation;
 	
 	private AffineTransform					mViewTransform = null;
 	/**
@@ -109,10 +111,12 @@ public class GraphicsView extends JPanel {
 		mCenterY = mPropertyContext.getProperty(PROP_VIEW_CENTER_Y, 0.0);
 		mScaleX = mPropertyContext.getProperty(PROP_VIEW_SCALE_X, 1.0);
 		mScaleY = mPropertyContext.getProperty(PROP_VIEW_SCALE_Y, 1.0);
+		mRotation = mPropertyContext.getProperty(PROP_VIEW_ROTATE, 0.0);
 		mCenterX.addPropertyChangeListener(mTransformListener);
 		mCenterY.addPropertyChangeListener(mTransformListener);
 		mScaleX.addPropertyChangeListener(mTransformListener);
 		mScaleY.addPropertyChangeListener(mTransformListener);
+		mRotation.addPropertyChangeListener(mTransformListener);
 		
 		addComponentListener(new ComponentAdapter() {
 			@Override
@@ -171,7 +175,7 @@ public class GraphicsView extends JPanel {
 	int pcounter = 0;
 	@Override
 	protected void paintComponent(Graphics g) {
-		System.out.println("Paint " + pcounter++ + " Scale: " + getScaleX());
+//		System.out.println("Paint " + pcounter++ + " Scale: " + getScaleX());
 		super.paintComponent(g);
 		Graphics2D g2d = (Graphics2D)g;
 		
@@ -192,6 +196,7 @@ public class GraphicsView extends JPanel {
 		
 		//get all visible items, depending on the visible rect
 		Rectangle2D rect = getVisibleSceneRect();
+		
 		List<GraphicsItem> itemList = mScene.getItems(rect);
 		
 		//sort to overdraw the correct items, for example background items
@@ -205,7 +210,9 @@ public class GraphicsView extends JPanel {
 		for (GraphicsItem item : itemList) {
 			item.draw(g2d, mDrawContext);
 		}
-		
+
+//		g2d.setColor(new Color(255, 0, 0, 180));
+//		g2d.fill(new Rectangle2D.Double(rect.getX() + 5, rect.getY() + 5, rect.getWidth() - 10, rect.getHeight()-10));
 		//reset the old transform
 		g2d.setTransform(oldTransform);
 		mScene.getDirtyProperty().set(false); //notify / remember that the scene is no longer dirty, at least not in terms of visualisation
@@ -227,11 +234,14 @@ public class GraphicsView extends JPanel {
 			//add offset so 0.0, 0.0 would be in the center of the sceen
 			double w2 = getWidth() / 2.0;
 			double h2 = getHeight() / 2.0;
+			double rdeg = mRotation.get();
+			double r = Math.toRadians(rdeg);
+			
 			t.translate(-w2 * mScaleX.get(), h2 * mScaleY.get());
 			//now the view transform relative to the scene
 			t.translate(mCenterX.get(), -mCenterY.get());
-
 			t.scale(mScaleX.get(), -mScaleY.get());
+			t.rotate(r);
 			try {
 				mViewTransform = t.createInverse();
 			} catch (Exception e) {
@@ -337,6 +347,11 @@ public class GraphicsView extends JPanel {
 	public <T> IParameter<T> getProperty(String string) {
 		return mPropertyContext.getProperty(string);
 	}
+	
+	public void setRotation(double degrees) {
+		mRotation.set(degrees);
+	}
+	public double getRotationDegrees() { return mRotation.get(); }
 
 
 

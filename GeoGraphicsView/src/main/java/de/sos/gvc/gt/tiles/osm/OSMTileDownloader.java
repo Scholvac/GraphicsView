@@ -6,12 +6,16 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
+import java.net.SocketTimeoutException;
 import java.net.URL;
 import java.net.URLConnection;
 
 import javax.imageio.ImageIO;
 
+import org.apache.log4j.helpers.UtilLoggingLevel;
+
 import de.sos.gvc.gt.tiles.ITileLoader;
+import de.sos.gvc.log.GVLog;
 
 
 /**
@@ -72,6 +76,10 @@ public class OSMTileDownloader implements ITileLoader<OSMTileDescription>{
 					return data;
 				else
 					throw new NullPointerException("Failed to get Compressed Tile Image for URL: " + url);
+			}catch(SocketTimeoutException ste) {
+				GVLog.warn("Socket Timedout: " + url);
+				mReadTimeOutMillis += 2000;
+				if (att == 1) try { Thread.sleep(250); } catch (InterruptedException e) { e.printStackTrace(); }
 			}catch(Exception | Error e) {
 				e.printStackTrace();
 			}finally {

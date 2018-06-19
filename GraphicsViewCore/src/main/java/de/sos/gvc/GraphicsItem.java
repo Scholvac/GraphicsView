@@ -15,10 +15,10 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import de.sos.gvc.drawables.DrawableStyle;
 import de.sos.gvc.drawables.ShapeDrawable;
 import de.sos.gvc.param.IParameter;
 import de.sos.gvc.param.ParameterContext;
+import de.sos.gvc.styles.DrawableStyle;
 
 /**
  * Handles the visual state of an item within the scene. 

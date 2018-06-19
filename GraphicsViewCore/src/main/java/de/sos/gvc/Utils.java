@@ -1,6 +1,7 @@
 package de.sos.gvc;
 
 import java.awt.geom.AffineTransform;
+import java.awt.geom.NoninvertibleTransformException;
 import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
 import java.util.ArrayList;
@@ -41,6 +42,39 @@ public class Utils {
 		return new Rectangle2D.Double(mix, miy, w, h);
 	}
 
+	public static Rectangle2D inverseTransform(Rectangle2D rect, AffineTransform transform) {
+		double mix = rect.getMinX();
+		double max = rect.getMaxX();
+		double miy = rect.getMinY();
+		double may = rect.getMaxY();
+		//build all 4 vertices
+		double[] vertices = new double[] {
+				mix, may, //ul
+				max, may, //ur
+				max, miy, //lr
+				mix, miy  //ll
+		};
+		double[] newVertices = new double[8];
+		try {
+			transform.inverseTransform(vertices, 0, newVertices, 0, 4);
+		} catch (NoninvertibleTransformException e) {
+			e.printStackTrace();
+			return null;
+		}
+		mix = miy = Double.MAX_VALUE;
+		max = may = -Double.MAX_VALUE;
+		for (int i = 0; i < 8; i+=2) {
+			double x = newVertices[i], y = newVertices[i+1];
+			mix = Math.min(x, mix);
+			max = Math.max(x, max);
+			miy = Math.min(y, miy);
+			may = Math.max(y, may);
+		}
+		double w = max - mix;
+		double h = may - miy;
+		return new Rectangle2D.Double(mix, miy, w, h);
+	}
+	
 	public static Point2D[] getVertices(Rectangle2D rect) {
 		double mix = rect.getMinX();
 		double max = rect.getMaxX();
@@ -77,5 +111,7 @@ public class Utils {
 		double h = may - miy;
 		return new Rectangle2D.Double(mix, miy, w, h);
 	}
+
+
 
 }

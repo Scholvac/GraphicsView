@@ -1,7 +1,9 @@
 package de.sos.gvc;
 
+import java.awt.Shape;
 import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
+import java.awt.geom.Rectangle2D.Double;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.util.ArrayList;
@@ -23,6 +25,96 @@ public class GraphicsScene {
 
 	public interface IItemFilter {
 		public boolean accept(GraphicsItem item);
+	}
+	
+	public static class ComboundItemFilter implements IItemFilter {
+		private IItemFilter[] mFilter;
+		public ComboundItemFilter(IItemFilter ...filters) {
+			mFilter = filters;
+		}
+		@Override
+		public boolean accept(GraphicsItem item) {
+			try {
+				for (IItemFilter f : mFilter){
+					if (!f.accept(item))
+						return false;
+				}
+				return true;
+			}catch(Exception e) {
+				e.printStackTrace();
+				return false;
+			}
+		}
+	}
+	
+	
+	public static class RectangleSelectionFilter implements IItemFilter {
+		private Rectangle2D 		mQuery;
+		private boolean 			mSceneCoordinates;
+
+		public RectangleSelectionFilter(Point2D point, double epsilon, boolean sceneCoordinates) {
+			this(new Rectangle2D.Double(point.getX() - epsilon/2.0, point.getY()-epsilon/2.0, epsilon, epsilon), sceneCoordinates);
+		}
+
+		public RectangleSelectionFilter(Rectangle2D rect, boolean sceneCoordinates) {
+			mQuery = rect;
+			mSceneCoordinates = sceneCoordinates;
+		}
+		
+		@Override
+		public boolean accept(GraphicsItem item) {
+			Shape s = item.getShape();
+			if (s == null) return false;
+			if (mSceneCoordinates) {
+				//first check the bounding box, if that fit, we also check the shape, otherwise we can skip the expensive test
+				Rectangle2D sb = item.getSceneBounds();
+				if (sb.contains(mQuery) || sb.intersects(mQuery)) {
+					return true;
+				}
+			}else {
+				Rectangle2D sb = item.getLocalBounds();
+				if (sb.contains(mQuery) || sb.intersects(mQuery)) {
+					return true;
+				}
+			}
+			return false;
+		}
+	}
+	public static class ShapeSelectionFilter implements IItemFilter {
+		private Rectangle2D 		mQuery;
+		private boolean 			mSceneCoordinates;
+
+		public ShapeSelectionFilter(Point2D point, double epsilon, boolean sceneCoordinates) {
+			this(new Rectangle2D.Double(point.getX() - epsilon/2.0, point.getY()-epsilon/2.0, epsilon, epsilon), sceneCoordinates);
+		}
+
+		public ShapeSelectionFilter(Rectangle2D rect, boolean sceneCoordinates) {
+			mQuery = rect;
+			mSceneCoordinates = sceneCoordinates;
+		}
+		
+		@Override
+		public boolean accept(GraphicsItem item) {
+			Shape s = item.getShape();
+			if (s == null) return false;
+			if (mSceneCoordinates) {
+				//first check the bounding box, if that fit, we also check the shape, otherwise we can skip the expensive test
+				Rectangle2D sb = item.getSceneBounds();
+				if (sb.contains(mQuery) || sb.intersects(mQuery)) {
+					Rectangle2D sceneLocal = Utils.inverseTransform(mQuery, item.getWorldTransform()); //its faster to convert the 4 points of the query into the coordinates of the shape as converting the complex shape
+					if (s.contains(sceneLocal) || s.intersects(sceneLocal))
+						return true;
+				}
+			}else {
+				Rectangle2D sb = item.getLocalBounds();
+				if (sb.contains(mQuery) || sb.intersects(mQuery)) {
+					Rectangle2D localLocal = Utils.inverseTransform(mQuery, item.getLocalTransform()); //its faster to convert the 4 points of the query into the coordinates of the shape as converting the complex shape
+					if (s.contains(localLocal) || s.intersects(localLocal))
+						return true;
+				}
+			}
+			return false;
+		}
 	}
 	
 	class ItemListener implements PropertyChangeListener {

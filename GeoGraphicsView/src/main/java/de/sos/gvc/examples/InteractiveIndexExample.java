@@ -19,7 +19,6 @@ import javax.swing.JSplitPane;
 import de.sos.gvc.GraphicsItem;
 import de.sos.gvc.GraphicsScene;
 import de.sos.gvc.GraphicsView;
-import de.sos.gvc.drawables.DrawableStyle;
 import de.sos.gvc.gt.TileHandler;
 import de.sos.gvc.gt.tiles.ITileFactory;
 import de.sos.gvc.gt.tiles.TileFactory;
@@ -39,6 +38,7 @@ import de.sos.gvc.index.impl.BIGNode;
 import de.sos.gvc.index.impl.DefaultEntry;
 import de.sos.gvc.param.ParameterContext;
 import de.sos.gvc.storage.ListStorage;
+import de.sos.gvc.styles.DrawableStyle;
 
 
 /**

@@ -12,7 +12,6 @@ import javax.swing.JFrame;
 import de.sos.gvc.GraphicsItem;
 import de.sos.gvc.GraphicsScene;
 import de.sos.gvc.GraphicsView;
-import de.sos.gvc.drawables.DrawableStyle;
 import de.sos.gvc.handler.DefaultViewDragHandler;
 import de.sos.gvc.handler.MouseDelegateHandler;
 import de.sos.gvc.handler.SelectionHandler;
@@ -25,6 +24,7 @@ import de.sos.gvc.handler.SelectionHandler.ItemScaleEvent;
 import de.sos.gvc.log.GVLog;
 import de.sos.gvc.param.ParameterContext;
 import de.sos.gvc.storage.ListStorage;
+import de.sos.gvc.styles.DrawableStyle;
 
 
 /**

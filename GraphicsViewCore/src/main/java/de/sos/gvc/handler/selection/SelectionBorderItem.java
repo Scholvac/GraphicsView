@@ -8,13 +8,16 @@ import java.awt.Graphics2D;
 import java.awt.Point;
 import java.awt.RadialGradientPaint;
 import java.awt.Robot;
+import java.awt.Shape;
 import java.awt.Stroke;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionAdapter;
 import java.awt.event.MouseMotionListener;
+import java.awt.geom.AffineTransform;
 import java.awt.geom.Arc2D;
+import java.awt.geom.Area;
 import java.awt.geom.Path2D;
 import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
@@ -26,10 +29,12 @@ import java.util.List;
 
 import de.sos.gvc.GraphicsItem;
 import de.sos.gvc.IDrawContext;
+import de.sos.gvc.IDrawable;
 import de.sos.gvc.Utils;
-import de.sos.gvc.drawables.DrawableStyle;
 import de.sos.gvc.handler.SelectionHandler;
 import de.sos.gvc.handler.SelectionHandler.ItemMoveEvent;
+import de.sos.gvc.param.IParameter;
+import de.sos.gvc.styles.DrawableStyle;
 
 
 /**
@@ -225,6 +230,47 @@ public class SelectionBorderItem extends GraphicsItem {
 		}
 	}
 	
+	
+	private static class DoubleShapeDrawable implements IDrawable {
+
+		private IParameter<Shape> 			mShape;
+		Shape								mShape2;
+		
+		public DoubleShapeDrawable(IParameter<Shape> shapeProperty) {
+			mShape = shapeProperty;
+		}
+
+		@Override
+		public void paintItem(Graphics2D g, DrawableStyle style, IDrawContext ctx) {
+			if (style == null) {
+				g.draw(mShape.get());
+				if (mShape2 != null)
+					g.draw(mShape2);
+			}else {
+				if (style.hasFillPaint()) {
+					style.applyFillPaint(g);
+					g.fill(mShape.get());
+					if (mShape2 != null) {
+//						Color c = g.getColor();
+//						Color tc = new Color(c.getRed(), c.getGreen(), c.getBlue(), 55);
+//						g.setColor(tc);
+//						g.fill(mShape2);
+//						g.setColor(c);
+						g.fill(mShape2);
+					}
+				}
+				if (style.hasLinePaint()) {
+					style.applyLinePaint(g);
+					g.draw(mShape.get());
+					if (mShape2 != null)
+						g.draw(mShape2);
+				}
+			}
+			
+		}
+		
+	}
+	
 	private static final DrawableStyle 	sBorderStyle;
 	private static final DrawableStyle	sControlPointStyle;
 	
@@ -232,8 +278,10 @@ public class SelectionBorderItem extends GraphicsItem {
 	static {
 		sBorderStyle = new DrawableStyle();
 		sBorderStyle.setName("SelectionBorder");
-		sBorderStyle.setFillPaint(null);
-		sBorderStyle.setLinePaint(Color.BLUE.brighter());
+		Color bb = Color.BLUE.brighter();
+		Color tbb = new Color(bb.getRed(), bb.getGreen(), bb.getBlue(), 55);
+		sBorderStyle.setLinePaint(bb);
+		sBorderStyle.setFillPaint(tbb);
 		Stroke dashed = new BasicStroke(3, BasicStroke.CAP_BUTT, BasicStroke.JOIN_BEVEL, 0, new float[]{9}, 0);
 		sBorderStyle.setLineStroke(dashed);
 		
@@ -267,7 +315,7 @@ public class SelectionBorderItem extends GraphicsItem {
 	};
 	private GraphicsItem 					mSelectedItem;
 	private SelectionHandler 				mCallbackManager;
-	
+	private DoubleShapeDrawable				mDrawable;
 	
 	private double mMarginX = 0;
 	private double mMarginY = 0;
@@ -281,7 +329,9 @@ public class SelectionBorderItem extends GraphicsItem {
 		mCallbackManager = callbackManager;
 		setStyle(sBorderStyle);
 		setSelectable(false);
-				
+		mDrawable = new DoubleShapeDrawable(getShapeProperty());
+		setDrawable(mDrawable);
+		
 		setMouseMotionSupport(new MouseMotionAdapter() {
 			@Override
 			public void mouseDragged(MouseEvent e) {
@@ -337,7 +387,7 @@ public class SelectionBorderItem extends GraphicsItem {
 		if (item != mSelectedItem) {
 			if (mSelectedItem != null) {
 				uninstallListener(mSelectedItem);
-				
+				mDrawable.mShape2 = null;
 			}
 		}
 		if (item != null) {
@@ -346,9 +396,40 @@ public class SelectionBorderItem extends GraphicsItem {
 			
 			Rectangle2D rect = item.getSceneBounds();
 			setRectangle(rect);
+			
+			if (mSelectedItem.getShape() != null) {
+				try {
+					//build a shape out of the shapes of the selected object, to display a transparent version of the shape
+					AffineTransform selTrans = mSelectedItem.getWorldTransform();
+					AffineTransform myTrans = new AffineTransform(getWorldTransform());
+					myTrans.invert();
+					myTrans.concatenate(selTrans);
+					Area newShape = new Area(myTrans.createTransformedShape(mSelectedItem.getShape()));
+					_recursiveAddShapes(newShape, mSelectedItem);
+					mDrawable.mShape2 = newShape;
+				}catch(Exception e) {}
+			}
 		}		
 	}
 	
+	private void _recursiveAddShapes(Area newShape, GraphicsItem item) {
+		for (GraphicsItem child : item.getChildren()) {
+			Shape s = child.getShape();
+			if (s != null){
+				try {
+					AffineTransform selTrans = child.getWorldTransform();
+					AffineTransform myTrans = new AffineTransform(getWorldTransform());
+					myTrans.invert();
+					myTrans.concatenate(selTrans);
+					newShape.add(new Area(myTrans.createTransformedShape(s)));
+				}catch(Exception e) {}
+			}
+			if (child.hasChildren())
+				_recursiveAddShapes(newShape, child);
+		}
+	}
+
+
 	private void setRectangle(Rectangle2D rect) {
 		Point2D center = new Point2D.Double(rect.getCenterX(), rect.getCenterY());
 		//move the rectangle to 0,0
@@ -398,6 +479,7 @@ public class SelectionBorderItem extends GraphicsItem {
 		setShape(p);
 	}
 
+	
 
 	private Point2D[] getLocalVertices() {
 		return new Point2D[] {
