@@ -11,7 +11,7 @@ import de.sos.gvc.gt.tiles.cache.ICacheDataFactory;
  * @author scholvac
  *
  */
-public interface ITileFactory<DESC extends ITileDescription> {
+public interface ITileProvider<DESC extends ITileDescription> {
 
 	public Collection<DESC> getTileDescriptions(LatLonBoundingBox area, Rectangle2D viewArea/*in Pixel*/);
 	
@@ -30,4 +30,19 @@ public interface ITileFactory<DESC extends ITileDescription> {
 	 */
 	public <PARENT_CACHE_VALUE> void notifyParentUnloadedTile(CacheData<DESC, PARENT_CACHE_VALUE> data,
 			ICacheDataFactory<DESC, PARENT_CACHE_VALUE> cacheFactory);
+
+	/**
+	 * writes the information of the tile description into a single line string. 
+	 * @note this string may be used as name for files
+	 * @param desc
+	 * @return
+	 */
+	public String getStringDescription(DESC desc);
+	/**
+	 * restores a tile description from a string
+	 * @note this will be always called with the result obtained by <code>getStringDescription(DESC d)</code>
+	 * @param substring
+	 * @return
+	 */
+	public DESC createDescriptionFromString(String substring);
 }
