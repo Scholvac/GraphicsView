@@ -6,6 +6,7 @@ import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
 import java.awt.event.MouseWheelEvent;
 import java.awt.event.MouseWheelListener;
+import java.awt.geom.Point2D;
 
 import de.sos.gvc.GraphicsView;
 import de.sos.gvc.IGraphicsViewHandler;
@@ -43,14 +44,13 @@ public class DefaultViewDragHandler implements IGraphicsViewHandler, MouseListen
 	
 	
 	@Override
-	public void mouseClicked(MouseEvent e) {
-		
-	}
+	public void mouseClicked(MouseEvent e) { }
 
 	@Override
 	public void mousePressed(MouseEvent e) {
-		if (e.isConsumed() == false)
+		if (e.isConsumed() == false) {
 			mLastScreenPosition = e.getPoint();
+		}
 	}
 
 	@Override
@@ -59,38 +59,38 @@ public class DefaultViewDragHandler implements IGraphicsViewHandler, MouseListen
 	}
 
 	@Override
-	public void mouseEntered(MouseEvent e) {
-		// TODO Auto-generated method stub
-		
-	}
-
+	public void mouseEntered(MouseEvent e) { }
 	@Override
-	public void mouseExited(MouseEvent e) {
-		// TODO Auto-generated method stub
-		
-	}
+	public void mouseExited(MouseEvent e) {}
 
 	@Override
 	public void mouseDragged(MouseEvent e) {
 		if (e.isConsumed() == false && mLastScreenPosition != null) {
 			double dx = e.getPoint().getX() - mLastScreenPosition.getX();
 			double dy = e.getPoint().getY() - mLastScreenPosition.getY();
+			double angle_radian = Math.toRadians(-mView.getRotationDegrees()); 
+			//rotation matrix
+			double cos = Math.cos(angle_radian);
+			double sin = Math.sin(angle_radian);
+			double dxx = dx * cos + dy * -sin;
+			double dyy = dx * sin + dy * cos;
+			
+			
 			mLastScreenPosition.setLocation(e.getPoint());
 			double scaleX = mView.getScaleX();
 			double scaleY = mView.getScaleY();
 			double x = mView.getCenterX();
 			double y = mView.getCenterY();
-			mView.setCenter(x - dx * scaleX, y - dy * scaleY);
+			double xx = x - dxx * scaleX;
+			double yy = y - dyy * scaleY;
+			mView.setCenter(xx, yy);
 		}else {
 			mLastScreenPosition = null;
 		}
 	}
 
 	@Override
-	public void mouseMoved(MouseEvent e) {
-		// TODO Auto-generated method stub
-		
-	}
+	public void mouseMoved(MouseEvent e) {}
 
 	@Override
 	public void mouseWheelMoved(MouseWheelEvent e) {

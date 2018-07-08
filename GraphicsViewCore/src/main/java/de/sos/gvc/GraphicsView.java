@@ -5,6 +5,7 @@ import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Point;
 import java.awt.Rectangle;
+import java.awt.RenderingHints;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
 import java.awt.geom.AffineTransform;
@@ -158,11 +159,6 @@ public class GraphicsView extends JPanel {
 			handler.uninstall(this);
 		}
 	}
-
-	public void setCenter(double x, double y) {
-		mCenterX.set(x);
-		mCenterY.set(y);
-	}
 	
 	public void setScale(double scaleXY) {
 		setScale(scaleXY, scaleXY);
@@ -179,6 +175,8 @@ public class GraphicsView extends JPanel {
 		super.paintComponent(g);
 		Graphics2D g2d = (Graphics2D)g;
 		
+		g2d.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC);
+		g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 		
 		synchronized (mPaintListener) {
 			for (IPaintListener pl : mPaintListener) 
@@ -235,13 +233,15 @@ public class GraphicsView extends JPanel {
 			double w2 = getWidth() / 2.0;
 			double h2 = getHeight() / 2.0;
 			double rdeg = mRotation.get();
-			double r = Math.toRadians(rdeg);
+			double r = Math.toRadians(-rdeg);
 			
 			t.translate(-w2 * mScaleX.get(), h2 * mScaleY.get());
 			//now the view transform relative to the scene
 			t.translate(mCenterX.get(), -mCenterY.get());
 			t.scale(mScaleX.get(), -mScaleY.get());
+			t.translate(w2, h2);
 			t.rotate(r);
+			t.translate(-w2, -h2);
 			try {
 				mViewTransform = t.createInverse();
 			} catch (Exception e) {
@@ -251,9 +251,17 @@ public class GraphicsView extends JPanel {
 		return mViewTransform;
 	}
 	
+	public void setCenter(double x, double y) {
+		mCenterX.set(x);
+		mCenterY.set(y);
+	}
+	public double getCenterX() { return mCenterX.get(); }
+	public double getCenterY() { return mCenterY.get(); }
+	
 	public Point2D getPositionInComponent(Point2D sceneLocation) {
 		try {
-			return getViewTransform().transform(sceneLocation, null);
+			Point2D tmp = getViewTransform().transform(sceneLocation, null);
+			return new Point2D.Double(tmp.getX(), tmp.getY());
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -267,19 +275,8 @@ public class GraphicsView extends JPanel {
 	
 	public Rectangle2D getVisibleSceneRect() {
 		Rectangle vr = getVisibleRect();
-//		System.out.println("VR: " + vr);
-		Point2D min = new Point2D.Double(vr.getMinX(), vr.getMinY());
-		Point2D max = new Point2D.Double(vr.getMaxX(), vr.getMaxY());
-		min = getSceneLocation(min, min);
-		max = getSceneLocation(max, max);
-		double mix = min.getX(), miy = min.getY(), mx = max.getX(), my = max.getY();
-		if (mix > mx) {
-			double tmp = mx; mx = mix; mix = tmp;
-		}
-		if (miy > my) {
-			double tmp = my; my = miy; miy = tmp;
-		}
-		return new Rectangle2D.Double(mix, miy, mx-mix, my-miy);
+		Rectangle2D rect = Utils.inverseTransform(vr, getViewTransform());		
+		return rect;
 	}
 	
 	/**
@@ -339,8 +336,7 @@ public class GraphicsView extends JPanel {
 	}
 	public double getScaleX() { return mScaleX.get(); }
 	public double getScaleY() { return mScaleY.get(); }
-	public double getCenterX() { return mCenterX.get(); }
-	public double getCenterY() { return mCenterY.get(); }
+
 	public GraphicsScene getScene() { return mScene; }
 
 
@@ -352,6 +348,11 @@ public class GraphicsView extends JPanel {
 		mRotation.set(degrees);
 	}
 	public double getRotationDegrees() { return mRotation.get(); }
+
+
+	public void setCenter(Point2D center) {
+		setCenter(center.getX(), center.getY());		
+	}
 
 
 

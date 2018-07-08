@@ -11,6 +11,8 @@ import java.awt.Paint;
 import java.awt.Stroke;
 import java.awt.geom.Rectangle2D;
 
+import de.sos.gvc.IDrawContext;
+
 /**
  * 
  * @author scholvac
@@ -85,16 +87,21 @@ public class DrawableStyle {
 	public boolean hasLinePaint() {
 		return linePaint != null;
 	}
-	public void applyFillPaint(Graphics2D g) {
+	public void applyFillPaint(Graphics2D g, IDrawContext ctx) {
 		if (fillPaint != null) {
 			g.setPaint(fillPaint);
 		}
 	}
-	public void applyLinePaint(Graphics2D g) {
-		if (lineStroke != null)
+	public void applyLinePaint(Graphics2D g, IDrawContext ctx) {
+		if (lineStroke != null) {
+			if (lineStroke instanceof ScaledStroke) {
+				double scale = ctx.getScale();
+//				if (scale > 1)
+//					scale = 1. / scale;
+				((ScaledStroke) lineStroke).setScale(scale);
+			}
 			g.setStroke(lineStroke);
-		else
-			g.setStroke(new BasicStroke(1));
+		}
 		if (linePaint != null) {
 			g.setPaint(linePaint);
 		}

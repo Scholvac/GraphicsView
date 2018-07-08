@@ -9,6 +9,7 @@
 	<modules>
 		<module>GraphicsViewCore</module>
 		<module>GeoGraphicsView</module>
+		<!-- <module>GeometryEditor</module>-->
 	</modules>
 
 

@@ -32,6 +32,7 @@ import de.sos.gvc.IDrawContext;
 import de.sos.gvc.IDrawable;
 import de.sos.gvc.Utils;
 import de.sos.gvc.handler.SelectionHandler;
+import de.sos.gvc.handler.MouseDelegateHandler.DelegateMouseEvent;
 import de.sos.gvc.handler.SelectionHandler.ItemMoveEvent;
 import de.sos.gvc.param.IParameter;
 import de.sos.gvc.styles.DrawableStyle;
@@ -42,7 +43,7 @@ import de.sos.gvc.styles.DrawableStyle;
  * @author scholvac
  *
  */
-public class SelectionBorderItem extends GraphicsItem {
+public class SelectionBorderItem extends GraphicsItem implements MouseListener, MouseMotionListener{
 
 	enum MouseMode {
 		NONE, MOVE, ROTATE, SCALE
@@ -76,10 +77,13 @@ public class SelectionBorderItem extends GraphicsItem {
 		}
 		@Override public void mouseMoved(MouseEvent e) {}
 		@Override public void mouseClicked(MouseEvent e) { }
+		
 		@Override public void mousePressed(MouseEvent e) { 
 			if (!mCallbackManager.hasScaleCallbacks()) return ;
 			mOldVertices = getSceneVertices();
 			mMouseMode = MouseMode.SCALE;
+			if (e instanceof DelegateMouseEvent)
+				((DelegateMouseEvent) e).addPermanentMouseMotionListener(this);
 		}
 		@Override public void mouseReleased(MouseEvent e) {
 			if (!mCallbackManager.hasScaleCallbacks()) return ;
@@ -89,6 +93,8 @@ public class SelectionBorderItem extends GraphicsItem {
 			setRectangle(mSelectedItem.getSceneBounds());
 			mOldVertices = null;
 			mMouseMode = MouseMode.NONE;
+			if (e instanceof DelegateMouseEvent)
+				((DelegateMouseEvent) e).removePermanentMouseMotionListener(this);
 		}
 
 		@Override
@@ -188,6 +194,8 @@ public class SelectionBorderItem extends GraphicsItem {
 			if (!mCallbackManager.hasRotationCallbacks()) return ;
 			mLastPosition = e.getLocationOnScreen();
 			mMouseMode = MouseMode.ROTATE;
+			if (e instanceof DelegateMouseEvent)
+				((DelegateMouseEvent) e).addPermanentMouseMotionListener(this);
 			e.consume();
 		}
 
@@ -199,6 +207,8 @@ public class SelectionBorderItem extends GraphicsItem {
 			double endDegrees = SelectionBorderItem.this.getRotationDegrees();
 			mCallbackManager.fireRotateEvent(mStartDegrees, endDegrees);
 			mMouseMode = MouseMode.NONE;
+			if (e instanceof DelegateMouseEvent)
+				((DelegateMouseEvent) e).removePermanentMouseMotionListener(this);
 		}
 				
 
@@ -248,7 +258,7 @@ public class SelectionBorderItem extends GraphicsItem {
 					g.draw(mShape2);
 			}else {
 				if (style.hasFillPaint()) {
-					style.applyFillPaint(g);
+					style.applyFillPaint(g, ctx);
 					g.fill(mShape.get());
 					if (mShape2 != null) {
 //						Color c = g.getColor();
@@ -260,7 +270,7 @@ public class SelectionBorderItem extends GraphicsItem {
 					}
 				}
 				if (style.hasLinePaint()) {
-					style.applyLinePaint(g);
+					style.applyLinePaint(g, ctx);
 					g.draw(mShape.get());
 					if (mShape2 != null)
 						g.draw(mShape2);
@@ -332,54 +342,8 @@ public class SelectionBorderItem extends GraphicsItem {
 		mDrawable = new DoubleShapeDrawable(getShapeProperty());
 		setDrawable(mDrawable);
 		
-		setMouseMotionSupport(new MouseMotionAdapter() {
-			@Override
-			public void mouseDragged(MouseEvent e) {
-				if (mCallbackManager.hasMoveCallbacks() && mMouseMode == MouseMode.MOVE) {
-					if (e.isConsumed() == false) {
-						Point2D loc = getView().getSceneLocation(e.getPoint());
-						setSceneLocation(loc);
-//						ItemMoveEvent evt = mCallbackManager.createMoveEvent(e);						
-//						mCallbackManager.fireMoveEvent(evt);
-						e.consume();
-					}
-				}
-			}
-		});
-		setMouseSupport(new MouseAdapter() {
-			@Override
-			public void mousePressed(MouseEvent e) {
-				if (mCallbackManager.hasMoveCallbacks() == false || mMouseMode != MouseMode.NONE)
-					return ;
-				mMouseMode = MouseMode.MOVE;
-				super.mousePressed(e);
-			}
-			@Override
-			public void mouseReleased(MouseEvent e) {
-				if (mMouseMode == MouseMode.MOVE && mCallbackManager.hasMoveCallbacks()) {
-					List<GraphicsItem> items = Arrays.asList(mSelectedItem);
-					Point2D ol = mSelectedItem.getSceneLocation();
-					List<Point2D> oldLoc = Arrays.asList(new Point2D.Double(ol.getX(), ol.getY()));
-					List<Point2D> newLoc = Arrays.asList(getView().getSceneLocation(e.getPoint()));
-					ItemMoveEvent evt = new ItemMoveEvent(items, oldLoc, newLoc);
-											
-					mCallbackManager.fireMoveEvent(evt);
-					setSceneLocation(newLoc.get(0));
-				}
-				mMouseMode = MouseMode.NONE;
-			}
-			@Override
-			public void mouseEntered(MouseEvent e) {
-				e.getComponent().setCursor(new Cursor(Cursor.MOVE_CURSOR));
-				e.consume();
-			}
-			@Override
-			public void mouseExited(MouseEvent e) {
-				e.getComponent().setCursor(new Cursor(Cursor.DEFAULT_CURSOR));
-				mMouseMode = MouseMode.NONE;
-				e.consume();
-			}
-		});
+		setMouseMotionSupport(this);
+		setMouseSupport(this);
 	}
 
 
@@ -396,6 +360,7 @@ public class SelectionBorderItem extends GraphicsItem {
 			
 			Rectangle2D rect = item.getSceneBounds();
 			setRectangle(rect);
+			setRotation(item.getRotation());
 			
 			if (mSelectedItem.getShape() != null) {
 				try {
@@ -519,6 +484,77 @@ public class SelectionBorderItem extends GraphicsItem {
 		super.draw(g, ctx);
 //		g.setColor(Color.red);
 //		g.fill(new Arc2D.Double(getCenterX()-5, getCenterY()-5, 10, 10, 0, 360, Arc2D.CHORD));
+	}
+
+
+	@Override
+	public void mouseDragged(MouseEvent e) {
+		if (mCallbackManager.hasMoveCallbacks() && mMouseMode == MouseMode.MOVE) {
+			if (e.isConsumed() == false) {
+				Point2D loc = getView().getSceneLocation(e.getPoint());
+				setSceneLocation(loc);
+//				ItemMoveEvent evt = mCallbackManager.createMoveEvent(e);						
+//				mCallbackManager.fireMoveEvent(evt);
+				e.consume();
+			}
+		}
+	}
+
+
+	@Override
+	public void mouseMoved(MouseEvent e) {
+		// TODO Auto-generated method stub
+		
+	}
+
+
+	@Override
+	public void mouseClicked(MouseEvent e) {
+		// TODO Auto-generated method stub
+		
+	}
+
+
+	@Override
+	public void mousePressed(MouseEvent e) {
+		if (mCallbackManager.hasMoveCallbacks() == false || mMouseMode != MouseMode.NONE)
+			return ;
+		mMouseMode = MouseMode.MOVE;
+		if (e instanceof DelegateMouseEvent)
+			((DelegateMouseEvent) e).addPermanentMouseMotionListener(this); //bugfix: do not lose the drag when moving fast
+	}
+
+
+	@Override
+	public void mouseReleased(MouseEvent e) {
+		if (mMouseMode == MouseMode.MOVE && mCallbackManager.hasMoveCallbacks()) {
+			List<GraphicsItem> items = Arrays.asList(mSelectedItem);
+			Point2D ol = mSelectedItem.getSceneLocation();
+			List<Point2D> oldLoc = Arrays.asList(new Point2D.Double(ol.getX(), ol.getY()));
+			List<Point2D> newLoc = Arrays.asList(getView().getSceneLocation(e.getPoint()));
+			ItemMoveEvent evt = new ItemMoveEvent(items, oldLoc, newLoc);
+									
+			mCallbackManager.fireMoveEvent(evt);
+			setSceneLocation(newLoc.get(0));
+		}
+		mMouseMode = MouseMode.NONE;
+		if (e instanceof DelegateMouseEvent)
+			((DelegateMouseEvent) e).removePermanentMouseMotionListener(this); //cleanup - see mousePressed
+	}
+
+
+	@Override
+	public void mouseEntered(MouseEvent e) {
+		e.getComponent().setCursor(new Cursor(Cursor.MOVE_CURSOR));
+		e.consume();
+	}
+
+
+	@Override
+	public void mouseExited(MouseEvent e) {
+		e.getComponent().setCursor(new Cursor(Cursor.DEFAULT_CURSOR));
+		mMouseMode = MouseMode.NONE;
+		e.consume();
 	}
 	
 }

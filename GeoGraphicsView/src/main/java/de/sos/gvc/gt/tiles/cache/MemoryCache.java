@@ -9,7 +9,7 @@ import java.util.HashMap;
 import org.slf4j.Logger;
 
 import de.sos.gvc.gt.tiles.ITileDescription;
-import de.sos.gvc.gt.tiles.ITileFactory;
+import de.sos.gvc.gt.tiles.ITileProvider;
 import de.sos.gvc.gt.tiles.ITileLoader;
 import de.sos.gvc.gt.tiles.LatLonBoundingBox;
 import de.sos.gvc.gt.tiles.LazyTileItem;
@@ -22,11 +22,11 @@ import de.sos.gvc.log.GVLog;
  * @author scholvac
  *
  */
-public class MemoryCache<DESC extends ITileDescription, CACHEVALUE> implements ITileFactory<DESC> {
+public class MemoryCache<DESC extends ITileDescription, CACHEVALUE> implements ITileProvider<DESC> {
 
 	private Logger	LOG = GVLog.getLogger(MemoryCache.class);
 	
-	private ITileFactory<DESC> 									mDelegate = null;
+	private ITileProvider<DESC> 									mDelegate = null;
 	private ICacheDataFactory<DESC, CACHEVALUE>	 				mCacheHandler = null;
 	
 	private HashMap<Integer, CacheData<DESC, CACHEVALUE>> 		mTileCache = new HashMap<>();
@@ -45,10 +45,10 @@ public class MemoryCache<DESC extends ITileDescription, CACHEVALUE> implements I
 	
 	
 	
-	public MemoryCache(ICacheDataFactory<DESC, CACHEVALUE> handler, ITileFactory<DESC> delegate) {
+	public MemoryCache(ICacheDataFactory<DESC, CACHEVALUE> handler, ITileProvider<DESC> delegate) {
 		this(handler, delegate, 50*1024*1024, "MemoryCache");
 	}
-	public MemoryCache(ICacheDataFactory<DESC, CACHEVALUE> handler, ITileFactory<DESC> delegate, long memconsumption, String name) {
+	public MemoryCache(ICacheDataFactory<DESC, CACHEVALUE> handler, ITileProvider<DESC> delegate, long memconsumption, String name) {
 		mDelegate = delegate;
 		mName = name;
 		if (mName != null)
@@ -145,6 +145,16 @@ public class MemoryCache<DESC extends ITileDescription, CACHEVALUE> implements I
 			return ; //nothing to do
 		CacheData<DESC, CACHEVALUE> localData = mCacheHandler.createCacheDataFromOtherCache(data, cacheFactory);
 		addTileDataToCache(localData);
+	}
+	@Override
+	public String getStringDescription(DESC desc) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+	@Override
+	public DESC createDescriptionFromString(String substring) {
+		// TODO Auto-generated method stub
+		return null;
 	}
 
 

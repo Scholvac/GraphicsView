@@ -1,4 +1,4 @@
-package de.sos.gvc.gt;
+package de.sos.gvc.gt.tiles;
 
 import java.awt.Graphics2D;
 import java.awt.geom.Rectangle2D;
@@ -13,12 +13,9 @@ import de.sos.gvc.GraphicsView;
 import de.sos.gvc.IDrawContext;
 import de.sos.gvc.IGraphicsViewHandler;
 import de.sos.gvc.IPaintListener;
+import de.sos.gvc.gt.GeoUtils;
 import de.sos.gvc.gt.proj.LatLonPoint;
 import de.sos.gvc.gt.proj.Planet;
-import de.sos.gvc.gt.tiles.ITileDescription;
-import de.sos.gvc.gt.tiles.LatLonBoundingBox;
-import de.sos.gvc.gt.tiles.LazyTileItem;
-import de.sos.gvc.gt.tiles.TileFactory;
 import de.sos.gvc.log.GVLog;
 
 
@@ -31,7 +28,7 @@ public class TileHandler implements IPaintListener, IGraphicsViewHandler{
 
 	
 	@SuppressWarnings("rawtypes")
-	private TileFactory						mTileFactory;
+	private ITileFactory						mTileFactory;
 	
 	/** if set to true, we do update the tiles within the scene before we repaint the window*/
 	private boolean							mTileUpdateRequired = true;
@@ -45,7 +42,7 @@ public class TileHandler implements IPaintListener, IGraphicsViewHandler{
 	@SuppressWarnings("rawtypes")
 	private HashMap<Integer, LazyTileItem>		mActiveTiles = new HashMap<>();
 	
-	public TileHandler(TileFactory factory) {
+	public TileHandler(ITileFactory factory) {
 		mTileFactory = factory;
 	}
 	
@@ -123,7 +120,7 @@ public class TileHandler implements IPaintListener, IGraphicsViewHandler{
 	}
 
 
-	public void setFactory(TileFactory value) {
+	public void setFactory(ITileFactory value) {
 		mTileFactory = value;
 	}
 

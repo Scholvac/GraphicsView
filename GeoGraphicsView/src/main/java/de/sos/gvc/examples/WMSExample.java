@@ -6,10 +6,11 @@ import javax.swing.JFrame;
 import de.sos.gvc.GraphicsScene;
 import de.sos.gvc.GraphicsView;
 import de.sos.gvc.gt.GeoUtils;
-import de.sos.gvc.gt.TileHandler;
 import de.sos.gvc.gt.proj.LatLonPoint;
 import de.sos.gvc.gt.tiles.ITileFactory;
-import de.sos.gvc.gt.tiles.TileFactory;
+import de.sos.gvc.gt.tiles.ITileProvider;
+import de.sos.gvc.gt.tiles.TileHandler;
+import de.sos.gvc.gt.tiles.cache.CacheTileFactory;
 import de.sos.gvc.gt.tiles.cache.MemoryCache;
 import de.sos.gvc.gt.tiles.cache.factories.BufferedImageFactory;
 import de.sos.gvc.gt.tiles.cache.factories.ByteDataFactory;
@@ -44,10 +45,10 @@ public class WMSExample {
 		WMSOptions opt =new WMSOptions("http://chartserver4.sevencs.com:8080", WMSVersion.VERSION_1_1_1);
 //		WMSOptions opt =new WMSOptions("10.53.1.24:8484", WMSVersion.VERSION_1_3_0);
 		
-		ITileFactory<OSMTileDescription> webCache = new WMSTileFactory(opt);
-		ITileFactory<OSMTileDescription> byteCache = new MemoryCache<>(new ByteDataFactory<>(), webCache, 20*1024*1024, "Byte Cache");
-		ITileFactory<OSMTileDescription> memImgcache = new MemoryCache<>(new BufferedImageFactory<>(), byteCache, 2*1024*1024, "Image Cache");
-		TileFactory<OSMTileDescription> factory = new TileFactory<>(memImgcache, 8);
+		ITileProvider<OSMTileDescription> webCache = new WMSTileFactory(opt);
+		ITileProvider<OSMTileDescription> byteCache = new MemoryCache<>(new ByteDataFactory<>(), webCache, 20*1024*1024, "Byte Cache");
+		ITileProvider<OSMTileDescription> memImgcache = new MemoryCache<>(new BufferedImageFactory<>(), byteCache, 2*1024*1024, "Image Cache");
+		ITileFactory<OSMTileDescription> factory = new CacheTileFactory<>(memImgcache, 8);
 		
 		view.addHandler(new TileHandler(factory));
 		

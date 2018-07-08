@@ -7,7 +7,7 @@ import java.util.Collection;
 
 import de.sos.gvc.gt.GeoUtils;
 import de.sos.gvc.gt.proj.LatLonPoint;
-import de.sos.gvc.gt.tiles.ITileFactory;
+import de.sos.gvc.gt.tiles.ITileProvider;
 import de.sos.gvc.gt.tiles.ITileLoader;
 import de.sos.gvc.gt.tiles.LatLonBoundingBox;
 import de.sos.gvc.gt.tiles.LazyTileItem;
@@ -20,7 +20,7 @@ import de.sos.gvc.gt.tiles.cache.ICacheDataFactory;
  * @author scholvac
  *
  */
-public class OSMTileFactory implements ITileFactory<OSMTileDescription> {
+public class OSMTileFactory implements ITileProvider<OSMTileDescription> {
 	
 	//usefull links: 	http://tools.geofabrik.de/map/#16/53.5208/8.6397&type=Geofabrik_Standard&grid=1
 	//					https://gis.stackexchange.com/questions/19632/how-to-calculate-the-optimal-zoom-level-to-display-two-or-more-points-on-a-map
@@ -44,7 +44,7 @@ public class OSMTileFactory implements ITileFactory<OSMTileDescription> {
 		int zoom = calculateZoom(area, viewArea.getWidth());
 		if (zoom < 0)
 			return new ArrayList<>();
-		int[][] tiles = getTileNumbers(area.getUpperLeft(), area.getLowerRight(), zoom);
+		int[][] tiles = getTileNumbers(area.getUpperLeft(), area.getLowerRight(), zoom+1);
 		ArrayList<OSMTileDescription> out = new ArrayList<>();
 		for (int i = 0; i < tiles.length; i++) {
 			out.add(new OSMTileDescription(tiles[i][0], tiles[i][1], tiles[i][2]));
@@ -158,6 +158,20 @@ public class OSMTileFactory implements ITileFactory<OSMTileDescription> {
 			ICacheDataFactory<OSMTileDescription, PARENT_CACHE_VALUE> cacheFactory) {
 		// TODO Auto-generated method stub
 		
+	}
+	@Override
+	public String getStringDescription(OSMTileDescription desc) {
+		return "OSM_" + desc.getZoom() + "_" + desc.getTileX() + "_" + desc.getTileY();
+	}
+	@Override
+	public OSMTileDescription createDescriptionFromString(String substring) {
+		String[] str = substring.split("_");
+		if (str.length != 4) return null;
+		if (str[0].equals("OSM") == false) return null;
+		int z = Integer.parseInt(str[1]);
+		int x = Integer.parseInt(str[2]);
+		int y = Integer.parseInt(str[3]);
+		return new OSMTileDescription(x, y, z);
 	}
 
 }

@@ -3,7 +3,7 @@ package de.sos.gvc.gt.tiles.wms;
 import java.awt.geom.Point2D;
 
 import de.sos.gvc.gt.GeoUtils;
-import de.sos.gvc.gt.tiles.ITileFactory;
+import de.sos.gvc.gt.tiles.ITileProvider;
 import de.sos.gvc.gt.tiles.ITileLoader;
 import de.sos.gvc.gt.tiles.LatLonBoundingBox;
 import de.sos.gvc.gt.tiles.osm.OSMTileDescription;
@@ -15,7 +15,7 @@ import de.sos.gvc.gt.tiles.wms.WMSOptions.WMSVersion;
  * @author scholvac
  *
  */
-public class WMSTileFactory extends OSMTileFactory implements ITileFactory<OSMTileDescription> {
+public class WMSTileFactory extends OSMTileFactory implements ITileProvider<OSMTileDescription> {
 	
 	private WMSOptions mOptions;
 

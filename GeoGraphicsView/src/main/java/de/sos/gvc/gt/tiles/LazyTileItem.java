@@ -83,11 +83,9 @@ public class LazyTileItem<DESC extends ITileDescription> extends GraphicsItem
 		return mDescription;
 	}
 
-	public void setImage(BufferedImage img) {
-		synchronized (mImage) {
-			mImage = img;
-			setDrawable(new ImageDrawable((Rectangle2D) getShape(), img)); //this marks the item as dirty -> repaint
-		}		
+	public synchronized void setImage(BufferedImage img) {
+		mImage = img;
+		setDrawable(new ImageDrawable((Rectangle2D) getShape(), img)); //this marks the item as dirty -> repaint		
 	}
 	public BufferedImage getImage() { return mImage; }
 	@Override

@@ -1,5 +1,7 @@
 package de.sos.gvc.gt.tiles.osm;
 
+import javax.management.MXBean;
+
 import de.sos.gvc.gt.proj.HashCodeUtil;
 import de.sos.gvc.gt.proj.LatLonPoint;
 import de.sos.gvc.gt.tiles.ITileDescription;
@@ -56,4 +58,19 @@ public class OSMTileDescription implements ITileDescription{
 		return mBounds;
 	}
 
+	@Override
+	public int hashCode() {
+		return mHash;
+	}
+	@Override
+	public boolean equals(Object obj) {
+		if (obj instanceof OSMTileDescription == false) return false;
+		OSMTileDescription o = (OSMTileDescription)obj;
+		return mTileX == o.mTileX && mTileY == o.mTileY && mZoom == o.mZoom;
+	}
+	
+	@Override
+	public String toString() {
+		return "Tile[" + mZoom + " / " + mTileX + " / " + mTileY + "]";
+	}
 }

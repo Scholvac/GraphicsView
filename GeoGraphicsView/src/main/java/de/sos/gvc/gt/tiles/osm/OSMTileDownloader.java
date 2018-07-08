@@ -13,8 +13,10 @@ import java.net.URLConnection;
 import javax.imageio.ImageIO;
 
 import org.apache.log4j.helpers.UtilLoggingLevel;
+import org.slf4j.Logger;
 
 import de.sos.gvc.gt.tiles.ITileLoader;
+import de.sos.gvc.gt.tiles.cache.MultiCacheFactory.IByteTileLoader;
 import de.sos.gvc.log.GVLog;
 
 
@@ -23,13 +25,17 @@ import de.sos.gvc.log.GVLog;
  * @author scholvac
  *
  */
-public class OSMTileDownloader implements ITileLoader<OSMTileDescription>{
+public class OSMTileDownloader implements ITileLoader<OSMTileDescription>, IByteTileLoader<OSMTileDescription>{
+	
+	private static final Logger	logger = GVLog.getLogger(OSMTileDownloader.class);
 	
 	private String			mBaseURL;
 	private int				mAttemps = 3;
 	private String 			mUserAgent = "GeoGraphView/1.0";
 	private int 			mConnectTimeOutMillis = 2000; //2sec
 	private int 			mReadTimeOutMillis = 2000; //2sec
+	
+	
 	
 	public OSMTileDownloader() {
 		this("http://tile.openstreetmap.org/");
@@ -81,6 +87,7 @@ public class OSMTileDownloader implements ITileLoader<OSMTileDescription>{
 				mReadTimeOutMillis += 2000;
 				if (att == 1) try { Thread.sleep(250); } catch (InterruptedException e) { e.printStackTrace(); }
 			}catch(Exception | Error e) {
+				logger.error("Failed to download tile " + url, e);
 				e.printStackTrace();
 			}finally {
 				att--;
@@ -90,6 +97,7 @@ public class OSMTileDownloader implements ITileLoader<OSMTileDescription>{
 	}
 	
 	public byte[] getCompressedTileImage(URL url) throws IOException {
+		if (logger.isTraceEnabled()) logger.trace("Downloading Tile: {}", url);
 		URLConnection connection = url.openConnection();
 		connection.setConnectTimeout(mConnectTimeOutMillis);
 		connection.setReadTimeout(mReadTimeOutMillis);
@@ -110,6 +118,12 @@ public class OSMTileDownloader implements ITileLoader<OSMTileDescription>{
         byte[] data = bout.toByteArray();
         bout.close();
         return data;
+	}
+	@Override
+	public byte[] loadTile(OSMTileDescription description) {
+		
+		return new OSMTileDownloader().getCompressedTileImage(description);
+//		return getCompressedTileImage(description);
 	}
 
 

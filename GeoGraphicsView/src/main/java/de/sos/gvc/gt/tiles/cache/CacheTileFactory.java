@@ -1,4 +1,4 @@
-package de.sos.gvc.gt.tiles;
+package de.sos.gvc.gt.tiles.cache;
 
 import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;
@@ -13,6 +13,12 @@ import java.util.concurrent.TimeUnit;
 
 import javax.imageio.ImageIO;
 
+import de.sos.gvc.gt.tiles.ITileDescription;
+import de.sos.gvc.gt.tiles.ITileFactory;
+import de.sos.gvc.gt.tiles.ITileLoader;
+import de.sos.gvc.gt.tiles.ITileProvider;
+import de.sos.gvc.gt.tiles.LatLonBoundingBox;
+import de.sos.gvc.gt.tiles.LazyTileItem;
 import de.sos.gvc.log.GVLog;
 
 
@@ -21,16 +27,16 @@ import de.sos.gvc.log.GVLog;
  * @author scholvac
  *
  */
-public class TileFactory<DESC extends ITileDescription> {
+public class CacheTileFactory<DESC extends ITileDescription> implements ITileFactory<DESC> {
 	
 	private ExecutorService		mExecutorService;
-	private ITileFactory<DESC> 	mFactory;
+	private ITileProvider<DESC> mFactory;
 	
 	private BufferedImage		mLoadingImage;
 	private BufferedImage		mErrorImage;
 	private UnloadWorker 		mTileUnloader;
 	
-	public TileFactory(ITileFactory<DESC> factory, int threadPoolSize) {
+	public CacheTileFactory(ITileProvider<DESC> factory, int threadPoolSize) {
 		mFactory = factory;
 		try {
 			mLoadingImage = ImageIO.read(getClass().getClassLoader().getResource("loading.png"));
@@ -109,6 +115,10 @@ public class TileFactory<DESC extends ITileDescription> {
 	}
 	
 	
+	/* (non-Javadoc)
+	 * @see de.sos.gvc.gt.tiles.ITileFactory#getTileDescriptions(de.sos.gvc.gt.tiles.LatLonBoundingBox, java.awt.geom.Rectangle2D)
+	 */
+	@Override
 	public Collection<DESC> getTileDescriptions(LatLonBoundingBox area, Rectangle2D viewArea){
 		return mFactory.getTileDescriptions(area, viewArea);
 	}
@@ -163,6 +173,10 @@ public class TileFactory<DESC extends ITileDescription> {
 	@enduml
 
 	*/
+	/* (non-Javadoc)
+	 * @see de.sos.gvc.gt.tiles.ITileFactory#createTileItem(DESC)
+	 */
+	@Override
 	public LazyTileItem<DESC> createTileItem(DESC desc)  {
 		LazyTileItem<DESC> tile = new LazyTileItem<DESC>(desc, mLoadingImage);
 		try {
@@ -172,32 +186,10 @@ public class TileFactory<DESC extends ITileDescription> {
 		return tile;		
 	}
 	
-	/**
-	 * If a tile is no longer needed by the view (e.g. it is no longer within the visible area) 
-	 * the view unloads the tile. That does not necessarily mean that the tile is destroyed. Instead
-	 * the TileFactory notifies the ITileFactory (e.g. the Memory Cache) that the tile is no longer needed
-	 * the MemoryCache now can decide wheater the tile will be destroyed or not. 
-	 * If a Cache Entity destroys a tile, it shall notify its backup that the tile has been destroyed, to give the same 
-	 * change to the backup entry (usually the WebCache does nothing on this method)
-	 * 
-	 * @note this method may also be called from the previous cache if he did decide that he need to destroy an unused tile, without being notified by the view
-	 * for example if a new tile has been created and the memory consumption reaches a threshold. 
-	 * 
-	 * @startuml
-		actor GeoView as View
-		boundary TileFactory as TF
-		collections MemoryCache as MC
-		database FileCache as FC
-		database WebCache as WC
-		
-		View -> TF : unloadTile(tile)
-		TF ->> MC : unloadTile(tile)
-		MC -> MC : checkIfUnload() : true
-		MC -> FC : unloadTile(tile)
-		FC -> FC : checkIfUnload() : false
-	 * @enduml
-	 * @param tile
+	/* (non-Javadoc)
+	 * @see de.sos.gvc.gt.tiles.ITileFactory#unloadTileItem(de.sos.gvc.gt.tiles.LazyTileItem)
 	 */
+	@Override
 	public void unloadTileItem(LazyTileItem<DESC> tile) {
 		try {
 			mTilesToUnload.put(tile);

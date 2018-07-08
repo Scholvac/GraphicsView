@@ -50,6 +50,9 @@ public class GeoUtils {
 	public static void setGeoPosition(GraphicsItem item, double lat, double lon) {
 		item.setCenter(getPosition(lat, lon));
 	}
+	public static void setGeoPosition(GraphicsItem item, LatLonPoint llp) {
+		item.setCenter(getPosition(llp));
+	}
 
 
 	

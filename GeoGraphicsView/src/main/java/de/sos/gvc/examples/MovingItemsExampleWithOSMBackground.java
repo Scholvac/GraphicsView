@@ -16,10 +16,11 @@ import de.sos.gvc.GraphicsItem;
 import de.sos.gvc.GraphicsScene;
 import de.sos.gvc.GraphicsView;
 import de.sos.gvc.gt.GeoUtils;
-import de.sos.gvc.gt.TileHandler;
 import de.sos.gvc.gt.proj.LatLonPoint;
 import de.sos.gvc.gt.tiles.ITileFactory;
-import de.sos.gvc.gt.tiles.TileFactory;
+import de.sos.gvc.gt.tiles.ITileProvider;
+import de.sos.gvc.gt.tiles.TileHandler;
+import de.sos.gvc.gt.tiles.cache.CacheTileFactory;
 import de.sos.gvc.gt.tiles.cache.MemoryCache;
 import de.sos.gvc.gt.tiles.cache.factories.BufferedImageFactory;
 import de.sos.gvc.gt.tiles.cache.factories.ByteDataFactory;
@@ -147,10 +148,10 @@ public class MovingItemsExampleWithOSMBackground {
 		 * 
 		 * @see MemoryCache and OSMTileFactory
 		 */
-		ITileFactory<OSMTileDescription> webCache = new OSMTileFactory();
-		ITileFactory<OSMTileDescription> byteCache = new MemoryCache<>(new ByteDataFactory<>(), webCache);
-		ITileFactory<OSMTileDescription> memImgcache = new MemoryCache<>(new BufferedImageFactory<>(), byteCache);
-		TileFactory<OSMTileDescription> factory = new TileFactory<>(memImgcache, 8);
+		ITileProvider<OSMTileDescription> webCache = new OSMTileFactory();
+		ITileProvider<OSMTileDescription> byteCache = new MemoryCache<>(new ByteDataFactory<>(), webCache);
+		ITileProvider<OSMTileDescription> memImgcache = new MemoryCache<>(new BufferedImageFactory<>(), byteCache);
+		ITileFactory<OSMTileDescription> factory = new CacheTileFactory<>(memImgcache, 8);
 		
 		view.addHandler(new TileHandler(factory));
 		

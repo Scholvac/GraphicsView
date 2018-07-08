@@ -195,7 +195,7 @@ public class GraphicsScene {
 		return mItemStore.getItems(rect, filter);
 	}
 	public List<GraphicsItem> getAllItems(Rectangle2D rect, IItemFilter filter) {
-		List<GraphicsItem> topLevel = getItems(rect, filter);
+		List<GraphicsItem> topLevel = getItems(rect, null);
 		return getAllItems(rect, topLevel, filter);	
 	}
 	
@@ -212,10 +212,11 @@ public class GraphicsScene {
 	public List<GraphicsItem> getAllItems(Rectangle2D rect, List<GraphicsItem> items, IItemFilter filter) {
 		ArrayList<GraphicsItem> out = new ArrayList<>();
 		//first find all top level features and iterate only their children. all other would not meet the 2) condition
-		List<GraphicsItem> openList = getItems(rect, items, filter);
+		List<GraphicsItem> openList = getItems(rect, items, null); //@note do not use the filter here, to not exclude childen whose parent does not fit the fiilter but the child itself would pass the filter
 		while(openList.isEmpty() == false) {
 			GraphicsItem first = openList.remove(0);
-			out.add(first);
+			if (filter == null || filter.accept(first))
+				out.add(first);
 			if (first.hasChildren()) {
 				for (GraphicsItem child : first.getChildren()) {
 					//we do not now if the child is part of the box, may it another child that let the parent be inside the box
@@ -223,8 +224,7 @@ public class GraphicsScene {
 						continue;
 					Rectangle2D wb = child.getSceneBounds();
 					if (rect.contains(wb) || rect.intersects(wb)) {
-						if (filter == null || filter.accept(child))
-							openList.add(child);
+						openList.add(child);
 					}
 				}
 			}

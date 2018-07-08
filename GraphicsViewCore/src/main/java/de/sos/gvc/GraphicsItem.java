@@ -6,6 +6,7 @@ import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
 import java.awt.event.MouseWheelListener;
 import java.awt.geom.AffineTransform;
+import java.awt.geom.NoninvertibleTransformException;
 import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
 import java.beans.PropertyChangeEvent;
@@ -550,6 +551,20 @@ public class GraphicsItem {
 	}
 	public void setSceneLocation(double centerX, double centerY) {
 		setSceneLocation(new Point2D.Double(centerX, centerY));
+	}
+	
+	/**
+	 * returns the local position of a scene point
+	 * @param sceneLoc position in scene coordinates 
+	 * @return location in local coordinates
+	 */
+	public Point2D scene2Local(Point2D sceneLoc) {
+		try {
+			return getWorldTransform().inverseTransform(sceneLoc, null);
+		} catch (NoninvertibleTransformException e) {
+			e.printStackTrace();
+			return null;
+		}
 	}
 	
 	public void setVisible(boolean b) { mVisible.set(b);}

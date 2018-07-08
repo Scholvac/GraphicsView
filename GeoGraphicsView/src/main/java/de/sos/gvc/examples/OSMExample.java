@@ -1,18 +1,21 @@
 package de.sos.gvc.examples;
 import java.awt.BorderLayout;
+import java.io.IOException;
 
 import javax.swing.JFrame;
 
 import de.sos.gvc.GraphicsScene;
 import de.sos.gvc.GraphicsView;
 import de.sos.gvc.gt.GeoUtils;
-import de.sos.gvc.gt.TileHandler;
 import de.sos.gvc.gt.proj.LatLonPoint;
 import de.sos.gvc.gt.tiles.ITileFactory;
-import de.sos.gvc.gt.tiles.TileFactory;
+import de.sos.gvc.gt.tiles.ITileProvider;
+import de.sos.gvc.gt.tiles.TileHandler;
+import de.sos.gvc.gt.tiles.cache.CacheTileFactory;
 import de.sos.gvc.gt.tiles.cache.MemoryCache;
 import de.sos.gvc.gt.tiles.cache.factories.BufferedImageFactory;
 import de.sos.gvc.gt.tiles.cache.factories.ByteDataFactory;
+import de.sos.gvc.gt.tiles.cache.factories.FileDataFactory;
 import de.sos.gvc.gt.tiles.osm.OSMTileDescription;
 import de.sos.gvc.gt.tiles.osm.OSMTileFactory;
 import de.sos.gvc.handler.DefaultViewDragHandler;
@@ -27,7 +30,7 @@ import de.sos.gvc.param.ParameterContext;
  */
 public class OSMExample {
 	
-	public static void main(String[] args) {
+	public static void main(String[] args) throws IOException {
 		
 		//Create a new Scene and a new View 
 		GraphicsScene scene = new GraphicsScene();
@@ -48,10 +51,11 @@ public class OSMExample {
 		 * 
 		 * @see MemoryCache and OSMTileFactory
 		 */
-		ITileFactory<OSMTileDescription> webCache = new OSMTileFactory();
-		ITileFactory<OSMTileDescription> byteCache = new MemoryCache<>(new ByteDataFactory<>(), webCache, 20*1024*1024, "Byte Cache");
-		ITileFactory<OSMTileDescription> memImgcache = new MemoryCache<>(new BufferedImageFactory<>(), byteCache, 2*1024*1024, "Image Cache");
-		TileFactory<OSMTileDescription> factory = new TileFactory<>(memImgcache, 8);
+		ITileProvider<OSMTileDescription> webCache = new OSMTileFactory();
+		ITileProvider<OSMTileDescription> fileCache = new MemoryCache<>(new FileDataFactory<>(System.clearProperty("user.home") + "/.OSMCache/"), webCache, 100*1024*1024, "File Cache");// create a cache that saves images into a given directory
+		ITileProvider<OSMTileDescription> byteCache = new MemoryCache<>(new ByteDataFactory<>(), fileCache, 1*1024*1024, "Byte Cache");
+		ITileProvider<OSMTileDescription> memImgcache = new MemoryCache<>(new BufferedImageFactory<>(), byteCache, 1*1024*1024, "Image Cache");
+		ITileFactory<OSMTileDescription> factory = new CacheTileFactory<>(memImgcache, 8);
 		
 		view.addHandler(new TileHandler(factory));
 		

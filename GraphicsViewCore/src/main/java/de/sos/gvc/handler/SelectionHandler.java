@@ -220,7 +220,9 @@ public class SelectionHandler implements IGraphicsViewHandler, MouseListener {
 	}
 	private GraphicsItem getBestFit(Point point) {
 		Point2D scene = mView.getSceneLocation(point, null);
-		List<GraphicsItem> items = mView.getAllItemsAt(point, mEpsilon.get(), mEpsilon.get(), null);
+		double eps = mEpsilon.get() * mView.getScaleX();
+		
+		List<GraphicsItem> items = mView.getAllItemsAt(point, eps, eps, null);
 		Optional<GraphicsItem> optItem = items.stream().filter(p -> mSelectableFilter.accept(p)).sorted(new Comparator<GraphicsItem>() {
 			public int compare(GraphicsItem o1, GraphicsItem o2) {
 				return Float.compare(o1.getZOrder(), o2.getZOrder());
@@ -230,7 +232,7 @@ public class SelectionHandler implements IGraphicsViewHandler, MouseListener {
 			AffineTransform wt = predicate.getWorldTransform();
 			try {
 				Point2D localScene = wt.inverseTransform(scene, null);
-				Rectangle2D r = new Rectangle2D.Double(localScene.getX(), localScene.getY(), 3*mEpsilon.get(), 3*mEpsilon.get());
+				Rectangle2D r = new Rectangle2D.Double(localScene.getX(), localScene.getY(), 3*eps, 3*eps);
 				boolean res = s.contains(r);
 				if (!res)
 					res = s.intersects(r);

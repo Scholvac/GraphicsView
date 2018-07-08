@@ -28,6 +28,7 @@ The focus is on decoupling from the graphics scene, in which all objects are def
 * **Easy observation of Changes**: each item can be observed, wheater one of its parameters has been changed
 * **Custom Drawables** : The optical representation of an item can easily been changed
 * **Z-Order**: Define which item shall overpaint all others
+* **Rotate View**: rotate the view without changing anything in the model or drawing
  
 ## Features added by GeoGraphicsView
 * **Tile Support** : The GeoGraphicsView supports different TileFactories, that could even be mixed
@@ -68,7 +69,10 @@ The focus is on decoupling from the graphics scene, in which all objects are def
 	* ![Overview](doc/images/GeoItems1.png "GeoItems")
 	* ![Overview](doc/images/ScaleEffect.png "ScaleEffect.png")
 	* ![Overview](doc/images/ScaleEffect2.png "ScaleEffect")
-
+* RotateViewExample.java: 
+	* Demonstrate how to rotate the view
+	* ![Overview](doc/images/RotateView.png "RotateView")
+	
 # Similar Projects and what is different
 The following projects have some kind of similar objectives but none of them could fullfill all requirements. However all of them have been used as inspiration. 
 

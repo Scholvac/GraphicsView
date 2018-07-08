@@ -26,10 +26,11 @@ import de.sos.gvc.GraphicsView;
 import de.sos.gvc.IDrawContext;
 import de.sos.gvc.gt.GeoGraphicsItem;
 import de.sos.gvc.gt.GeoUtils;
-import de.sos.gvc.gt.TileHandler;
 import de.sos.gvc.gt.proj.LatLonPoint;
 import de.sos.gvc.gt.tiles.ITileFactory;
-import de.sos.gvc.gt.tiles.TileFactory;
+import de.sos.gvc.gt.tiles.ITileProvider;
+import de.sos.gvc.gt.tiles.TileHandler;
+import de.sos.gvc.gt.tiles.cache.CacheTileFactory;
 import de.sos.gvc.gt.tiles.cache.MemoryCache;
 import de.sos.gvc.gt.tiles.cache.factories.BufferedImageFactory;
 import de.sos.gvc.gt.tiles.cache.factories.ByteDataFactory;
@@ -74,10 +75,10 @@ public class GeoItemsIntroduction {
 		 * 
 		 * @see MemoryCache and OSMTileFactory
 		 */
-		ITileFactory<OSMTileDescription> webCache = new OSMTileFactory();
-		ITileFactory<OSMTileDescription> byteCache = new MemoryCache<>(new ByteDataFactory<>(), webCache, 20*1024*1024, "Byte Cache");
-		ITileFactory<OSMTileDescription> memImgcache = new MemoryCache<>(new BufferedImageFactory<>(), byteCache, 2*1024*1024, "Image Cache");
-		TileFactory<OSMTileDescription> factory = new TileFactory<>(memImgcache, 8);
+		ITileProvider<OSMTileDescription> webCache = new OSMTileFactory();
+		ITileProvider<OSMTileDescription> byteCache = new MemoryCache<>(new ByteDataFactory<>(), webCache, 20*1024*1024, "Byte Cache");
+		ITileProvider<OSMTileDescription> memImgcache = new MemoryCache<>(new BufferedImageFactory<>(), byteCache, 2*1024*1024, "Image Cache");
+		ITileFactory<OSMTileDescription> factory = new CacheTileFactory<>(memImgcache, 8);
 		view.addHandler(new TileHandler(factory));
 		
 		/**
