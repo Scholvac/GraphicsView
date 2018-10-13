@@ -51,11 +51,6 @@
 		</plugins>
 	</build>
 	
-	<distributionManagement>
-		<snapshotRepository>
-			<id>emirDeploy</id>
-			<url>http://ems.informatik.uni-oldenburg.de:3195/nexus/content/repositories/eMIR_Thirdparty/</url>
-		</snapshotRepository>
-	</distributionManagement>
+
 	
 </project>
