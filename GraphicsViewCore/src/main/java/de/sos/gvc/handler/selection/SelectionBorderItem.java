@@ -18,6 +18,7 @@ import java.awt.event.MouseMotionListener;
 import java.awt.geom.AffineTransform;
 import java.awt.geom.Arc2D;
 import java.awt.geom.Area;
+import java.awt.geom.NoninvertibleTransformException;
 import java.awt.geom.Path2D;
 import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
@@ -194,6 +195,7 @@ public class SelectionBorderItem extends GraphicsItem implements MouseListener, 
 			if (!mCallbackManager.hasRotationCallbacks()) return ;
 			mLastPosition = e.getLocationOnScreen();
 			mMouseMode = MouseMode.ROTATE;
+			mStartDegrees = SelectionBorderItem.this.getRotationDegrees();
 			if (e instanceof DelegateMouseEvent)
 				((DelegateMouseEvent) e).addPermanentMouseMotionListener(this);
 			e.consume();
@@ -217,7 +219,6 @@ public class SelectionBorderItem extends GraphicsItem implements MouseListener, 
 			if (!mCallbackManager.hasRotationCallbacks() || mMouseMode != MouseMode.NONE) return ;
 			e.getComponent().setCursor(new Cursor(Cursor.WAIT_CURSOR));
 			mMouseMode = MouseMode.ROTATE;
-			mStartDegrees = SelectionBorderItem.this.getRotationDegrees();
 			e.consume();
 		}
 
@@ -361,6 +362,7 @@ public class SelectionBorderItem extends GraphicsItem implements MouseListener, 
 			Rectangle2D rect = item.getSceneBounds();
 			setRectangle(rect);
 			setRotation(item.getRotation());
+			setZOrder(999);
 			
 			if (mSelectedItem.getShape() != null) {
 				try {
@@ -438,8 +440,6 @@ public class SelectionBorderItem extends GraphicsItem implements MouseListener, 
 			p.lineTo(vertices[i].getX(), vertices[i].getY());
 		p.lineTo(vertices[0].getX(), vertices[0].getY());
 		p.closePath();
-//		p.moveTo(0, vertices[0].getY());
-//		p.lineTo(0, vertices[0].getY() + (vertices[0].getY() - vertices[2].getY())/5.0);
 		
 		setShape(p);
 	}
@@ -479,11 +479,8 @@ public class SelectionBorderItem extends GraphicsItem implements MouseListener, 
 
 	@Override
 	public void draw(Graphics2D g, IDrawContext ctx) {
-//		Stroke dashed = new BasicStroke((float)(ctx.getScale()*3.0f), BasicStroke.CAP_BUTT, BasicStroke.JOIN_BEVEL, 0, new float[]{9}, 0);
 		getStyle().setLineStroke(new BasicStroke((float) (1.0f * ctx.getScale())));
 		super.draw(g, ctx);
-//		g.setColor(Color.red);
-//		g.fill(new Arc2D.Double(getCenterX()-5, getCenterY()-5, 10, 10, 0, 360, Arc2D.CHORD));
 	}
 
 
@@ -493,8 +490,6 @@ public class SelectionBorderItem extends GraphicsItem implements MouseListener, 
 			if (e.isConsumed() == false) {
 				Point2D loc = getView().getSceneLocation(e.getPoint());
 				setSceneLocation(loc);
-//				ItemMoveEvent evt = mCallbackManager.createMoveEvent(e);						
-//				mCallbackManager.fireMoveEvent(evt);
 				e.consume();
 			}
 		}
@@ -514,12 +509,13 @@ public class SelectionBorderItem extends GraphicsItem implements MouseListener, 
 		
 	}
 
-
+	private Point2D mCurrentCenter = null;
 	@Override
 	public void mousePressed(MouseEvent e) {
 		if (mCallbackManager.hasMoveCallbacks() == false || mMouseMode != MouseMode.NONE)
 			return ;
 		mMouseMode = MouseMode.MOVE;
+		mCurrentCenter = getSceneLocation();
 		if (e instanceof DelegateMouseEvent)
 			((DelegateMouseEvent) e).addPermanentMouseMotionListener(this); //bugfix: do not lose the drag when moving fast
 	}
@@ -531,10 +527,27 @@ public class SelectionBorderItem extends GraphicsItem implements MouseListener, 
 			List<GraphicsItem> items = Arrays.asList(mSelectedItem);
 			Point2D ol = mSelectedItem.getSceneLocation();
 			List<Point2D> oldLoc = Arrays.asList(new Point2D.Double(ol.getX(), ol.getY()));
-			List<Point2D> newLoc = Arrays.asList(getView().getSceneLocation(e.getPoint()));
-			ItemMoveEvent evt = new ItemMoveEvent(items, oldLoc, newLoc);
-									
+			
+			Point2D newLocP = new Point2D.Double();
+			try {
+				Rectangle2D lb = getLocalBounds();
+				System.out.println("Height: " + lb.getHeight());
+				getWorldTransform().transform(new Point2D.Double(), newLocP);
+				System.out.println(newLocP);
+			} catch (Exception e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			}
+			Point2D newCenter = getSceneLocation();
+			double dx = newCenter.getX() - mCurrentCenter.getX();
+			double dy = newCenter.getY() - mCurrentCenter.getY();
+			System.out.println("DX: " + dx + " DY: " + dy);
+			
+			List<Point2D> newLoc = Arrays.asList(newLocP);//getSceneLocation());//getView().getSceneLocation(e.getPoint()));
+			List<Point2D> move = Arrays.asList(new Point2D.Double(dx, dy)); 
+			ItemMoveEvent evt = new ItemMoveEvent(items, move);
 			mCallbackManager.fireMoveEvent(evt);
+			
 			setSceneLocation(newLoc.get(0));
 		}
 		mMouseMode = MouseMode.NONE;

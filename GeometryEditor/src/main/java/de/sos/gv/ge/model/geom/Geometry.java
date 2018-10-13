@@ -1,6 +1,9 @@
 package de.sos.gv.ge.model.geom;
 
+import java.awt.geom.AffineTransform;
 import java.awt.geom.Point2D;
+import java.beans.PropertyChangeListener;
+import java.beans.PropertyChangeSupport;
 import java.util.ArrayList;
 
 public class Geometry implements IGeometry {
@@ -9,9 +12,25 @@ public class Geometry implements IGeometry {
 	
 	private ArrayList<IGeometry>	mSubGeometries = null;
 	private ArrayList<Point2D>		mPoints = new ArrayList<>();
+	
+	private PropertyChangeSupport	mPCS = null;
 
 	public Geometry(GeometryType type) {
 		mType = type;
+	}
+	
+	@Override
+	public void addListener(PropertyChangeListener listener) {
+		if (mPCS == null) mPCS = new PropertyChangeSupport(this);
+		mPCS.addPropertyChangeListener(listener);		
+	}
+
+	@Override
+	public void removeListener(PropertyChangeListener listener) {
+		if (mPCS != null)
+			mPCS.removePropertyChangeListener(listener);
+		if (mPCS.hasListeners(null))
+			mPCS = null;
 	}
 	
 	@Override
@@ -48,16 +67,23 @@ public class Geometry implements IGeometry {
 		if (p0 != null && p0.getX()  == point.getX() && p0.getY() == point.getY())
 			return; //should only affect the last point in a polygon and linear ring, otherwise the geometry is wrong?
 		mPoints.add(idx, point);
+		if (mPCS != null) mPCS.firePropertyChange("Points", null, point);
 	}
 
 	@Override
 	public Point2D removePoint(int idx) {
-		return mPoints.remove(idx);
+		Point2D old = mPoints.remove(idx);
+		if (mPCS != null) mPCS.firePropertyChange("Points", old, null);
+		return old;
 	}
 
 	@Override
 	public Point2D replacePoint(int idx, Point2D point) {
-		return mPoints.set(idx, point);
+		Point2D oldPoint = mPoints.set(idx, point);
+		if (mPCS != null) {
+			mPCS.firePropertyChange("Points", oldPoint, point);
+		}
+		return oldPoint;
 	}
 
 	@Override
@@ -74,7 +100,22 @@ public class Geometry implements IGeometry {
 			mSubGeometries = null;
 		return r;
 	}
-	
+
+
+	@Override
+	public void applyTransform(AffineTransform transform) {
+		if (mPoints != null && mPoints.isEmpty() == false) {
+			for (int i = 0; i < mPoints.size(); i++) {
+				Point2D p = mPoints.get(i);
+				transform.transform(p, p);
+			}
+			if (mPCS != null) mPCS.firePropertyChange("Points", null, mPoints);
+		}
+		if (mSubGeometries != null && mSubGeometries.isEmpty() == false) {
+			for (IGeometry sub : mSubGeometries)
+				sub.applyTransform(transform);
+		}
+	}
 	 
 
 }

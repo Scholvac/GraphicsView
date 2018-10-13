@@ -14,6 +14,7 @@ import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeSupport;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 
 import de.sos.gvc.drawables.ShapeDrawable;
@@ -464,9 +465,18 @@ public class GraphicsItem {
 		g.setTransform(oldTrans);
 		
 		if (hasChildren()) {
-			for (GraphicsItem child : getChildren()) {
-				if (child.isVisible())
-					child.draw(g, ctx);
+			List<GraphicsItem> children = new ArrayList<>(getChildren());
+			Collections.sort(children, new Comparator<GraphicsItem>() {
+				@Override
+				public int compare(GraphicsItem o1, GraphicsItem o2) {
+					return Float.compare(o1.getZOrder(), o2.getZOrder());
+				}
+			});
+			synchronized (children) {
+				for (GraphicsItem child : children) {
+					if (child.isVisible())
+						child.draw(g, ctx);
+				}
 			}
 		}
 	}
@@ -543,7 +553,8 @@ public class GraphicsItem {
 			setLocalLocation(sceneLoc);
 		else {
 			try {
-				setLocalLocation(getParent().getWorldTransform().inverseTransform(sceneLoc, null));
+				Point2D loc = getParent().getWorldTransform().inverseTransform(sceneLoc, null);
+				setLocalLocation(loc);
 			}catch(Exception e) {
 				e.printStackTrace();
 			}			
@@ -628,7 +639,11 @@ public class GraphicsItem {
 	
 	public boolean isSelectable() { return mSelectable.get();}
 	public boolean hasChildren() { return getChildren().isEmpty() == false; }
-	public List<GraphicsItem> getChildren() { return Collections.unmodifiableList(mChildren); }
+	public List<GraphicsItem> getChildren() {
+		synchronized (mChildren) {
+			return Collections.unmodifiableList(mChildren);	
+		}		 
+	}
 	
 	public float getZOrder() { return _mZOrder; }
 	public void setZOrder(float z) { mZOrder.set(z); }

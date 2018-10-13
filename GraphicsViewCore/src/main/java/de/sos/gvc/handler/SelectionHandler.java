@@ -35,6 +35,18 @@ public class SelectionHandler implements IGraphicsViewHandler, MouseListener {
 		public final List<Point2D>						oldSceneLocations;
 		public final List<Point2D>						newSceneLocations;
 		public final List<Point2D>						moveDistance;
+		
+		public ItemMoveEvent(List<GraphicsItem> items, List<Point2D> move) {
+			this.items = items;
+			oldSceneLocations = new ArrayList<>();
+			newSceneLocations = new ArrayList<>();
+			this.moveDistance = move;
+			for (int i = 0; i < move.size(); i++) {
+				Point2D p = items.get(i).getSceneLocation();
+				oldSceneLocations.add(new Point2D.Double(p.getX(), p.getY()));
+				newSceneLocations.add(new Point2D.Double(p.getX() + move.get(i).getX(), p.getY() + move.get(i).getY()));
+			}
+		}
 		public ItemMoveEvent(List<GraphicsItem> items, List<Point2D> oldLoc, List<Point2D> newLoc) {
 			this.items = items;
 			this.oldSceneLocations = oldLoc;
@@ -89,8 +101,17 @@ public class SelectionHandler implements IGraphicsViewHandler, MouseListener {
 	
 	public static class ItemRotateEvent {
 
+		/**
+		 * Angle of items (in degrees) before the rotate operation started
+		 */
 		public final  List<Double> startAngles;
+		/**
+		 * The items that has been manipulated throught the rotate event
+		 */
 		public final  List<GraphicsItem> items;
+		/**
+		 * angles of the items after the rotation took place (in degrees)
+		 */
 		public final  List<Double> endAngles;
 
 		public ItemRotateEvent(List<GraphicsItem> items, List<Double> startAngles, List<Double> endAngles) {
@@ -225,7 +246,7 @@ public class SelectionHandler implements IGraphicsViewHandler, MouseListener {
 		List<GraphicsItem> items = mView.getAllItemsAt(point, eps, eps, null);
 		Optional<GraphicsItem> optItem = items.stream().filter(p -> mSelectableFilter.accept(p)).sorted(new Comparator<GraphicsItem>() {
 			public int compare(GraphicsItem o1, GraphicsItem o2) {
-				return Float.compare(o1.getZOrder(), o2.getZOrder());
+				return -Float.compare(o1.getZOrder(), o2.getZOrder());
 			}
 		}).filter(predicate -> {
 			Shape s = predicate.getShape();

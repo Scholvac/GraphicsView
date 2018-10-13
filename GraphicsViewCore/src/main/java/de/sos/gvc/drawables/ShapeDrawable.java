@@ -57,15 +57,21 @@ public class ShapeDrawable extends AbstractDrawable
 				if (shape instanceof Rectangle2D || shape instanceof Line2D) {
 					g.draw(shape);
 				}else {
-					//if the shape contains curves, the default behavior of the BasicStroke will lead the 
-					//shape to grow with the line with. (Thats ok, but...)
-					//however if the linewith exceeds the size of the shape itself, the line will no longer be
-					//connected with its original shape, e.g. the drawn shape is bigger as the orginal and does not have any intersection at all. 
-					//to avoid this effect, we create the stroked shape 
+					float scale = (float)ctx.getScale();
 					Stroke ls = style.getLineStroke();
-					if (ls == null) ls = new BasicStroke((float) (1 * ctx.getScale()));
-					g.setStroke(new BasicStroke(1));
-					g.draw(new BasicStroke(1).createStrokedShape(shape));
+					if (ls == null || scale > 1) 
+						ls = new BasicStroke(scale);
+					g.setStroke(ls);
+					
+					if (scale > 1) {
+						g.setStroke(new BasicStroke(1));	
+						g.draw(shape);
+					}else {
+						g.draw(shape);
+					}
+					
+					
+						
 				}
 			}
 		}

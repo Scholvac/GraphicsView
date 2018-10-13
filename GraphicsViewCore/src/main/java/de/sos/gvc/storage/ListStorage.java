@@ -59,7 +59,9 @@ public class ListStorage implements IItemStorage {
 		Stream<GraphicsItem> res1 = mParallel ? mItems.parallelStream() : mItems.stream();		
 		res1 = res1.filter(f-> f.isVisible()).filter(f->{
 			Rectangle2D wb = f.getSceneBounds();
-			if (rect.contains(wb) || rect.intersects(wb))
+			if (f.getZOrder() != 10)
+				System.out.println();
+			if (rect.contains(wb) || intersects(rect, wb))
 				return true;
 			return false;
 		});
@@ -69,5 +71,16 @@ public class ListStorage implements IItemStorage {
 		return list;
 	}
 	
+	
+	/** Actually the same implementation as in java.awt.RectangularShape but omits the empty check, as Lines could have a bounding box with w | h == 0 */
+	 public boolean intersects(Rectangle2D r0, Rectangle2D r1) {
+	     double x0 = r0.getX();
+	     double y0 = r0.getY();
+	     double x = r1.getX(), y = r1.getY();
+	     return (x + r1.getWidth() > x0 &&
+	    		 y + r1.getHeight() > y0 &&
+	             x < x0 + r0.getWidth() &&
+	             y < y0 + r0.getHeight());
+    }
 
 }

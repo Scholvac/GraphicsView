@@ -48,7 +48,7 @@ public class GridItem extends GraphicsItem {
 			Stroke oldStroke = g.getStroke();
 			g.setStroke(stroke);
 			Color oldColor = g.getColor();
-			g.setColor(Color.LIGHT_GRAY);
+			g.setColor(Color.LIGHT_GRAY.darker());
 			
 			for (double x = start; x < rect.getMaxX(); x += step) {
 				g.draw(new Line2D.Double(x, rect.getMinY(), x, rect.getMaxY()));
@@ -94,6 +94,7 @@ public class GridItem extends GraphicsItem {
 	public GridItem() {
 		super(new Rectangle2D.Double(-10, -10, 20, 20));
 		setDrawable(new GridDrawable());		
+		setSelectable(false);
 	}
 	
 	

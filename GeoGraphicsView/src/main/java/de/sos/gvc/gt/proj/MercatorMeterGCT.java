@@ -1,6 +1,7 @@
 package de.sos.gvc.gt.proj;
 
 import java.awt.geom.Point2D;
+import net.jafama.FastMath;
 
 /**
  * Convert between mercator meters and lat/lon degrees.
@@ -33,11 +34,11 @@ public class MercatorMeterGCT extends AbstractGCT implements
     	lat = LatLonPoint.normalizeLatitude(lat);
     	lon = LatLonPoint.wrapLongitude(lon);
 
-        double latrad = Math.toRadians(lat);
-        double lonrad = Math.toRadians(lon);
+        double latrad = FastMath.toRadians(lat);
+        double lonrad = FastMath.toRadians(lon);
 
         double lat_m = latfac
-                * Math.log(Math.tan(((latrad + ProjMath.HALF_PI_D) / 2d)));
+                * FastMath.log(FastMath.tan(((latrad + ProjMath.HALF_PI_D) / 2d)));
         double lon_m = lonfac * lonrad;
 
         ret.setLocation(lon_m, lat_m);
@@ -47,11 +48,11 @@ public class MercatorMeterGCT extends AbstractGCT implements
 
     @Override
 	public LatLonPoint inverse(double lon_m, double lat_m, LatLonPoint ret) {
-        double latrad = (2d * Math.atan(Math.exp(lat_m / latfac))) - ProjMath.HALF_PI_D;
+        double latrad = (2d * FastMath.atan(FastMath.exp(lat_m / latfac))) - ProjMath.HALF_PI_D;
         double lonrad = lon_m / lonfac;
 
-        double lat = Math.toDegrees(latrad);
-        double lon = Math.toDegrees(lonrad);
+        double lat = FastMath.toDegrees(latrad);
+        double lon = FastMath.toDegrees(lonrad);
 
         lat = LatLonPoint.normalizeLatitude(lat);
         lon = LatLonPoint.wrapLongitude(lon);

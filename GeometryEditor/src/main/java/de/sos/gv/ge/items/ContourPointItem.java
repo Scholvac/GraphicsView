@@ -13,6 +13,10 @@ import java.awt.geom.Line2D;
 import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
 
+import javax.swing.JPopupMenu;
+import javax.swing.SwingUtilities;
+
+import de.sos.gv.ge.menu.MenuManager;
 import de.sos.gv.ge.model.geom.IGeometry;
 import de.sos.gvc.GraphicsItem;
 import de.sos.gvc.IDrawContext;
@@ -37,6 +41,7 @@ public class ContourPointItem extends GraphicsItem implements MouseMotionListene
 	private Point2D 			mPrevPoint;
 	private Point2D 			mNextPoint;
 	private Point2D 			mOldLocation;
+	private MenuManager mMenuManager;
 
 	
 	class ContourPointDrawable extends ShapeDrawable implements IDrawable {
@@ -68,16 +73,18 @@ public class ContourPointItem extends GraphicsItem implements MouseMotionListene
 		
 	}
 	
-	public ContourPointItem(IGeometry geom, int idx) {
+	public ContourPointItem(MenuManager mm, IGeometry geom, int idx) {
 		super(new Arc2D.Double(-5, -5, 10, 10, 0, 360, Arc2D.CHORD));
 		mGeometry = geom;
 		mIndex = idx;
+		mMenuManager = mm;
 
 		setStyle(sNormalStyle);
 		setDrawable(new ContourPointDrawable(getShapeProperty()));
 		
 		setMouseMotionSupport(this);
 		setMouseSupport(this);
+		setSelectable(false);
 	}
 
 	
@@ -86,6 +93,16 @@ public class ContourPointItem extends GraphicsItem implements MouseMotionListene
 		setScale(ctx.getScale());
 		super.draw(g, ctx);
 	}
+	
+	
+	
+	
+	
+	
+	
+	public int getIndex() { return mIndex; }
+	
+	
 
 
 	@Override
@@ -103,13 +120,17 @@ public class ContourPointItem extends GraphicsItem implements MouseMotionListene
 		
 	}
 
-
+	
 	@Override
 	public void mouseClicked(MouseEvent e) {
-		// TODO Auto-generated method stub
-		
+		if (SwingUtilities.isRightMouseButton(e)) {
+			JPopupMenu pm = new JPopupMenu();
+			mMenuManager.fillContourItemMenu(this, mGeometry, pm);
+			pm.show(getView(), e.getX(), e.getY());
+			e.consume();
+		}
 	}
-
+	
 
 	@Override
 	public void mousePressed(MouseEvent e) {
@@ -127,6 +148,9 @@ public class ContourPointItem extends GraphicsItem implements MouseMotionListene
 	@Override
 	public void mouseReleased(MouseEvent e) {
 		setStyle(sNormalStyle);
+		
+		//set the new position of this vertex item
+		mGeometry.replacePoint(mIndex, getCenter()); //get center is the position in local coordinates.
 		
 		mNextPoint = mPrevPoint = mOldLocation = null;
 		if (e instanceof DelegateMouseEvent)
@@ -147,5 +171,8 @@ public class ContourPointItem extends GraphicsItem implements MouseMotionListene
 		e.getComponent().setCursor(new Cursor(Cursor.DEFAULT_CURSOR));
 		e.consume();
 	}
+
+
+	
 	
 }

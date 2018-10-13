@@ -41,11 +41,7 @@ The focus is on decoupling from the graphics scene, in which all objects are def
 * **No dependencies** : plain java and java2D is used 
 
 # Examples
-## Quickstart
 
-	if (isAwesome){
-	  return true
-	}
 ## Source Code Examples
 * SelectionExample.java : Demonstrates how to add Items and how to use the SelectionHandler to select them
 * RotationExample.java : Demonstrate how Items could be rotated, as well as the effect to their bounding box
@@ -73,7 +69,7 @@ The focus is on decoupling from the graphics scene, in which all objects are def
 	* Demonstrate how to rotate the view
 	* ![Overview](doc/images/RotateView.png "RotateView")
 	
-# Similar Projects and what is different
+# Similar Projects 
 The following projects have some kind of similar objectives but none of them could fullfill all requirements. However all of them have been used as inspiration. 
 
 * [JXMapViewer](https://github.com/msteiger/jxmapviewer2)

@@ -15,14 +15,19 @@ import javax.swing.JToolBar;
 import javax.swing.JMenuBar;
 import javax.swing.JLabel;
 
+import de.sos.gv.ge.callbacks.GeometryInteractions;
+import de.sos.gv.ge.items.AxisItem;
 import de.sos.gv.ge.items.GeometryItem;
 import de.sos.gv.ge.items.GridItem;
+import de.sos.gv.ge.menu.DefaultContextMenuCallback;
+import de.sos.gv.ge.menu.MenuManager;
 import de.sos.gv.ge.model.geom.GeometryUtils;
 import de.sos.gvc.GraphicsItem;
 import de.sos.gvc.GraphicsScene;
 import de.sos.gvc.GraphicsView;
 import de.sos.gvc.handler.DefaultViewDragHandler;
 import de.sos.gvc.handler.MouseDelegateHandler;
+import de.sos.gvc.handler.SelectionHandler;
 import de.sos.gvc.styles.DrawableStyle;
 import de.sos.gvc.styles.ScaledStroke;
 
@@ -41,7 +46,9 @@ public class GeometryEditorMainWindow {
 		EventQueue.invokeLater(new Runnable() {
 			public void run() {
 				try {
-					GeometryEditorMainWindow window = new GeometryEditorMainWindow();
+					MenuManager mm = new MenuManager();
+					mm.registerCallback(new DefaultContextMenuCallback());
+					GeometryEditorMainWindow window = new GeometryEditorMainWindow(mm);
 					window.frame.setVisible(true);
 				} catch (Exception e) {
 					e.printStackTrace();
@@ -55,12 +62,16 @@ public class GeometryEditorMainWindow {
 	
 	
 	private GridItem 				mGridItem; //can be activated or deactivated
+	private MenuManager				mMenuManager;
+	private AxisItem mAxisItem;
 	
 	/**
 	 * Create the application.
 	 */
-	public GeometryEditorMainWindow() {
+	public GeometryEditorMainWindow(MenuManager mm) {
+		mMenuManager = mm;
 		initialize();
+		
 	}
 
 	/**
@@ -94,10 +105,20 @@ public class GeometryEditorMainWindow {
 		mView.addHandler(new MouseDelegateHandler());
 		mView.addHandler(new DefaultViewDragHandler());
 		
+		SelectionHandler selectionHandler = new SelectionHandler();
+		GeometryInteractions callback = new GeometryInteractions();
+		selectionHandler.addMoveCallback(callback);
+		selectionHandler.addScaleCallback(callback);
+		selectionHandler.addRotationCallback(callback);
+	
+		mView.addHandler(selectionHandler);
 		
 		mScene.addItem(mGridItem = new GridItem());
+		mScene.addItem(mAxisItem = new AxisItem());
+		GeometryItem testItem = new GeometryItem(mMenuManager, GeometryUtils.geometryFromWKT("POLYGON ((60 -90, -70 -90, 70 10, 120 -30, 60 -90))"));
+		mScene.addItem(testItem);
 		
-		GeometryItem testItem = new GeometryItem(GeometryUtils.geometryFromWKT("POLYGON ((60 -90, -70 -90, 70 10, 120 -30, 60 -90))"));
+		testItem = new GeometryItem(mMenuManager, GeometryUtils.geometryFromWKT("POLYGON ((40 -70, -50 -70, 50 10, 100 -30, 40 -90))"));
 		mScene.addItem(testItem);
 		
 		return mView;
