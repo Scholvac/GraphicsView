@@ -41,11 +41,12 @@ public class ContourPointItem extends GraphicsItem implements MouseMotionListene
 	private Point2D 			mPrevPoint;
 	private Point2D 			mNextPoint;
 	private Point2D 			mOldLocation;
-	private MenuManager mMenuManager;
+	private MenuManager 		mMenuManager;
 
 	
 	class ContourPointDrawable extends ShapeDrawable implements IDrawable {
-		public ContourPointDrawable(IParameter<Shape> shape) {
+		
+		public ContourPointDrawable(IShapeProvider shape) {
 			super(shape);
 		}
 
@@ -80,7 +81,7 @@ public class ContourPointItem extends GraphicsItem implements MouseMotionListene
 		mMenuManager = mm;
 
 		setStyle(sNormalStyle);
-		setDrawable(new ContourPointDrawable(getShapeProperty()));
+		setDrawable(new ContourPointDrawable(this));
 		
 		setMouseMotionSupport(this);
 		setMouseSupport(this);

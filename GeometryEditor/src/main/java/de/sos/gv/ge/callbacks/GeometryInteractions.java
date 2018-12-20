@@ -26,7 +26,6 @@ public class GeometryInteractions implements IMoveCallback, IScaleCallback, IRot
 				item.getGeometry().applyTransform(transform);
 			}
 		}
-		System.out.println("Move");
 	}
 
 	@Override
@@ -45,7 +44,6 @@ public class GeometryInteractions implements IMoveCallback, IScaleCallback, IRot
 				item.getGeometry().applyTransform(transform_s);
 			}
 		}
-		System.out.println("Scale");
 	}
 
 	@Override

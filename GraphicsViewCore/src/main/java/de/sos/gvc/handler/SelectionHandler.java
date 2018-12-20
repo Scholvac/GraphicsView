@@ -250,16 +250,18 @@ public class SelectionHandler implements IGraphicsViewHandler, MouseListener {
 			}
 		}).filter(predicate -> {
 			Shape s = predicate.getShape();
-			AffineTransform wt = predicate.getWorldTransform();
-			try {
-				Point2D localScene = wt.inverseTransform(scene, null);
-				Rectangle2D r = new Rectangle2D.Double(localScene.getX(), localScene.getY(), 3*eps, 3*eps);
-				boolean res = s.contains(r);
-				if (!res)
-					res = s.intersects(r);
-				return res;
-			} catch (NoninvertibleTransformException e) {
-				e.printStackTrace();
+			if (s != null) {
+				AffineTransform wt = predicate.getWorldTransform();
+				try {
+					Point2D localScene = wt.inverseTransform(scene, null);
+					Rectangle2D r = new Rectangle2D.Double(localScene.getX(), localScene.getY(), 3*eps, 3*eps);
+					boolean res = s.contains(r);
+					if (!res)
+						res = s.intersects(r);
+					return res;
+				} catch (NoninvertibleTransformException e) {
+					e.printStackTrace();
+				}
 			}
 			return false;
 		}).findFirst();

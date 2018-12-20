@@ -14,7 +14,7 @@ import java.util.Map;
  */
 public class ParameterContext {
 	private Map<String, IParameter> 					mProperties = new HashMap<>();
-	private ArrayList<PropertyChangeListener> 		mListener = new ArrayList<>();
+	private ArrayList<PropertyChangeListener> 			mListener = new ArrayList<>();
 
 	public IParameter getProperty(String name) {
 		return getProperty(name, null);

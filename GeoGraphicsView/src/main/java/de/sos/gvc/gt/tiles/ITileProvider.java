@@ -5,6 +5,7 @@ import java.util.Collection;
 
 import de.sos.gvc.gt.tiles.cache.CacheData;
 import de.sos.gvc.gt.tiles.cache.ICacheDataFactory;
+import de.sos.gvc.gt.tiles.cache.MultiCacheFactory.IByteTileLoader;
 
 /**
  * 
@@ -16,6 +17,7 @@ public interface ITileProvider<DESC extends ITileDescription> {
 	public Collection<DESC> getTileDescriptions(LatLonBoundingBox area, Rectangle2D viewArea/*in Pixel*/);
 	
 	public ITileLoader<DESC> createTileLoader();
+	
 
 	/**
 	 * This method is called if a tile, created by this ITileFactory has been unloaded

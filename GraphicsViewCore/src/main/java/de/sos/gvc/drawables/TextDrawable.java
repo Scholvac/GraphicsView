@@ -34,7 +34,9 @@ public class TextDrawable implements IDrawable {
 	@Override
 	public void paintItem(Graphics2D g, DrawableStyle style, IDrawContext ctx) {
 		
-		if (mLabel == null || mLabel.get() == null) return ;
+		String label = getText();
+		if (label == null || label.isEmpty())
+			return ;
 		
 		AffineTransform at = g.getTransform();
 		g.scale(1, -1);
@@ -47,12 +49,12 @@ public class TextDrawable implements IDrawable {
 		
 		if (style != null && style.hasLinePaint())
 			style.applyLinePaint(g, ctx);
-		Rectangle2D r = fm.getStringBounds(mLabel.get(), g);
+		Rectangle2D r = fm.getStringBounds(label, g);
 		double x = -r.getWidth() / 2.0;//r.getMinX();
 		double y = r.getHeight() / 2.0; //r.getMinY();
 		
 		
-		g.drawString(mLabel.get(), (float)x, (float)y);
+		g.drawString(label, (float)x, (float)y);
 		g.setTransform(at);
 	}
 	public String getText() {

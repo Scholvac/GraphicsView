@@ -174,11 +174,8 @@ public class CaffeineCacheTest {
 			.buildAsync(new ByteToImageLoader(byteCache));
 			
 		for (int i = 0; i <  1000; i++) {
-			if (i == 989)
-				System.out.println("--Foobar");
 			CompletableFuture<Map<OSMTileDescription, BufferedImage>> cachevalues = imgCache.getAll(tiles);
 			Map<OSMTileDescription, BufferedImage> values = cachevalues.get();
-			System.out.println(i + " : " + values.size());
 		}
 	}
 

@@ -17,7 +17,9 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
+import de.sos.gvc.Utils.TmpVars;
 import de.sos.gvc.drawables.ShapeDrawable;
+import de.sos.gvc.drawables.ShapeDrawable.IShapeProvider;
 import de.sos.gvc.param.IParameter;
 import de.sos.gvc.param.ParameterContext;
 import de.sos.gvc.styles.DrawableStyle;
@@ -74,28 +76,29 @@ import de.sos.gvc.styles.DrawableStyle;
  * @author scholvac
  *
  */
-public class GraphicsItem {
+public class GraphicsItem implements IShapeProvider  {
+	//inherit from IShapeProvider to support the default behaviour if no Drawable is set, the item's shape is drawn
 
-	public static final String PROP_VISIBLE = "VISIBLE";
-	public static final String PROP_SELECTED = "SELECTED";
-	public static final String PROP_SELECTABLE = "SELECTABLE";
-	public static final String PROP_SHAPE = "SHAPE";
-	public static final String PROP_CENTER_X = "CENTER_X";
-	public static final String PROP_CENTER_Y = "CENTER_Y";
-	public static final String PROP_ROTATION = "ROTATION";
-	public static final String PROP_SCALE_X = "SCALE_X";
-	public static final String PROP_SCALE_Y = "SCALE_Y";
-	public static final String PROP_STYLE = "STYLE";
-	public static final String PROP_DRAWABLE = "DRAWABLE";
-	public static final String PROP_PARENT = "PARENT";
-	public static final String PROP_Z_ORDER = "Z_ORDER";
+	public static final String PROP_VISIBLE 				= "VISIBLE";
+	public static final String PROP_SELECTED		 		= "SELECTED";
+	public static final String PROP_SELECTABLE 				= "SELECTABLE";
+	public static final String PROP_SHAPE 					= "SHAPE";
+	public static final String PROP_CENTER_X 				= "CENTER_X";
+	public static final String PROP_CENTER_Y 				= "CENTER_Y";
+	public static final String PROP_ROTATION 				= "ROTATION";
+	public static final String PROP_SCALE_X 				= "SCALE_X";
+	public static final String PROP_SCALE_Y 				= "SCALE_Y";
+	public static final String PROP_STYLE 					= "STYLE";
+	public static final String PROP_DRAWABLE 				= "DRAWABLE";
+	public static final String PROP_PARENT 					= "PARENT";
+	public static final String PROP_Z_ORDER 				= "Z_ORDER";
 	
-	public static final String PROP_MOUSE_WHEEL_SUPPORT = "MOUSE_WHEEL_SUPPORT";
-	public static final String PROP_MOUSE_MOTION_SUPPORT = "MOUSE_MOTION_SUPPORT";
-	public static final String PROP_MOUSE_SUPPORT = "MOUSE_SUPPORT";
+	public static final String PROP_MOUSE_WHEEL_SUPPORT 	= "MOUSE_WHEEL_SUPPORT";
+	public static final String PROP_MOUSE_MOTION_SUPPORT 	= "MOUSE_MOTION_SUPPORT";
+	public static final String PROP_MOUSE_SUPPORT 			= "MOUSE_SUPPORT";
 	
-	public static final String PROP_LOCAL_BOUNDS = "LOCAL_BOUNDS";
-	public static final String PROP_SCENE_BOUNDS = "SCENE_BOUNDS";
+	public static final String PROP_LOCAL_BOUNDS 			= "LOCAL_BOUNDS";
+	public static final String PROP_SCENE_BOUNDS 			= "SCENE_BOUNDS";
 	
 	
 	
@@ -106,61 +109,74 @@ public class GraphicsItem {
 	 * If an item is not visible, the item will neither be drawn nor will it be selected or notified for mouse events
 	 * In general, the scene does not return the item in all query methods, except getItems()
 	 */
-	private IParameter<Boolean>							mVisible;
-	private boolean										_mVisible; //shadow of mVisible
-	private IParameter<Boolean>							mSelected;
-	private IParameter<Boolean>							mSelectable;
+//	private IParameter<Boolean>							mVisible;
+//	private boolean										_mVisible; //shadow of mVisible
+	private boolean										mVisible;
+	
+//	private IParameter<Boolean>							mSelected;
+//	private IParameter<Boolean>							mSelectable;
+	private boolean										mSelected;
+	private boolean										mSelectable;
 	/**
 	 * Stores the shape of the property. 
 	 * The shape is not nessesarily used to paint the item but used for Collision detection
 	 */
-	private IParameter<Shape>							mShape;
-	/**
-	 * X Position of the Item in Scene Coordinates, usually the center of getBounds()
-	 */
-	private IParameter<Double>							mCenterX;
-	private double										_mCenterX;//shadow
-	/**
-	 * Y Position of the Item in Scene Coordinates, usually the center of getBounds()
-	 */
-	private IParameter<Double>							mCenterY;
-	private double										_mCenterY;//shadow
+//	private IParameter<Shape>							mShape;
+	private Shape										mShape;
+//	/**
+//	 * X Position of the Item in Scene Coordinates, usually the center of getBounds()
+//	 */
+	private double										mCenterX;
+//	private IParameter<Double>							mCenterX;
+//	private double										_mCenterX;//shadow
+//	/**
+//	 * Y Position of the Item in Scene Coordinates, usually the center of getBounds()
+//	 */
+	private double										mCenterY;
+//	private IParameter<Double>							mCenterY;
+//	private double										_mCenterY;//shadow
 	/**
 	 * Rotation of the Item in Scene Coordinates and Degrees
 	 */
-	private IParameter<Double>							mRotation;
-	private double										_mRotation; //shadow
+	private double										mRotation;
+//	private IParameter<Double>							mRotation;
+//	private double										_mRotation; //shadow
 	
-	/**
-	 * Scale on X-Axis of the item in scene coordinates (1 == default)
-	 */
-	private IParameter<Double>							mScaleX; 
-	private double										_mScaleX;
-	
-	/**
-	 * Scale on Y-Axis of the item in scene coordinates (1 == default)
-	 */
-	private IParameter<Double>							mScaleY; 
-	private double										_mScaleY;
+//	/**
+//	 * Scale on X-Axis of the item in scene coordinates (1 == default)
+//	 */
+	private double										mScaleX;
+//	private IParameter<Double>							mScaleX; 
+//	private double										_mScaleX;
+//	
+//	/**
+//	 * Scale on Y-Axis of the item in scene coordinates (1 == default)
+//	 */
+	private double										mScaleY;
+//	private IParameter<Double>							mScaleY; 
+//	private double										_mScaleY;
 	
 	/**
 	 * Controls the order that is used during painting of items by an view. the lower the value the earlier the item is painted
 	 * The default value will be initialized to 100. Background Items may use values between 0 and 20.0f
 	 */
-	private IParameter<Float>							mZOrder;
-	private float										_mZOrder; //shadow
+	private float										mZOrder;
+//	private IParameter<Float>							mZOrder;
+//	private float										_mZOrder; //shadow
 	/**
 	 * Contains the object that draws the item into the view
 	 * @note if no drawable is defined when the first drawcall occures, the default behaviour 
 	 * creates a new ShapeDrawable using the shape that is used for collision detection
 	 */
-	private IParameter<IDrawable>						mDrawable;
+	private IDrawable									mDrawable;
+//	private IParameter<IDrawable>						mDrawable;
 	/**
 	 * Style that defines how the drawable shall be drawn (may be null)
 	 */
-	private IParameter<DrawableStyle>					mStyle;
+	private DrawableStyle								mStyle; 
+//	private IParameter<DrawableStyle>					mStyle;
 	
-	private ParameterContext 							mPropertyContext;
+//	private ParameterContext 							mPropertyContext;
 	
 	
 	/**
@@ -168,8 +184,12 @@ public class GraphicsItem {
 	 * This variable will be calculated whenever the shape changes
 	 * @cached
 	 */
-	private IParameter<Rectangle2D> 						mLocalBounds;
-	private Rectangle2D									_mLocalBounds; //shadow
+	private final Rectangle2D							mLocalBounds = new Rectangle2D.Double();
+	private final Rectangle2D							mWorldBounds = new Rectangle2D.Double();
+	private boolean 									mInvalidLocalBound = true;
+	private boolean 									mInvalidWorldBound = true;
+//	private IParameter<Rectangle2D> 					mLocalBounds;
+//	private Rectangle2D									_mLocalBounds; //shadow
 	/**
 	 * Bounding rectangle of the item witin the scene
 	 * This variable is bound to changes of mLocalTransform and LocalBounds
@@ -182,11 +202,14 @@ public class GraphicsItem {
 	 * - mCenterX, mCenterY, mRotation
 	 * @cached
 	 */
-	private AffineTransform 							mLocalTransform;
+	private final AffineTransform 						mLocalTransform = new AffineTransform();
 	private boolean 									mInvalidLocalTransform = true;
 	
-	private IParameter<GraphicsItem>						mParent;
-	private GraphicsItem								_mParent; //shadow
+	private final AffineTransform						mWorldTransform = new AffineTransform();
+	private boolean										mInvalidWorldTransform = true;
+	
+//	private IParameter<GraphicsItem>					mParent;
+	private GraphicsItem								mParent;
 	private ArrayList<GraphicsItem>						mChildren = new ArrayList<>();
 	
 	private PropertyChangeListener						mChildListener = new PropertyChangeListener() { //listen to events of child items and delegates them
@@ -196,6 +219,7 @@ public class GraphicsItem {
 		}
 	};
 	private GraphicsScene mScene;
+	
 	
 	
 	
@@ -209,55 +233,35 @@ public class GraphicsItem {
 
 
 	public GraphicsItem(Shape shape, ParameterContext propertyContext) {
-		mPropertyContext = propertyContext;
-			
+//		mPropertyContext = propertyContext;
+					
 		//ensure that we do have the basic properties
-		mVisible = mPropertyContext.getProperty(PROP_VISIBLE, true);
-		mSelected = mPropertyContext.getProperty(PROP_SELECTED, false);
-		mSelectable = mPropertyContext.getProperty(PROP_SELECTABLE, true);
+		mVisible = propertyContext.getValue(PROP_VISIBLE, true);
+		mSelected = propertyContext.getValue(PROP_SELECTED, false);
+		mSelectable = propertyContext.getValue(PROP_SELECTABLE, true);
 		
-		mLocalBounds = mPropertyContext.getProperty(PROP_LOCAL_BOUNDS, null);
-		mStyle = mPropertyContext.getProperty(PROP_STYLE, null);
-		mDrawable = mPropertyContext.getProperty(PROP_DRAWABLE, null);
-		mParent = mPropertyContext.getProperty(PROP_PARENT, null);
+//		setLocalBounds(propertyContext.getValue(PROP_LOCAL_BOUNDS, null));
+		mStyle = propertyContext.getValue(PROP_STYLE, null);
+		mDrawable = propertyContext.getValue(PROP_DRAWABLE, null);
+		mParent = null; //propertyContext.getProperty(PROP_PARENT, null);
 		
-		mCenterX = mPropertyContext.getProperty(PROP_CENTER_X, 0.0);
-		mCenterX.addPropertyChangeListener(pcl -> {
-			_mCenterX = (double) pcl.getNewValue();
-			mInvalidLocalTransform = true; 
-		});
-		
-		mCenterY = mPropertyContext.getProperty(PROP_CENTER_Y, 0.0);
-		mCenterY.addPropertyChangeListener(pcl -> {
-			_mCenterY = (double) pcl.getNewValue();
-			mInvalidLocalTransform = true; 
-		});
-		
-		mRotation = mPropertyContext.getProperty(PROP_ROTATION, 0.0);
-		mRotation.addPropertyChangeListener(pcl -> {
-			_mRotation = (double)pcl.getNewValue();
-			mInvalidLocalTransform = true; 
-		});
-		
-		mScaleX = mPropertyContext.getProperty(PROP_SCALE_X, 1.0);
-		mScaleX.addPropertyChangeListener(pcl -> {
-			_mScaleX = (double) pcl.getNewValue();
-			mInvalidLocalTransform = true;	
-		} );
-		
-		mScaleY = mPropertyContext.getProperty(PROP_SCALE_Y, 1.0);
-		mScaleY.addPropertyChangeListener(pcl ->{
-			_mScaleY = (double)pcl.getNewValue();
-			mInvalidLocalTransform = true; 
-		});
+		mCenterX = propertyContext.getValue(PROP_CENTER_X, 0.0);	
+		mCenterY = propertyContext.getValue(PROP_CENTER_Y, 0.0);
 
-		mShape = mPropertyContext.getProperty(PROP_SHAPE, null);
-		mShape.addPropertyChangeListener(pcl->{ 
-			mLocalBounds.set(null); 
-		});
-		mShape.set(shape);
+		mRotation = propertyContext.getValue(PROP_ROTATION, 0.0);
+	
+		mScaleX = propertyContext.getValue(PROP_SCALE_X, 1.0);
+		mScaleY = propertyContext.getValue(PROP_SCALE_Y, 1.0);
+
 		
-		mZOrder = mPropertyContext.getProperty(PROP_Z_ORDER, 100.0f);
+//		setShape(propertyContext.getValue(PROP_SHAPE, null));
+//		mShape.addPropertyChangeListener(pcl->{ 
+//			mLocalBounds.set(null); 
+//		});
+//		mShape.set(shape);
+		setShape(shape);
+		
+		mZOrder = propertyContext.getValue(PROP_Z_ORDER, 100.0f);
 		
 		propertyContext.registerListener(mChildListener);
 		
@@ -266,19 +270,17 @@ public class GraphicsItem {
 		// note: 	do not use two propertyChangeListener for shadow variables if they do modify two values (see for example _mCenterX) 
 		// 			otherwise we may get some threading errors
 		
-		mVisible.addPropertyChangeListener(pcl->_mVisible = mVisible.get());		
-		mZOrder.addPropertyChangeListener(pcl -> _mZOrder = mZOrder.get());
-		mLocalBounds.addPropertyChangeListener(pcl -> _mLocalBounds = null);
-		mParent.addPropertyChangeListener(pcl -> _mParent = mParent.get());
+//		mVisible.addPropertyChangeListener(pcl->_mVisible = mVisible.get());		
+//		mZOrder.addPropertyChangeListener(pcl -> _mZOrder = mZOrder.get());
+//		mLocalBounds.addPropertyChangeListener(pcl -> {
+//			_mLocalBounds = null;	
+//		});
+//		mParent.addPropertyChangeListener(pcl -> _mParent = mParent.get());
+//		
+//		_mVisible = mVisible.get();
+//		_mZOrder = mZOrder.get();
+//		_mParent = mParent.get();
 		
-		_mVisible = mVisible.get();
-		_mZOrder = mZOrder.get();
-		_mParent = mParent.get();
-		_mCenterX = mCenterX.get();
-		_mCenterY = mCenterY.get();
-		_mRotation = mRotation.get();
-		_mScaleX = mScaleX.get();
-		_mScaleY = mScaleY.get();
 	}
 
 
@@ -300,54 +302,102 @@ public class GraphicsItem {
 	}
 
 
-	public ParameterContext getPropertyContext() {
-		return mPropertyContext;
+//	public ParameterContext getPropertyContext() {
+//		return mPropertyContext;
+//	}
+	
+	public void invalidateLocalTransform() {
+		mInvalidWorldTransform = mInvalidLocalTransform = true;
 	}
-	
-	
 	public AffineTransform getLocalTransform() {
-		if (mInvalidLocalTransform || mLocalTransform == null) {
-			mInvalidLocalTransform = false;
-			double x = _mCenterX, y = _mCenterY, r = getRotationRadians();
-			double sx = _mScaleX, sy = _mScaleY;
-			AffineTransform t = new AffineTransform();	
-			
-			t.translate(x, y);
-			t.rotate(-r);
-			t.scale(sx, sy);			
-			mLocalTransform = t;
+		if (mInvalidLocalTransform) {
+			synchronized (mLocalTransform) {
+				mLocalTransform.setToIdentity();
+
+				double x = mCenterX, y = mCenterY, r = getRotationRadians();
+				double sx = mScaleX, sy = mScaleY;
+				
+				mLocalTransform.translate(x, y);
+				mLocalTransform.rotate(-r);
+				mLocalTransform.scale(sx, sy);
+				
+				mInvalidLocalTransform = false;
+			}
 		}
 		return mLocalTransform;
 	}
 	
 	public AffineTransform getWorldTransform() {
-		if (getParent() == null)
-			return getLocalTransform();
-		AffineTransform t = new AffineTransform(getParent().getWorldTransform());
-		t.concatenate(getLocalTransform());
-		return t;
+		doCheckUpdateWorldTransform();
+		return mWorldTransform;
 	}
 	
+	
+	private void doCheckUpdateWorldTransform() {
+		TmpVars vars = Utils.TmpVars.get();
+		GraphicsItem[] stack = vars.itemStack;
+		GraphicsItem rootNode = this;
+		int i = 0;
+        while (true) {
+        	GraphicsItem  hisParent = rootNode.mParent;
+        	if (hisParent == null) {
+        		updateWorldTransform();
+        		i--;
+        		break;
+        	}
+        	stack[i] = rootNode;
+            rootNode = hisParent;
+            i++;
+        }
+        vars.release(); 
+        for (int j = i; j >= 0; j--) {
+            rootNode = stack[j];
+            if (rootNode.mInvalidWorldTransform)
+            	rootNode.updateWorldTransform();
+        }
+	}
+	
+	/** Updates the world transform of this item. 
+	 * @note This method assumes that all parent (if any) have a valid worldTransform
+	 */
+	private void updateWorldTransform() {
+		GraphicsItem parent = getParent();
+		if (parent == null) {
+			synchronized (mWorldTransform) {
+				mWorldTransform.setTransform(getLocalTransform());
+				mInvalidWorldTransform = false;
+			}			
+		}else {
+			synchronized (mWorldTransform) {
+				mWorldTransform.setTransform(parent.mWorldTransform);
+				mWorldTransform.concatenate(getLocalTransform());
+				mInvalidWorldTransform = false;
+			}
+		}
+		
+	}
 
 
-
+//	private Rectangle2D _getLocalBounds() {
+//		if (mLocalBounds.get() == null) {
+//			if (getShape() == null)
+//				return null;
+//			mLocalBounds.set(getShape().getBounds2D()); 
+//		}
+//		return mLocalBounds.get();
+//	}
+	
 	/** 
 	 * returns the local bounds of the item, that is the bound of the shape 
 	 * @return
 	 */
-	private Rectangle2D _getLocalBounds() {
-		if (mLocalBounds.get() == null) {
-			if (getShape() == null)
-				return null;
-			mLocalBounds.set(getShape().getBounds2D()); 
-		}
-		return mLocalBounds.get();
-	}
 	public Rectangle2D getLocalBounds() {
-		if (_mLocalBounds == null) {
-			_mLocalBounds = _getLocalBounds(); 
+		if (mInvalidLocalBound) {
+			if (getShape() != null)
+				mLocalBounds.setRect(getShape().getBounds2D());
+			mInvalidLocalBound = false;
 		}
-		return _mLocalBounds;
+		return mLocalBounds;
 	}
 	
 	/**
@@ -355,23 +405,25 @@ public class GraphicsItem {
 	 * @return
 	 */
 	public Rectangle2D getSceneBounds() {
-		Rectangle2D lb = getLocalBounds();
-		if (lb == null && mChildren != null) {
-			//in this case we will grow with the children, e.g. this item is an invisible or empty item
-			lb = new Rectangle2D.Double();
+		if (mInvalidWorldBound) {
+			Rectangle2D lb = getLocalBounds();
+			
+			Utils.transform(lb, getWorldTransform(), mWorldBounds);
+			synchronized (mChildren) {
+				for (GraphicsItem child : mChildren) {
+					Rectangle2D cb = child.getSceneBounds();
+					if (cb != null)
+						Rectangle2D.union(mWorldBounds, cb, mWorldBounds);
+				}			
+			}
+			mInvalidWorldBound = false;
 		}
-		if (lb == null) 
-			return null;
-		Rectangle2D rect = Utils.transform(lb, getWorldTransform());
-		synchronized (mChildren) {
-			for (GraphicsItem child : mChildren) {
-				Rectangle2D cb = child.getSceneBounds();
-				if (cb != null)
-					rect = rect.createUnion(cb);
-			}			
-		}
-		return rect;
+		return mWorldBounds;
 	}
+	
+	
+	
+	
 	
 	/**
 	 * returns the bounding box of this item and all its children
@@ -422,6 +474,7 @@ public class GraphicsItem {
 	 * @param scene
 	 */
 	protected void onAddedToScene(GraphicsScene scene) {}
+	
 	protected GraphicsScene getScene() {
 		if (getParent() != null)
 			return getParent().getScene();
@@ -449,20 +502,30 @@ public class GraphicsItem {
 	}
 	
 	public double getRotationRadians() { return Math.toRadians(getRotationDegrees()); }
-	public double getRotationDegrees() { return _mRotation; }
-	public double getCenterY() { return _mCenterY; }
-	public double getCenterX() { return _mCenterX; }
-	public double getScaleX() { return _mScaleX;}
-	public double getScaleY() { return _mScaleY;}
+	public double getRotationDegrees() { return mRotation; }
+	public double getLocalRotationDegrees() { return mRotation; }
+	public double getLocalRotationRadians() { return getRotationRadians(); }
+	
+	public double getCenterY() { return mCenterY; }
+	public double getLocalTranslationX() { return mCenterX; }
+	public double getCenterX() { return mCenterX; }
+	public double getLocalTranslationY() { return mCenterY;}
+	
+	public double getScaleX() { return mScaleX;}
+	public double getLocalScaleX() { return mScaleX; }
+	public double getScaleY() { return mScaleY;}
+	public double getLocalScaleY() { return mScaleY;}
 
 
 	public void draw(Graphics2D g, IDrawContext ctx) {
-		AffineTransform oldTrans = g.getTransform();
+//		AffineTransform oldTrans = g.getTransform();
+		
 
 		g.transform(getWorldTransform());		
 		IDrawable drawable = getDrawable();
 		drawable.paintItem(g, getStyle(), ctx);
-		g.setTransform(oldTrans);
+//		g.setTransform(oldTrans);
+		g.setTransform(ctx.getViewTransform());
 		
 		if (hasChildren()) {
 			List<GraphicsItem> children = new ArrayList<>(getChildren());
@@ -482,15 +545,40 @@ public class GraphicsItem {
 	}
 
 
-	public Shape getShape() { return mShape.get(); }
-	public void setShape(Shape shape) { mShape.set(shape); }
-	public IParameter<Shape> getShapeProperty() { return mShape; }
+	public Shape getShape() { return mShape; }
+	public void setShape(Shape shape) {
+		if (shape != mShape) {
+			Shape old = mShape;
+			mShape = shape;
+			
+			mInvalidLocalBound = true;
+			mInvalidWorldBound = true;
+			mAllEventDelegate.firePropertyChange(PROP_SHAPE, old, mShape);
+		}
+	}
+//	public IParameter<Shape> getShapeProperty() { return mShape; }
 
-	public void setCenterX(double x) { mCenterX.set(x); }
-	public void setCenterY(double y) { mCenterY.set(y); }
+	public void setCenterX(double x) {
+		if (x != mCenterX) {
+			double old = mCenterX;
+			mCenterX = x;
+			mInvalidLocalTransform = mInvalidWorldTransform = true;
+			mInvalidWorldTransform = true;
+			mAllEventDelegate.firePropertyChange(PROP_CENTER_X, old, mCenterX);
+		}
+	}
+	public void setCenterY(double y) { 
+		if (y != mCenterY) {
+			double old = mCenterY;
+			mCenterY = y;
+			mInvalidLocalTransform = mInvalidWorldTransform = true;
+			mInvalidWorldTransform = true;
+			mAllEventDelegate.firePropertyChange(PROP_CENTER_Y, old, mCenterY);
+		} 
+	}
 	public void setCenter(double x, double y) {
-		mCenterX.set(x);
-		mCenterY.set(y);
+		setCenterX(x);
+		setCenterY(y);
 	}
 	public void setCenter(Point2D loc) { setCenter(loc.getX(), loc.getY()); }
 	public Point2D getCenter() { return getLocalLocation(); }
@@ -499,16 +587,46 @@ public class GraphicsItem {
 	public Point2D getLocalLocation() { return new Point2D.Double(getCenterX(), getCenterY()); }
 	
 	
-	public void setRotation(double rot_deg) { mRotation.set(rot_deg);}
-	public double getRotation() { return mRotation.get(); }
+	public void setRotation(double rot_deg) {
+		if (rot_deg != mRotation) {
+			double old = mRotation;
+			mRotation = rot_deg;
+			
+			mInvalidLocalTransform = mInvalidWorldTransform = true;
+			mInvalidWorldTransform = true; mInvalidLocalBound = true;
+			
+			mAllEventDelegate.firePropertyChange(PROP_ROTATION, old, mRotation);
+		}
+	}
+	public double getRotation() { return mRotation; }
 	
-	public void setLocalScaleX(double scaleX) { mScaleX.set(scaleX); }
-	public void setLocalScaleY(double scaleY) { mScaleY.set(scaleY); }
+	public void setLocalScaleX(double scaleX) { setScaleX(scaleX); }
+	public void setLocalScaleY(double scaleY) { setScaleY(scaleY); }
 	public void setLocalScale(double x, double y) { setScaleX(x); setScaleY(y); }
 	public void setLocalScale(double xAndy) { setScale(xAndy, xAndy); }
 	
-	public void setScaleX(double scaleX) { setLocalScaleX(scaleX); }
-	public void setScaleY(double scaleY) { setLocalScaleY(scaleY); }
+	public void setScaleX(double scaleX) {
+		if (scaleX != mScaleX) {
+			double old = mScaleX;
+			mScaleX = scaleX;
+			
+			mInvalidLocalTransform = mInvalidWorldTransform = true;
+			mInvalidWorldTransform = true; mInvalidLocalBound = true;
+			
+			mAllEventDelegate.firePropertyChange(PROP_SCALE_X, old, mScaleX);
+		}
+	}
+	public void setScaleY(double scaleY) { 
+		if (scaleY != mScaleY) {
+			double old = mScaleY;
+			mScaleY = scaleY;
+			
+			mInvalidLocalTransform = mInvalidWorldTransform = true;
+			mInvalidWorldTransform = true; mInvalidLocalBound = true;
+			
+			mAllEventDelegate.firePropertyChange(PROP_SCALE_Y, old, mScaleY);
+		}
+	}
 	public void setScale(double x, double y) { setLocalScale(x,y); }
 	public void setScale(double xAndy) { setLocalScale(xAndy, xAndy); }
 	
@@ -522,25 +640,29 @@ public class GraphicsItem {
 	}
 	
 	public void setSceneScaleX(double scaleX) { 
-		if (getParent() != null)
-			mScaleX.set(scaleX / getParent().getSceneScaleX());
-		else
-			mScaleX.set(scaleX);
+		if (getParent() != null) {
+			setScaleX(scaleX / getParent().getSceneScaleX());
+		}else
+			setScaleX(scaleX);
 	}
 	public void setSceneScaleY(double scaleY) {
 		if (getParent() != null)
-			mScaleY.set(scaleY / getParent().getSceneScaleY());
+			setScaleY(scaleY / getParent().getSceneScaleY());
 		else
-			mScaleY.set(scaleY); 
+			setScaleY(scaleY); 
 	}
 	public void setSceneScale(double x, double y) { setSceneScaleX(x); setSceneScaleY(y); }
 	public void setSceneScale(double xAndy) { setSceneScale(xAndy, xAndy); }
 	
 	
 	public Point2D getSceneLocation() {
-		if (getParent() != null)
-			return getParent().getWorldTransform().transform(getLocalLocation(), null);
-		return getLocalLocation();
+		doCheckUpdateWorldTransform();
+		double x = mWorldTransform.getTranslateX();
+		double y = mWorldTransform.getTranslateY();
+		return new Point2D.Double(x, y);
+//		if (getParent() != null)
+//			return getParent().getWorldTransform().transform(getLocalLocation(), null);
+//		return getLocalLocation();
 	}
 
 	/**
@@ -578,29 +700,50 @@ public class GraphicsItem {
 		}
 	}
 	
-	public void setVisible(boolean b) { mVisible.set(b);}
-	public boolean isVisible() { return _mVisible;}
+	public void setVisible(boolean b) {
+		if (b != mVisible) {
+			mVisible = b;
+			mAllEventDelegate.firePropertyChange(PROP_STYLE, !b, b);
+		}
+	}
+	public boolean isVisible() { return mVisible;}
 
 	public void setStyle(DrawableStyle style) {
-		mStyle.set(style);
+		if (style != mStyle) {
+			DrawableStyle old = mStyle;
+			mStyle = style;
+			mAllEventDelegate.firePropertyChange(PROP_STYLE, old, mStyle);
+		}		
 	}
 	public DrawableStyle getStyle() {
-		return mStyle.get();
+		return mStyle;
 	}
 	public void setDrawable(IDrawable drawable) {
-		mDrawable.set(drawable);
+		if (drawable != mDrawable) {
+			IDrawable old = mDrawable;
+			mDrawable = drawable;
+			mAllEventDelegate.firePropertyChange(PROP_DRAWABLE, old, mDrawable);
+		}
 	}
 	public IDrawable getDrawable() {
-		IDrawable res = mDrawable.get();
-		if (res == null)
-			setDrawable(res = new ShapeDrawable(mShape));
-		return res;
+		if (mDrawable == null) {
+			setDrawable(new ShapeDrawable(this));
+		}
+		return mDrawable;
 	}
 	public GraphicsItem getParent() {
-		return _mParent;
+		return mParent;
 	}
 	protected void setParent(GraphicsItem parent) {
-		mParent.set(parent);
+		if (parent != mParent) {
+			GraphicsItem old = mParent;
+			mParent = parent;
+			
+			mInvalidWorldTransform = true;
+			mInvalidWorldBound = true;
+			
+			mAllEventDelegate.firePropertyChange(PROP_PARENT, old, mParent);
+		}
 	}
 
 
@@ -630,14 +773,23 @@ public class GraphicsItem {
 	}
 
 	public void setSelected(boolean b) {
-		mSelected.set(b);
+		if (b != mSelected) {
+			mSelected = b;
+			mAllEventDelegate.firePropertyChange(PROP_SELECTED, !b, b);
+		}
 	}
-	public boolean isSelected() { return mSelected.get();}
-	public IParameter<Boolean> getSelectedProperty() { return mSelected; }
 	
-	public void setSelectable(boolean b) { mSelectable.set(b);}
+	public boolean isSelected() { return mSelected;}
+//	public IParameter<Boolean> getSelectedProperty() { return mSelected; }
 	
-	public boolean isSelectable() { return mSelectable.get();}
+	public void setSelectable(boolean b) {
+		if (mSelectable != b) {
+			mSelectable = b;
+			mAllEventDelegate.firePropertyChange(PROP_SELECTABLE, !b, b);
+		}
+	}
+	
+	public boolean isSelectable() { return mSelectable;}
 	public boolean hasChildren() { return getChildren().isEmpty() == false; }
 	public List<GraphicsItem> getChildren() {
 		synchronized (mChildren) {
@@ -645,8 +797,14 @@ public class GraphicsItem {
 		}		 
 	}
 	
-	public float getZOrder() { return _mZOrder; }
-	public void setZOrder(float z) { mZOrder.set(z); }
+	public float getZOrder() { return mZOrder; }
+	public void setZOrder(float z) {
+		if (z != mZOrder) {
+			float old = mZOrder;
+			mZOrder = z;
+			mAllEventDelegate.firePropertyChange(PROP_Z_ORDER, old, z);
+		}
+	}
 	
 	protected boolean hasInvalidLocalTransform() { return mInvalidLocalTransform; }
 	/** getter for the local transform, that also returns NULL, if the transform has not been created
@@ -655,35 +813,62 @@ public class GraphicsItem {
 	 */
 	protected AffineTransform _getLocalTransform() { return mLocalTransform; }
 	/** overwrites the local transform and assumes that it is not invalid anymore */
-	protected void _setLocalTransform(AffineTransform transform) { mLocalTransform = transform; mInvalidLocalTransform = false; }
+	protected void _setLocalTransform(AffineTransform transform) {
+		synchronized (mLocalTransform) {
+			if (transform != null) {
+				mLocalTransform.setTransform(transform);
+			}else {
+				mLocalTransform.setToIdentity();
+			}
+			mInvalidLocalTransform = false;
+		}
+	}
 	
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	/////////////////////////////////////		INPUT SUPPORT 					/////////////////////////////////////
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	
+	private MouseWheelListener 		mMouseWheelSupport;
+	private MouseMotionListener 	mMouseMotionSupport;
+	private MouseListener			mMouseSupport;
+	
 	public MouseWheelListener getMouseWheelSupport() {
-		return mPropertyContext.getValue(PROP_MOUSE_WHEEL_SUPPORT);
+		return mMouseWheelSupport;
 	}
 	public void setMouseWheelSupport(MouseWheelListener l) {
-		mPropertyContext.setValue(PROP_MOUSE_WHEEL_SUPPORT, l);
+		if (l != mMouseWheelSupport) {
+			MouseWheelListener old = mMouseWheelSupport;
+			mMouseWheelSupport = l;
+			mAllEventDelegate.firePropertyChange(PROP_MOUSE_WHEEL_SUPPORT, old, mMouseWheelSupport);
+		}
 	}
+	
+	
 	public MouseMotionListener getMouseMotionSupport() {
-		return mPropertyContext.getValue(PROP_MOUSE_MOTION_SUPPORT);
+		return mMouseMotionSupport;
 	}
 	public void setMouseMotionSupport(MouseMotionListener l) {
-		mPropertyContext.setValue(PROP_MOUSE_MOTION_SUPPORT, l);
+		if (l != mMouseMotionSupport) {
+			MouseMotionListener old = mMouseMotionSupport;
+			mMouseMotionSupport = l;
+			mAllEventDelegate.firePropertyChange(PROP_MOUSE_MOTION_SUPPORT, old, mMouseMotionSupport);
+		}
 	}
+	
 	public MouseListener getMouseSupport() {
-		return mPropertyContext.getValue(PROP_MOUSE_SUPPORT);
+		return mMouseSupport;
 	}
 	public void setMouseSupport(MouseListener l) {
-		mPropertyContext.setValue(PROP_MOUSE_SUPPORT, l);
+		if (mMouseSupport != l) {
+			MouseListener old = mMouseSupport;
+			mMouseSupport = l;
+			mAllEventDelegate.firePropertyChange(PROP_MOUSE_SUPPORT, old, mMouseSupport);
+		}
 	}
 
 	
 	
 	
 	
-
 
 }

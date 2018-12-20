@@ -108,7 +108,6 @@ public class CustomStrokes2 extends JPanel {
 				switch(type) {
 				case PathIterator.SEG_MOVETO:
 					middle.moveTo(coords[0], coords[1]);
-//					System.out.println("Move To: " + coords[0] + coords[1]);
 					break;
 				case PathIterator.SEG_LINETO:
 					middle.lineTo(coords[0], coords[1]);
@@ -116,8 +115,6 @@ public class CustomStrokes2 extends JPanel {
 				case PathIterator.SEG_CLOSE:
 					middle.closePath();
 					break;
-				default:
-					System.out.println();
 				}
 			}
 			return middle;

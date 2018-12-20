@@ -36,17 +36,19 @@ public class GeoGraphicsItem extends GraphicsItem {
 	
 	@Override
 	public AffineTransform getLocalTransform() {
-		if (hasInvalidLocalTransform() || _getLocalTransform() == null) {
+		if (hasInvalidLocalTransform()) {
+			AffineTransform t = _getLocalTransform();
+			t.setToIdentity();
+			
 			double x = getCenterX(), y = getCenterY(), r = getRotationRadians();
 			double _sx = getScaleX(), _sy = getScaleY();
 			double scaleYCorrection = getScaleCorrection(y);
 			double sy = _sy * scaleYCorrection, sx = _sx * scaleYCorrection;
 			
-			AffineTransform t = new AffineTransform();	
+//			AffineTransform t = new AffineTransform();	
 			t.translate(x, y);
 			t.rotate(-r);
-			t.scale(sx, sy);			
-			_setLocalTransform(t);
+			t.scale(sx, sy);
 		}
 		return _getLocalTransform();
 	}

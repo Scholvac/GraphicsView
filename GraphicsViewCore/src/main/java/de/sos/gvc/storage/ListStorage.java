@@ -40,13 +40,17 @@ public class ListStorage implements IItemStorage {
 	public boolean addItem(GraphicsItem item) {
 		if (contains(item))
 			return false;
-		mItems.add(item);
+		synchronized (mItems) {
+			mItems.add(item);	
+		}		
 		return true;
 	}
 
 	@Override
 	public boolean removeItem(GraphicsItem item) {
-		return mItems.remove(item);
+		synchronized (mItems) {
+			return mItems.remove(item);	
+		}		
 	}
 
 	@Override
@@ -56,19 +60,19 @@ public class ListStorage implements IItemStorage {
 
 	@Override
 	public List<GraphicsItem> getItems(Rectangle2D rect, IItemFilter filter) {
-		Stream<GraphicsItem> res1 = mParallel ? mItems.parallelStream() : mItems.stream();		
-		res1 = res1.filter(f-> f.isVisible()).filter(f->{
-			Rectangle2D wb = f.getSceneBounds();
-			if (f.getZOrder() != 10)
-				System.out.println();
-			if (rect.contains(wb) || intersects(rect, wb))
-				return true;
-			return false;
-		});
-		if (filter != null)
-			res1 = res1.filter(f->filter.accept(f));
-		List<GraphicsItem> list = res1.collect(Collectors.toList());
-		return list;
+		synchronized (mItems) {
+			Stream<GraphicsItem> res1 = mParallel ? mItems.parallelStream() : mItems.stream();		
+			res1 = res1.filter(f-> f.isVisible()).filter(f->{
+				Rectangle2D wb = f.getSceneBounds();
+				if (rect.contains(wb) || intersects(rect, wb))
+					return true;
+				return false;
+			});
+			if (filter != null)
+				res1 = res1.filter(f->filter.accept(f));
+			List<GraphicsItem> list = res1.collect(Collectors.toList());
+			return list;	
+		}		
 	}
 	
 	

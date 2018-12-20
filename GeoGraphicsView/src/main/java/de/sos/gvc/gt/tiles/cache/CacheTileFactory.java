@@ -2,6 +2,7 @@ package de.sos.gvc.gt.tiles.cache;
 
 import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;
+import java.io.File;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -35,9 +36,19 @@ public class CacheTileFactory<DESC extends ITileDescription> implements ITileFac
 	private BufferedImage		mLoadingImage;
 	private BufferedImage		mErrorImage;
 	private UnloadWorker 		mTileUnloader;
+	private float 				mZOrder = 10;
+	private String				mName;
 	
 	public CacheTileFactory(ITileProvider<DESC> factory, int threadPoolSize) {
+		this(null, factory, threadPoolSize, 10);
+	}
+	public CacheTileFactory(ITileProvider<DESC> factory, int threadPoolSize, float zOrder) {
+		this(null, factory, threadPoolSize, zOrder);
+	}
+	public CacheTileFactory(String name, ITileProvider<DESC> factory, int threadPoolSize, float zOrder) {
 		mFactory = factory;
+		mZOrder = zOrder;
+		mName = name;
 		try {
 			mLoadingImage = ImageIO.read(getClass().getClassLoader().getResource("loading.png"));
 			mErrorImage = ImageIO.read(getClass().getClassLoader().getResource("error.png"));
@@ -52,7 +63,8 @@ public class CacheTileFactory<DESC extends ITileDescription> implements ITileFac
             @Override
             public Thread newThread(Runnable r)
             {
-                Thread t = new Thread(r, "TileDownloaderWorker-" + count++);
+            	String n = (mName != null ? mName : "") + "TileDownloaderWorkder-" + count++;
+                Thread t = new Thread(r, n);
                 t.setPriority(Thread.MIN_PRIORITY);
                 t.setDaemon(true);
                 return t;
@@ -179,6 +191,8 @@ public class CacheTileFactory<DESC extends ITileDescription> implements ITileFac
 	@Override
 	public LazyTileItem<DESC> createTileItem(DESC desc)  {
 		LazyTileItem<DESC> tile = new LazyTileItem<DESC>(desc, mLoadingImage);
+		tile.setZOrder(mZOrder);
+		
 		try {
 			mTilesToLoad.put(tile);
 			mExecutorService.execute(new TileWorker(mFactory.createTileLoader()));

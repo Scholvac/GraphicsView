@@ -244,35 +244,34 @@ public class SelectionBorderItem extends GraphicsItem implements MouseListener, 
 	
 	private static class DoubleShapeDrawable implements IDrawable {
 
-		private IParameter<Shape> 			mShape;
-		Shape								mShape2;
+		private Shape 								mOriginalShape;
+		private Shape								mShape2;
 		
-		public DoubleShapeDrawable(IParameter<Shape> shapeProperty) {
-			mShape = shapeProperty;
+		public DoubleShapeDrawable(Shape shapeProperty) {
+			mOriginalShape = shapeProperty;
+			
 		}
 
 		@Override
 		public void paintItem(Graphics2D g, DrawableStyle style, IDrawContext ctx) {
 			if (style == null) {
-				g.draw(mShape.get());
+				if (mOriginalShape != null)
+					g.draw(mOriginalShape);
 				if (mShape2 != null)
 					g.draw(mShape2);
 			}else {
 				if (style.hasFillPaint()) {
 					style.applyFillPaint(g, ctx);
-					g.fill(mShape.get());
+					if (mOriginalShape != null)
+						g.fill(mOriginalShape);
 					if (mShape2 != null) {
-//						Color c = g.getColor();
-//						Color tc = new Color(c.getRed(), c.getGreen(), c.getBlue(), 55);
-//						g.setColor(tc);
-//						g.fill(mShape2);
-//						g.setColor(c);
 						g.fill(mShape2);
 					}
 				}
 				if (style.hasLinePaint()) {
 					style.applyLinePaint(g, ctx);
-					g.draw(mShape.get());
+					if (mOriginalShape != null)
+						g.draw(mOriginalShape);
 					if (mShape2 != null)
 						g.draw(mShape2);
 				}
@@ -340,7 +339,7 @@ public class SelectionBorderItem extends GraphicsItem implements MouseListener, 
 		mCallbackManager = callbackManager;
 		setStyle(sBorderStyle);
 		setSelectable(false);
-		mDrawable = new DoubleShapeDrawable(getShapeProperty());
+		mDrawable = new DoubleShapeDrawable(getShape()); //getShapeProperty());
 		setDrawable(mDrawable);
 		
 		setMouseMotionSupport(this);

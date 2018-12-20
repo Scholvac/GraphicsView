@@ -1,5 +1,7 @@
 package de.sos.gvc;
 
+import java.awt.geom.AffineTransform;
+
 /**
  * 
  * @author scholvac
@@ -11,6 +13,8 @@ public interface IDrawContext {
 	 * @return
 	 */
 	GraphicsView 		getView();
+	
+	AffineTransform	getViewTransform();
 	
 	default double getScaleX() { return getView().getScaleX();}
 	default double getScaleY() { return getView().getScaleY();}

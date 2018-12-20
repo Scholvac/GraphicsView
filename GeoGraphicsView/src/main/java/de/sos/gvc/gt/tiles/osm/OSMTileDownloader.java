@@ -15,6 +15,7 @@ import javax.imageio.ImageIO;
 import org.apache.log4j.helpers.UtilLoggingLevel;
 import org.slf4j.Logger;
 
+import de.sos.gvc.gt.tiles.ITileDescription;
 import de.sos.gvc.gt.tiles.ITileLoader;
 import de.sos.gvc.gt.tiles.cache.MultiCacheFactory.IByteTileLoader;
 import de.sos.gvc.log.GVLog;
@@ -27,6 +28,9 @@ import de.sos.gvc.log.GVLog;
  */
 public class OSMTileDownloader implements ITileLoader<OSMTileDescription>, IByteTileLoader<OSMTileDescription>{
 	
+	public static interface IByteTileLoader<DESC extends ITileDescription> {
+		byte[] loadTile(DESC description);
+	}
 	private static final Logger	logger = GVLog.getLogger(OSMTileDownloader.class);
 	
 	private String			mBaseURL;

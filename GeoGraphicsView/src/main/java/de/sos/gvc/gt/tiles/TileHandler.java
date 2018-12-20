@@ -28,7 +28,7 @@ public class TileHandler implements IPaintListener, IGraphicsViewHandler{
 
 	
 	@SuppressWarnings("rawtypes")
-	private ITileFactory						mTileFactory;
+	private ITileFactory					mTileFactory;
 	
 	/** if set to true, we do update the tiles within the scene before we repaint the window*/
 	private boolean							mTileUpdateRequired = true;
@@ -41,8 +41,14 @@ public class TileHandler implements IPaintListener, IGraphicsViewHandler{
 	
 	@SuppressWarnings("rawtypes")
 	private HashMap<Integer, LazyTileItem>		mActiveTiles = new HashMap<>();
+	private String 								mName;
+	
 	
 	public TileHandler(ITileFactory factory) {
+		this(null, factory);
+	}
+	public TileHandler(String name, ITileFactory factory) {
+		mName = name;
 		mTileFactory = factory;
 	}
 	
@@ -122,6 +128,11 @@ public class TileHandler implements IPaintListener, IGraphicsViewHandler{
 
 	public void setFactory(ITileFactory value) {
 		mTileFactory = value;
+	}
+	
+	@Override
+	public String toString() {
+		return "TileHandler: " + mName;
 	}
 
 }

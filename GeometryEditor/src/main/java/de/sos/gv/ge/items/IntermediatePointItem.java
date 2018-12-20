@@ -61,7 +61,7 @@ public class IntermediatePointItem extends GraphicsItem implements MouseMotionLi
 	private int					mIndex1;
 	
 	class IntermediatePointDrawable extends ShapeDrawable implements IDrawable {
-		public IntermediatePointDrawable(IParameter<Shape> shape) {
+		public IntermediatePointDrawable(IShapeProvider shape) {
 			super(shape);
 		}
 
@@ -98,7 +98,7 @@ public class IntermediatePointItem extends GraphicsItem implements MouseMotionLi
 		mIndex1 = idx1;
 		
 		setStyle(sNormalStyle);
-		setDrawable(new IntermediatePointDrawable(getShapeProperty()));
+		setDrawable(new IntermediatePointDrawable(this));
 		
 		setMouseMotionSupport(this);
 		setMouseSupport(this);

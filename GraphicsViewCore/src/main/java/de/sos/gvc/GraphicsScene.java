@@ -10,6 +10,8 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Timer;
+import java.util.TimerTask;
 
 import de.sos.gvc.param.IParameter;
 import de.sos.gvc.param.Parameter;
@@ -23,6 +25,13 @@ import de.sos.gvc.storage.QuadTreeStorage;
  */
 public class GraphicsScene {
 
+	public interface DirtyListener {
+		/** Called if the dirty state changes to clean */
+		void notifyClean();
+		/** called if the dirty state change from clean to dirty */
+		void notifyDirty();
+	}
+	
 	public interface IItemFilter {
 		public boolean accept(GraphicsItem item);
 	}
@@ -118,33 +127,51 @@ public class GraphicsScene {
 	}
 	
 	class ItemListener implements PropertyChangeListener {
-		IParameter<Boolean> mDP = null;
-		public ItemListener(IParameter<Boolean> dp) { mDP = dp;}
+//		IParameter<Boolean> mDP = null;
+//		public ItemListener(IParameter<Boolean> dp) { mDP = dp;}
 		@Override
 		public void propertyChange(PropertyChangeEvent evt) {
-			mDP.set(true);
+			if (!mDirty) {
+				markDirty();
+			}
 		}
 	}
 	
-	private IParameter<Boolean>			mDirty = new Parameter<>("Dirty", "", true, false);
+//	private IParameter<Boolean>			mDirty = new Parameter<>("Dirty", "", true, false);
 	
 	private IItemStorage				mItemStore = new QuadTreeStorage();
 	private ItemListener				mItemListener;
 
 	private List<GraphicsView> 			mViews = new ArrayList<>();
 	
-	
-	public IParameter<Boolean> getDirtyProperty() { return mDirty; }
-	
+//	public IParameter<Boolean> getDirtyProperty() { return mDirty; }
+	private boolean						mDirty = true;
+	private ArrayList<DirtyListener>	mDirtyListener = new ArrayList<>();
 	
 	public GraphicsScene() {
 		 this(new ListStorage());
 	}
 	public GraphicsScene(IItemStorage itemStore) {
 		mItemStore = itemStore;
-		mItemListener = new ItemListener(mDirty);
+		mItemListener = new ItemListener();//mDirty);
 	}
 	
+	
+	
+	public boolean registerDirtyListener(DirtyListener dl) {
+		if (dl != null && mDirtyListener.contains(dl) == false)
+			return mDirtyListener.add(dl);
+		return false;
+	}
+	public boolean removeDirtyListener(DirtyListener dl) {
+		if (dl == null || mDirtyListener.contains(dl) == false)
+			return true;
+		return mDirtyListener.remove(dl);
+	}
+	
+	
+	
+
 	/**
 	 * Adds a view that displays the scene to its internal list
 	 * @param view
@@ -165,7 +192,7 @@ public class GraphicsScene {
 	public boolean addItem(GraphicsItem item) {
 		if (item == null) return false;
 		if (mItemStore.addItem(item)) {
-			item._setScene(this);;
+			item._setScene(this);
 			item.addPropertyChangeListener(mItemListener);
 			markDirty();
 			return true;
@@ -173,9 +200,26 @@ public class GraphicsScene {
 		return false;
 	}
 	public void markDirty() {
-		mDirty.set(true);
+//		mDirty.set(true);
+		if (!mDirty) {
+			mDirty = true;
+			//notify listener
+			for (int i = 0; i < mDirtyListener.size(); i++)
+				mDirtyListener.get(i).notifyDirty();
+		}		
 	}
-
+	
+	/** Resets the dirty state. 
+	 * @note this method shall only be called by the GraphicsView after drawing the current scene
+	 */
+	void markClean() {
+		if (mDirty) {
+			mDirty = false;
+			//notify listener
+			for (int i = 0; i < mDirtyListener.size(); i++)
+				mDirtyListener.get(i).notifyClean();
+		}
+	}
 
 	public boolean removeItem(GraphicsItem item) {
 		if (item == null) return false;
@@ -229,20 +273,6 @@ public class GraphicsScene {
 				}
 			}
 		}
-//		for (GraphicsItem item : items) {
-////			if (!item.isVisible()) continue;
-//			Rectangle2D wb = item.getSceneBounds();
-//			if (rect.contains(wb) || rect.intersects(wb)) {
-//				if (filter == null || filter.accept(item)) {
-//					out.add(item);
-//				}
-//				if (item.hasChildren()) {
-//					List<GraphicsItem> tmp = getAllItems(rect, item.getChildren(), filter);
-//					if (tmp != null && tmp.isEmpty() == false)
-//						out.addAll(tmp);
-//				}
-//			}
-//		}
 		Collections.reverse(out);
 		return out;
 	}
@@ -295,28 +325,6 @@ public class GraphicsScene {
 
 	private boolean intersect(Rectangle2D a, Rectangle2D b) {
 		return b.intersects(a) || b.contains(a);
-//		double minq = Math.min(b.getMinX(), b.getMaxX());
-//		double maxq = Math.max(b.getMinX(), b.getMaxX());
-//		double minp = Math.min(a.getMinX(), a.getMaxX());
-//		double maxp = Math.max(a.getMinX(), a.getMaxX());
-//		if (minp > maxq)
-//			return false;
-//		if (maxp < minq)
-//			return false;
-//		
-//		double t = -b.getMinY() + b.getHeight();
-//		double ay = a.getMinY();
-//		
-//		minq = Math.min(b.getMinY(), -b.getMaxY());
-//		maxq = Math.max(b.getMinY(), -b.getMaxY());
-//		minp = Math.min(a.getMinY(), -a.getMaxY());
-//		maxp = Math.max(a.getMinY(), -a.getMaxY());
-//		if (minp > maxq)
-//			return false;
-//		if (maxp < minq)
-//			return false;
-//		
-//		return true;
 	}
 
 

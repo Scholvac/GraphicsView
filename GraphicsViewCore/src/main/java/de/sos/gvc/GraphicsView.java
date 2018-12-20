@@ -17,11 +17,14 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Timer;
+import java.util.TimerTask;
 
 import javax.swing.JPanel;
 
 import org.slf4j.Logger;
 
+import de.sos.gvc.GraphicsScene.DirtyListener;
 import de.sos.gvc.GraphicsScene.IItemFilter;
 import de.sos.gvc.log.GVLog;
 import de.sos.gvc.param.IParameter;
@@ -56,6 +59,12 @@ public class GraphicsView extends JPanel {
 	protected IParameter<Double> 			mRotation;
 	
 	private AffineTransform					mViewTransform = null;
+	
+	/** maximum repaints (triggered by dirty scene) per second */
+	private int							mRepaintDelay = 1000/30; //default: maximum of 30 repaints per second, triggered by dirty scene
+	private Timer						mRepaintTimer;
+	private TimerTask					mRepaintTimerTask = null;
+	
 	/**
 	 * List of listener that will be notified before and after the painting has been done, for example to prepare a paint or clean up after painting
 	 */
@@ -80,19 +89,52 @@ public class GraphicsView extends JPanel {
 		}
 	};
 	private List<IGraphicsViewHandler>		mHandler = new ArrayList<>();
-	private PropertyChangeListener			mDirtySceneListener = new PropertyChangeListener() {		
+	
+	private DirtyListener					mDirtySceneListener = new DirtyListener() {		
 		@Override
-		public void propertyChange(PropertyChangeEvent evt) {
-			if ((Boolean)evt.getNewValue()) {
-				repaint();
+		public void notifyDirty() {
+			if (mRepaintTimerTask != null) {
+				return ; //repaint is already scheduled
 			}
+			mRepaintTimer.schedule(mRepaintTimerTask = new TimerTask() {				
+				@Override
+				public void run() {
+					mRepaintTimerTask = null;
+					repaint();
+				}
+			}, mRepaintDelay);
 		}
+		@Override
+		public void notifyClean() {}
 	};
+//	private PropertyChangeListener			mDirtySceneListener = new PropertyChangeListener() {		
+//		@Override
+//		public void propertyChange(PropertyChangeEvent evt) {
+//			if (mRepaintTimerTask != null) {
+////				System.out.println("Skipp");
+//				return ; //repaint is already scheduled
+//			}
+//			if ((Boolean)evt.getNewValue()) {
+//				mRepaintTimer.schedule(mRepaintTimerTask = new TimerTask() {				
+//					@Override
+//					public void run() {
+//						mRepaintTimerTask = null;
+////						System.out.println("Repaint");
+//						repaint();
+//					}
+//				}, mRepaintDelay);
+//			}
+//		}
+//	};
 	
 	IDrawContext							mDrawContext = new IDrawContext() {		
 		@Override
 		public GraphicsView getView() {
 			return GraphicsView.this;
+		}
+		@Override
+		public AffineTransform getViewTransform() {
+			return GraphicsView.this.getViewTransform();
 		}
 	};
 	
@@ -127,9 +169,14 @@ public class GraphicsView extends JPanel {
 		});
 		mPropertyContext.registerListener(mRepaintListener);
 		
-		mScene.getDirtyProperty().addPropertyChangeListener(mDirtySceneListener);
+		mScene.registerDirtyListener(mDirtySceneListener);
 		
-		
+		mRepaintTimer = new Timer("GraphicsViewRepaintTimer", true);		
+	}
+	
+	
+	public void setMaximumFPS(int fps) {
+		mRepaintDelay = 1000 / fps;
 	}
 	
 	public void addPaintListener(IPaintListener listener) {
@@ -175,7 +222,7 @@ public class GraphicsView extends JPanel {
 		super.paintComponent(g);
 		Graphics2D g2d = (Graphics2D)g;
 		
-		g2d.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC);
+		g2d.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR); //TODO: as property
 		g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 		
 		synchronized (mPaintListener) {
@@ -213,7 +260,7 @@ public class GraphicsView extends JPanel {
 //		g2d.fill(new Rectangle2D.Double(rect.getX() + 5, rect.getY() + 5, rect.getWidth() - 10, rect.getHeight()-10));
 		//reset the old transform
 		g2d.setTransform(oldTransform);
-		mScene.getDirtyProperty().set(false); //notify / remember that the scene is no longer dirty, at least not in terms of visualisation
+		mScene.markClean(); //remember that the scene is no longer dirty, at least not in terms of visualisation
 		
 		synchronized (mPaintListener) {
 			for (IPaintListener pl : mPaintListener) 
