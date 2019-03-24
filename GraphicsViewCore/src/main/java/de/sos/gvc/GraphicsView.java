@@ -1,6 +1,5 @@
 package de.sos.gvc;
 
-import java.awt.Color;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Point;
@@ -253,7 +252,14 @@ public class GraphicsView extends JPanel {
 		});
 		
 		for (GraphicsItem item : itemList) {
-			item.draw(g2d, mDrawContext);
+			try {
+				item.draw(g2d, mDrawContext);
+			}catch(Exception | Error e) {
+				//catch all exceptions (latest) here. Even if we do not handle them, 
+				//it crashes the whole (drawing-) system if it is not catched 
+				LOG.error("Failed to paint an Item with error {}", e);
+				e.printStackTrace();
+			}
 		}
 
 //		g2d.setColor(new Color(255, 0, 0, 180));
@@ -385,7 +391,7 @@ public class GraphicsView extends JPanel {
 	public double getScaleY() { return mScaleY.get(); }
 
 	public GraphicsScene getScene() { return mScene; }
-
+	public ParameterContext getPropertyContext() { return mPropertyContext; } 
 
 	public <T> IParameter<T> getProperty(String string) {
 		return mPropertyContext.getProperty(string);
@@ -399,6 +405,39 @@ public class GraphicsView extends JPanel {
 
 	public void setCenter(Point2D center) {
 		setCenter(center.getX(), center.getY());		
+	}
+
+	public void setCenterAndZoom(Point2D min, Point2D max, boolean scaleXandY) {
+		double x = Math.min(min.getX(), max.getX());
+		double y = Math.min(min.getY(), max.getY());
+		double w = Math.abs(min.getX() - max.getX());
+		double h = Math.abs(min.getY() - max.getY());
+		setCenterAndZoom(new Rectangle2D.Double(x, y, w, h), scaleXandY);
+	}
+	public void setCenterAndZoom(Rectangle2D bounds, boolean scaleXandY) {
+		Rectangle visRect = getVisibleRect();
+		
+		//bounds.width * scaleX = visRect.getWidth()
+		double scaleX = (1.1 * bounds.getWidth()) / visRect.getWidth();
+		double scaleY = (1.1 * bounds.getHeight()) / visRect.getHeight();
+		double cx = bounds.getCenterX(), cy = bounds.getCenterY();
+		
+
+		if (scaleX <= 0 || Double.isFinite(scaleX) == false || 
+				scaleY <= 0 || Double.isFinite(scaleY) == false ||
+				!Double.isFinite(cx) || !Double.isFinite(cy)) 
+		{
+			LOG.debug("Detected invalid scale parameter: X = {}, Y = {}", scaleX, scaleY);
+			return ;
+		}
+		if (!scaleXandY) {
+			if (scaleX > scaleY)
+				scaleY = scaleX;
+			else
+				scaleX = scaleY;
+		}
+		setCenter(cx, -cy);		
+		setScale(scaleX, scaleY);
 	}
 
 

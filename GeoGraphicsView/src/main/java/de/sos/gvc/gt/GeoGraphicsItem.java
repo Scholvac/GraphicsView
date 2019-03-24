@@ -33,25 +33,26 @@ public class GeoGraphicsItem extends GraphicsItem {
 		super(shape, propertyContext);
 	}
 	
-	
 	@Override
-	public AffineTransform getLocalTransform() {
-		if (hasInvalidLocalTransform()) {
-			AffineTransform t = _getLocalTransform();
-			t.setToIdentity();
-			
+	protected void updateLocalTransform() {
+		synchronized (mLocalTransform) {
 			double x = getCenterX(), y = getCenterY(), r = getRotationRadians();
 			double _sx = getScaleX(), _sy = getScaleY();
 			double scaleYCorrection = getScaleCorrection(y);
 			double sy = _sy * scaleYCorrection, sx = _sx * scaleYCorrection;
+
+			mLocalTransform.setToIdentity();
+			mLocalTransform.translate(x, y);
+			mLocalTransform.rotate(-r);
+			mLocalTransform.scale(sx, sy);
 			
-//			AffineTransform t = new AffineTransform();	
-			t.translate(x, y);
-			t.rotate(-r);
-			t.scale(sx, sy);
+			mInvalidLocalTransform = false;
 		}
-		return _getLocalTransform();
 	}
+	
+	
+	
+	
 	public static double getScaleCorrection(double y) {
 		LatLonPoint llp = GeoUtils.getLatLon(0, y);
 		y = llp.getLatitude();

@@ -1,6 +1,7 @@
 package de.sos.gvc.gt;
 
 import java.awt.geom.Point2D;
+import java.awt.geom.Point2D.Double;
 
 import de.sos.gvc.GraphicsItem;
 import de.sos.gvc.GraphicsView;
@@ -52,6 +53,9 @@ public class GeoUtils {
 	}
 	public static void setGeoPosition(GraphicsItem item, LatLonPoint llp) {
 		item.setCenter(getPosition(llp));
+	}
+	public static Point2D getPosition(LatLonPoint ll, Point2D store) {
+		return mMercator.forward(ll.getLatitude(), ll.getLongitude(), store);
 	}
 
 

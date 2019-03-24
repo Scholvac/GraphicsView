@@ -58,58 +58,59 @@ public class ShapeDrawable extends AbstractDrawable
 		Shape shape = mShape.getShape();
 		if (shape == null) return ;
 		
+		drawStyled(g, shape, style, ctx);
 		
-		if (style == null) {
-			g.draw(shape);
-		}else {
-			if (style.hasFillPaint()) {
-				style.applyFillPaint(g, ctx);
-				g.fill(shape);
-			}
-			if (style.hasLinePaint()) {
-				style.applyLinePaint(g, ctx);
-				if (shape instanceof Rectangle2D || shape instanceof Line2D) {
-					g.draw(shape);
-				}else {
-					
-					if (style.getLineStroke() != null) {
-						if (mTransformedStroke == null) {
-							try {
-								mTransformedStroke = new TransformedStroke(style.getLineStroke(), g.getTransform());
-							} catch (NoninvertibleTransformException e) {
-								e.printStackTrace();
-								mTransformedStroke = null;
-							}
-						}else {
-							try {
-								mTransformedStroke.set(style.getLineStroke(), g.getTransform());
-							} catch (NoninvertibleTransformException e) {
-								e.printStackTrace();
-								mTransformedStroke = null;
-							}
-						}
-					}else
-						mTransformedStroke = null;
-					
-					
-					
-					Stroke os = g.getStroke();
-					float scale = (float)ctx.getScale();
-					Stroke ls = mTransformedStroke;
-					if (ls == null)
-						if (scale > 1)
-							ls = new BasicStroke(1);//scale);
-						else
-							ls = new BasicStroke((float) (scale));
-					
-					g.setStroke(ls);
-					g.draw(shape);
-					
-					
-					g.setStroke(os);						
-				}
-			}
-		}
+//		if (style == null) {
+//			g.draw(shape);
+//		}else {
+//			if (style.hasFillPaint()) {
+//				style.applyFillPaint(g, ctx);
+//				g.fill(shape);
+//			}
+//			if (style.hasLinePaint()) {
+//				style.applyLinePaint(g, ctx);
+//				if (shape instanceof Line2D) {
+//					g.draw(shape);
+//				}else {
+//					
+//					if (style.getLineStroke() != null) {
+//						if (mTransformedStroke == null) {
+//							try {
+//								mTransformedStroke = new TransformedStroke(style.getLineStroke(), g.getTransform());
+//							} catch (NoninvertibleTransformException e) {
+//								e.printStackTrace();
+//								mTransformedStroke = null;
+//							}
+//						}else {
+//							try {
+//								mTransformedStroke.set(style.getLineStroke(), g.getTransform());
+//							} catch (NoninvertibleTransformException e) {
+//								e.printStackTrace();
+//								mTransformedStroke = null;
+//							}
+//						}
+//					}else
+//						mTransformedStroke = null;
+//					
+//					
+//					
+//					Stroke os = g.getStroke();
+//					float scale = (float)ctx.getScale();
+//					Stroke ls = mTransformedStroke;
+//					if (ls == null)
+//						if (scale > 1)
+//							ls = new BasicStroke(1);//scale);
+//						else
+//							ls = new BasicStroke((float) (scale));
+//					
+//					g.setStroke(ls);
+//					g.draw(shape);
+//					
+//					
+//					g.setStroke(os);						
+//				}
+//			}
+//		}
 	}
 	
 }

@@ -27,9 +27,11 @@ public class BIGLeaf<T extends IndexEntry<?>> implements IBIGNode<T> {
 
 	public void addEntry(T entry) {
 		mEntries.add(entry);
+		mRealGeometry = null;
 	}
 	public boolean remove(T entry) {
 		if (mEntries.remove(entry)) {
+			mRealGeometry = null;
 			//TODO: the leaf is empty now, so we can delete it to free the memory (issue: we should do this using the BIGQuadTree interface, to get the listener informed)
 			return true;
 		}

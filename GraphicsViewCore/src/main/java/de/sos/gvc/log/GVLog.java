@@ -38,8 +38,19 @@ public class GVLog {
 		@Override
 		public void initialize(URL url) {
 			if (url != null){
+				BasicConfigurator.resetConfiguration();
 				DOMConfigurator.configure(url);
 			}else{
+				//check if there are already some bindings. in this case the logging has been initialized by another project
+				//and we can skip it (and use the settings of the other project)
+				Logger l = getLogger(Logger.ROOT_LOGGER_NAME);
+				Enumeration app = org.apache.log4j.Logger.getRootLogger().getAllAppenders();
+				while(app.hasMoreElements()){
+					Object obj = app.nextElement();
+					if (obj instanceof Appender){
+						return ;
+					}
+				}
 				System.err.println("No valid Log configuration provided, using default configuration");
 				BasicConfigurator.configure();
 			}

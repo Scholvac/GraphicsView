@@ -85,7 +85,7 @@ public class MovingItemsExampleWithOSMBackground {
 			if (Math.abs(llp.getLongitude()) > 170)
 				x = 0;
 			mItem.setCenter(x, y);
-		}
+		} 
 	}
 	
 	

@@ -6,6 +6,7 @@ import java.awt.geom.Rectangle2D;
 import java.awt.geom.Rectangle2D.Double;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
+import java.beans.PropertyChangeSupport;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -36,6 +37,7 @@ public class GraphicsScene {
 		public boolean accept(GraphicsItem item);
 	}
 	
+
 	public static class ComboundItemFilter implements IItemFilter {
 		private IItemFilter[] mFilter;
 		public ComboundItemFilter(IItemFilter ...filters) {
@@ -137,23 +139,40 @@ public class GraphicsScene {
 		}
 	}
 	
-//	private IParameter<Boolean>			mDirty = new Parameter<>("Dirty", "", true, false);
+	/** Property - key to get notified (with PropertyChangeEvent) about adding and removing of new Items into the Root item list */
+	public static final String						ITEM_LIST_PROPERTY 					= "ItemListProperty";			
 	
-	private IItemStorage				mItemStore = new QuadTreeStorage();
-	private ItemListener				mItemListener;
+	private IItemStorage							mItemStore = new QuadTreeStorage();
+	private ItemListener							mItemListener;
 
-	private List<GraphicsView> 			mViews = new ArrayList<>();
+	private List<GraphicsView> 						mViews = new ArrayList<>();
 	
-//	public IParameter<Boolean> getDirtyProperty() { return mDirty; }
-	private boolean						mDirty = true;
-	private ArrayList<DirtyListener>	mDirtyListener = new ArrayList<>();
+	private boolean									mDirty = true;
+	private ArrayList<DirtyListener>				mDirtyListener = new ArrayList<>();
+	
+	private transient PropertyChangeSupport 		mPropertySupport = new PropertyChangeSupport(this);
 	
 	public GraphicsScene() {
 		 this(new ListStorage());
 	}
 	public GraphicsScene(IItemStorage itemStore) {
 		mItemStore = itemStore;
-		mItemListener = new ItemListener();//mDirty);
+		mItemListener = new ItemListener();
+	}
+	
+	public void addPropertyListener(final PropertyChangeListener pcl) {
+		if (pcl != null)
+			mPropertySupport.addPropertyChangeListener(pcl);
+	}
+	public void addPropertyListener(final String propertyName, final PropertyChangeListener pcl) {
+		if (pcl != null)
+			mPropertySupport.addPropertyChangeListener(propertyName, pcl);
+	}
+	public void removePropertyListener(final PropertyChangeListener pcl) {
+		mPropertySupport.removePropertyChangeListener(pcl);
+	}
+	public void removePropertyListener(final String propertyName, final PropertyChangeListener pcl) {
+		mPropertySupport.removePropertyChangeListener(propertyName, pcl);
 	}
 	
 	
@@ -189,18 +208,19 @@ public class GraphicsScene {
 			result = result & addItem(item);
 		return result;
 	}
-	public boolean addItem(GraphicsItem item) {
+	public boolean addItem(final GraphicsItem item) {
 		if (item == null) return false;
 		if (mItemStore.addItem(item)) {
 			item._setScene(this);
 			item.addPropertyChangeListener(mItemListener);
 			markDirty();
+			
+			mPropertySupport.firePropertyChange(ITEM_LIST_PROPERTY, null, item);
 			return true;
 		}
 		return false;
 	}
 	public void markDirty() {
-//		mDirty.set(true);
 		if (!mDirty) {
 			mDirty = true;
 			//notify listener
@@ -221,12 +241,14 @@ public class GraphicsScene {
 		}
 	}
 
-	public boolean removeItem(GraphicsItem item) {
+	public boolean removeItem(final GraphicsItem item) {
 		if (item == null) return false;
 		if (mItemStore.removeItem(item)) {
 			item.removePropertyChangeListener(mItemListener);
 			item._setScene(null);
 			markDirty();
+			
+			mPropertySupport.firePropertyChange(ITEM_LIST_PROPERTY, item, null);
 			return true;
 		}
 		return false;				

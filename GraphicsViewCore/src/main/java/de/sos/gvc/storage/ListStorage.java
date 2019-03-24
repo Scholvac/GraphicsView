@@ -61,7 +61,8 @@ public class ListStorage implements IItemStorage {
 	@Override
 	public List<GraphicsItem> getItems(Rectangle2D rect, IItemFilter filter) {
 		synchronized (mItems) {
-			Stream<GraphicsItem> res1 = mParallel ? mItems.parallelStream() : mItems.stream();		
+			boolean parallel = mParallel && mItems.size() > 100; //do not go through the trouble of creating all those worker threads if we have only a few items....
+			Stream<GraphicsItem> res1 = parallel ? mItems.parallelStream() : mItems.stream();		
 			res1 = res1.filter(f-> f.isVisible()).filter(f->{
 				Rectangle2D wb = f.getSceneBounds();
 				if (rect.contains(wb) || intersects(rect, wb))

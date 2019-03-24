@@ -19,6 +19,7 @@ import de.sos.gvc.GraphicsScene.IItemFilter;
 import de.sos.gvc.GraphicsView;
 import de.sos.gvc.IGraphicsViewHandler;
 import de.sos.gvc.Utils;
+import de.sos.gvc.handler.selection.BoundingBoxSelectionItem;
 import de.sos.gvc.handler.selection.SelectionBorderItem;
 import de.sos.gvc.param.IParameter;
 import de.sos.gvc.param.Parameter;
@@ -56,7 +57,6 @@ public class SelectionHandler implements IGraphicsViewHandler, MouseListener {
 				moveDistance.add(new Point2D.Double(newLoc.get(i).getX() - oldLoc.get(i).getX(), newLoc.get(i).getY()-oldLoc.get(i).getY()));
 		}
 	}
-	
 	public interface IMoveCallback {
 		public void onItemMoved(ItemMoveEvent event);
 	}
@@ -94,7 +94,6 @@ public class SelectionHandler implements IGraphicsViewHandler, MouseListener {
 			return new double[] { nw / ow, nh / oh};
 		}
 	}
-	
 	public interface IScaleCallback {
 		public void onItemScaled(ItemScaleEvent event);
 	}
@@ -127,7 +126,8 @@ public class SelectionHandler implements IGraphicsViewHandler, MouseListener {
 	
 	private GraphicsView 				mView;
 	private GraphicsItem 				mLastSelectedItem 		= null;
-	private SelectionBorderItem			mSelectionMarker 		= null;
+//	private SelectionBorderItem			mSelectionMarker 		= null;
+	private GraphicsItem				mSelectionMarker		= null;
 	
 	private IParameter<Double>			mEpsilon 				= new Parameter<>("Epsilon", "Selection Tolerance", true, 5.0);
 	private IItemFilter 				mSelectableFilter 		= new IItemFilter() {			
@@ -142,7 +142,7 @@ public class SelectionHandler implements IGraphicsViewHandler, MouseListener {
 	
 	
 	public SelectionHandler() {
-		mSelectionMarker = new SelectionBorderItem(this);
+//		mSelectionMarker = new SelectionBorderItem(this);
 	}
 		
 	public void addMoveCallback(IMoveCallback mh) {
@@ -190,11 +190,6 @@ public class SelectionHandler implements IGraphicsViewHandler, MouseListener {
 		if (e.isConsumed())
 			return ;
 		GraphicsItem item = getBestFit(e.getPoint());
-		System.out.println(e.getPoint() +  "Scene: " + mView.getSceneLocation(e.getPoint(), null) + " Item: " + item);
-		if (item != null) {
-			System.out.println("Local: " + item.getLocalLocation() + " Scene: " + item.getSceneLocation());
-		}
-		
 		if (item == mLastSelectedItem) {
 			return ; //do nothing also do not consume the event to give other the chance to work on the selected item
 		}
@@ -208,11 +203,26 @@ public class SelectionHandler implements IGraphicsViewHandler, MouseListener {
 		e.consume();
 	}
 
+	protected GraphicsItem getSelectionMarker(GraphicsItem item) {
+		//return new ShapeSelectionMarker(this, item);
+//		SelectionBorderItem sbi = new SelectionBorderItem(this);
+		BoundingBoxSelectionItem sbi = new BoundingBoxSelectionItem(this);
+		sbi.setSelectedItem(item);
+		return sbi;
+	}
+	
 	private void installSelectionMarker(GraphicsItem item) {
 		mLastSelectedItem = item; //remember for next time
-		mSelectionMarker.setSelectedItem(item);
-		mSelectionMarker.setVisible(true);
-		mView.getScene().addItem(mSelectionMarker);
+		
+		mSelectionMarker = getSelectionMarker(item);
+		if (mSelectionMarker != null) {
+			mSelectionMarker.setVisible(true);
+			mView.getScene().addItem(mSelectionMarker);
+		}
+		
+//		mSelectionMarker.setSelectedItem(item);
+//		mSelectionMarker.setVisible(true);
+//		mView.getScene().addItem(mSelectionMarker);
 		item.setSelected(true);		
 		onItemSelected(item); //notify subclasses
 	}
@@ -227,9 +237,16 @@ public class SelectionHandler implements IGraphicsViewHandler, MouseListener {
 		onItemDeselected(mLastSelectedItem);
 		mLastSelectedItem.setSelected(false);
 		mLastSelectedItem = null;
-		mSelectionMarker.setSelectedItem(null);
-		mSelectionMarker.setVisible(false);
-		mView.getScene().removeItem(mSelectionMarker);
+		
+		if (mSelectionMarker != null) {
+			mSelectionMarker.setVisible(false);
+			mView.getScene().removeItem(mSelectionMarker);
+			
+		}
+		mSelectionMarker = null;
+//		mSelectionMarker.setSelectedItem(null);
+//		mSelectionMarker.setVisible(false);
+//		mView.getScene().removeItem(mSelectionMarker);
 	}
 	
 	/**
@@ -244,6 +261,9 @@ public class SelectionHandler implements IGraphicsViewHandler, MouseListener {
 		double eps = mEpsilon.get() * mView.getScaleX();
 		
 		List<GraphicsItem> items = mView.getAllItemsAt(point, eps, eps, null);
+		if (items == null || items.isEmpty())
+			return null;
+		
 		Optional<GraphicsItem> optItem = items.stream().filter(p -> mSelectableFilter.accept(p)).sorted(new Comparator<GraphicsItem>() {
 			public int compare(GraphicsItem o1, GraphicsItem o2) {
 				return -Float.compare(o1.getZOrder(), o2.getZOrder());

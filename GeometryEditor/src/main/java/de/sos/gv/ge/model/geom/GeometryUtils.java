@@ -14,6 +14,8 @@ public class GeometryUtils {
 		if (geom.numGeometries() != 1) {
 			return createMultiShape(geom);
 		}
+		if (geom.numPoints() <= 1)
+			return new Arc2D.Double(0, 0, 1, 1, 0, 360, Arc2D.CHORD); 
 		assert(geom.numPoints() >= 1);
 		
 		if (geom.getType() == GeometryType.Point || geom.numPoints() == 1)

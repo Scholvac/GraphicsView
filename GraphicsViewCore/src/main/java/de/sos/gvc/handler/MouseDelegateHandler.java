@@ -141,6 +141,7 @@ public class MouseDelegateHandler implements IGraphicsViewHandler, MouseListener
 	}
 
 	private HashSet<GraphicsItem> 	mEnteredItems = new HashSet<>();
+	
 	private void handleMouseEnterAndExit(MouseEvent e) {
 		double epsilon = getSelectionEpsilon();
 		List<GraphicsItem> items = mView.getAllItemsAt(e.getPoint(), epsilon, epsilon, mMouseSupportFilter);
@@ -228,7 +229,7 @@ public class MouseDelegateHandler implements IGraphicsViewHandler, MouseListener
 		}
 		if (mmhs.isEmpty() == false)
 			for (MouseListener ml : mmhs)
-				ml.mouseClicked(dme);
+				ml.mouseReleased(dme);
 	}
 	
 	private double getSelectionEpsilon() {
