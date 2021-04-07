@@ -3,7 +3,6 @@ package de.sos.gvc;
 import java.awt.Shape;
 import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
-import java.awt.geom.Rectangle2D.Double;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeSupport;
@@ -11,11 +10,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.Timer;
-import java.util.TimerTask;
 
-import de.sos.gvc.param.IParameter;
-import de.sos.gvc.param.Parameter;
 import de.sos.gvc.storage.ListStorage;
 import de.sos.gvc.storage.QuadTreeStorage;
 
@@ -209,7 +204,10 @@ public class GraphicsScene {
 		return result;
 	}
 	public boolean addItem(final GraphicsItem item) {
-		if (item == null) return false;
+		if (item == null) 
+			return false;
+		if (item.getScene() == this)
+			return true;//alread inside but no notification
 		if (mItemStore.addItem(item)) {
 			item._setScene(this);
 			item.addPropertyChangeListener(mItemListener);

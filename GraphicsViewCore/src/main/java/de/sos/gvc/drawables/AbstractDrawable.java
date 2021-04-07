@@ -24,11 +24,11 @@ public abstract class AbstractDrawable implements IDrawable {
 			g.draw(shape);
 		}else {
 			if (style.hasFillPaint()) {
-				style.applyFillPaint(g, ctx);
+				style.applyFillPaint(g, ctx, shape);
 				g.fill(shape);
 			}
 			if (style.hasLinePaint()) {
-				style.applyLinePaint(g, ctx);
+				style.applyLinePaint(g, ctx, shape);
 				if (shape instanceof Line2D) {
 					g.draw(shape);
 				}else {

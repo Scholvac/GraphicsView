@@ -47,11 +47,13 @@ public class TextDrawable implements IDrawable {
 		}else
 			fm = g.getFontMetrics();//use default font and metric or that from the last time
 		
-		if (style != null && style.hasLinePaint())
-			style.applyLinePaint(g, ctx);
 		Rectangle2D r = fm.getStringBounds(label, g);
 		double x = -r.getWidth() / 2.0;//r.getMinX();
 		double y = r.getHeight() / 2.0; //r.getMinY();
+		
+		if (style != null && style.hasLinePaint())
+			style.applyLinePaint(g, ctx, r);
+		
 		
 		
 		g.drawString(label, (float)x, (float)y);

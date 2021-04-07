@@ -1,7 +1,5 @@
 package de.sos.gv.ge.menu;
 
-import java.awt.PopupMenu;
-
 import javax.swing.JPopupMenu;
 
 import de.sos.gv.ge.items.ContourPointItem;

@@ -4,14 +4,13 @@ import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Cursor;
 import java.awt.Graphics2D;
-import java.awt.Shape;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
 import java.awt.geom.Arc2D;
 import java.awt.geom.Line2D;
+import java.awt.geom.NoninvertibleTransformException;
 import java.awt.geom.Point2D;
-import java.awt.geom.Rectangle2D;
 
 import javax.swing.JPopupMenu;
 import javax.swing.SwingUtilities;
@@ -23,9 +22,7 @@ import de.sos.gvc.IDrawContext;
 import de.sos.gvc.IDrawable;
 import de.sos.gvc.drawables.ShapeDrawable;
 import de.sos.gvc.handler.MouseDelegateHandler.DelegateMouseEvent;
-import de.sos.gvc.param.IParameter;
 import de.sos.gvc.styles.DrawableStyle;
-import de.sos.gvc.styles.ScaledStroke;
 
 public class ContourPointItem extends GraphicsItem implements MouseMotionListener , MouseListener
 {
@@ -56,18 +53,17 @@ public class ContourPointItem extends GraphicsItem implements MouseMotionListene
 			
 			
 			if (mOldLocation != null) {
-				Point2D ill = scene2Local(mOldLocation);
+				Point2D ill = mOldLocation;
 				
-				sIntermediateStyle.applyLinePaint(g, ctx);
-				g.draw(new Arc2D.Double(ill.getX()-5, ill.getY()-5, 10, 10, 0, 360, Arc2D.CHORD));
+				Arc2D.Double arc = new Arc2D.Double(ill.getX()-5, ill.getY()-5, 10, 10, 0, 360, Arc2D.CHORD); 
+				sIntermediateStyle.applyLinePaint(g, ctx, arc);
+				g.draw(arc);
 			
 				if (mPrevPoint != null) {
-					Point2D pp = scene2Local(mPrevPoint);
-					g.draw(new Line2D.Double(0, 0, pp.getX(), pp.getY()));
+					g.draw(new Line2D.Double(0, 0, mPrevPoint.getX(), mPrevPoint.getY()));
 				}
 				if (mNextPoint != null) {
-					Point2D np = scene2Local(mNextPoint);
-					g.draw(new Line2D.Double(0, 0, np.getX(), np.getY()));
+					g.draw(new Line2D.Double(0, 0, mNextPoint.getX(), mNextPoint.getY()));
 				}
 			}
 		}
@@ -138,6 +134,8 @@ public class ContourPointItem extends GraphicsItem implements MouseMotionListene
 		setStyle(sActiveStyle);
 		mPrevPoint = mGeometry.getPreviousPoint(mIndex);
 		mNextPoint = mGeometry.getNextPoint(mIndex);
+	
+		
 		Point2D sl = getSceneLocation();
 		mOldLocation = new Point2D.Double(sl.getX(), sl.getY());
 		if (e instanceof DelegateMouseEvent)

@@ -1,6 +1,7 @@
 package de.sos.gvc.gt.proj;
 
 import java.awt.geom.Point2D;
+
 import net.jafama.FastMath;
 
 /**

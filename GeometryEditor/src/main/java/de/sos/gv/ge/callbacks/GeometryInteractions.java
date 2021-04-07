@@ -5,7 +5,6 @@ import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
 
 import de.sos.gv.ge.items.GeometryItem;
-import de.sos.gvc.GraphicsItem;
 import de.sos.gvc.handler.SelectionHandler.IMoveCallback;
 import de.sos.gvc.handler.SelectionHandler.IRotateCallback;
 import de.sos.gvc.handler.SelectionHandler.IScaleCallback;
@@ -51,9 +50,9 @@ public class GeometryInteractions implements IMoveCallback, IScaleCallback, IRot
 		for (int i = 0; i < event.items.size(); i++) {
 			if (event.items.get(i) instanceof GeometryItem) {
 				GeometryItem item = (GeometryItem)event.items.get(i);
-				Rectangle2D sb = item.getSceneBounds();
+				Rectangle2D sb = item.getLocalBounds();
 				double angle = event.endAngles.get(i) - event.startAngles.get(i);
-				double angleRad = Math.toRadians(-angle);
+				double angleRad = Math.toRadians(angle);
 				AffineTransform transf = new AffineTransform();
 				transf.rotate(angleRad, sb.getCenterX(), sb.getCenterY());
 				item.getGeometry().applyTransform(transf);

@@ -9,8 +9,8 @@ import java.util.HashMap;
 import org.slf4j.Logger;
 
 import de.sos.gvc.gt.tiles.ITileDescription;
-import de.sos.gvc.gt.tiles.ITileProvider;
 import de.sos.gvc.gt.tiles.ITileLoader;
+import de.sos.gvc.gt.tiles.ITileProvider;
 import de.sos.gvc.gt.tiles.LatLonBoundingBox;
 import de.sos.gvc.gt.tiles.LazyTileItem;
 import de.sos.gvc.gt.tiles.cache.impl.DistanceUnloadingStrategy;

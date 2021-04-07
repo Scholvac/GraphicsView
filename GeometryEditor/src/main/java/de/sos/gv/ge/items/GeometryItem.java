@@ -1,19 +1,16 @@
 package de.sos.gv.ge.items;
 
 import java.awt.Color;
-import java.awt.geom.Point2D;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.util.ArrayList;
 import java.util.List;
 
-import de.sos.gv.ge.MathUtils;
 import de.sos.gv.ge.menu.MenuManager;
 import de.sos.gv.ge.model.geom.GeometryUtils;
 import de.sos.gv.ge.model.geom.IGeometry;
 import de.sos.gv.ge.model.geom.IGeometry.GeometryType;
 import de.sos.gvc.GraphicsItem;
-import de.sos.gvc.GraphicsScene;
 import de.sos.gvc.styles.DrawableStyle;
 import de.sos.gvc.styles.ScaledStroke;
 
@@ -55,7 +52,7 @@ public class GeometryItem extends GraphicsItem implements PropertyChangeListener
 			for (int i = 0; i < mGeometry.numPoints(); i++) {
 				ContourPointItem cp = new ContourPointItem(mMenuManager, mGeometry, i);
 				addItem(cp); mContourPoints.add(cp);
-				cp.setSceneLocation(mGeometry.getPoint(i));
+				cp.setLocalLocation(mGeometry.getPoint(i));
 			}
 			for (int i = 0; i < mGeometry.numPoints(); i++) {
 				int idx0 = i, idx1 = mGeometry.getNextIndex(i);
@@ -114,6 +111,14 @@ public class GeometryItem extends GraphicsItem implements PropertyChangeListener
 	}
 
 	public IGeometry getGeometry() { return mGeometry; }
+
+	/**
+	 * Transform's the Geometry in a way that the new Geometry's center is at the center of the 
+	 * current position. 
+	 */
+	public void applyTransform() {
+		System.out.println();
+	}
 	
 	
 	

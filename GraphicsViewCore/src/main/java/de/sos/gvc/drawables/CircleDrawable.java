@@ -33,11 +33,11 @@ public class CircleDrawable extends AbstractDrawable {
 		}
 		if (style != null) {
 			if (style.hasFillPaint()) {
-				style.applyFillPaint(g, ctx);
+				style.applyFillPaint(g, ctx, mShape);
 				g.fill(mShape);
 			}
 			if (style.hasFillPaint()) {
-				style.applyLinePaint(g, ctx);
+				style.applyLinePaint(g, ctx, mShape);
 				g.draw(mShape);
 			}
 		}else {

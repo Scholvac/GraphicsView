@@ -1,7 +1,7 @@
 package de.sos.gvc.gt.tiles.google;
 
-import de.sos.gvc.gt.tiles.ITileProvider;
 import de.sos.gvc.gt.tiles.ITileLoader;
+import de.sos.gvc.gt.tiles.ITileProvider;
 import de.sos.gvc.gt.tiles.osm.OSMTileDescription;
 import de.sos.gvc.gt.tiles.osm.OSMTileFactory;
 

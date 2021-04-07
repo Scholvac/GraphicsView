@@ -1,6 +1,7 @@
 package de.sos.gvc.gt.tiles;
 
 import java.awt.Graphics2D;
+import java.awt.Rectangle;
 import java.awt.geom.Rectangle2D;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
@@ -42,6 +43,8 @@ public class TileHandler implements IPaintListener, IGraphicsViewHandler{
 	@SuppressWarnings("rawtypes")
 	private HashMap<Integer, LazyTileItem>		mActiveTiles = new HashMap<>();
 	private String 								mName;
+
+	private boolean mDirty;
 	
 	
 	public TileHandler(ITileFactory factory) {
@@ -83,7 +86,7 @@ public class TileHandler implements IPaintListener, IGraphicsViewHandler{
 		
 	}
 
-
+	
 
 	@SuppressWarnings({ "unchecked", "rawtypes" })
 	private void updateTiles(GraphicsView view) {
@@ -99,11 +102,12 @@ public class TileHandler implements IPaintListener, IGraphicsViewHandler{
 				ur.setLongitude(179.999);
 			}
 			LatLonBoundingBox geoBB = new LatLonBoundingBox(ll, ur);
-			Collection<ITileDescription> requiredTiles = mTileFactory.getTileDescriptions(geoBB, view.getBounds());
+			Rectangle viewBounds = view.getBounds();
+			Collection<ITileDescription> requiredTiles = mTileFactory.getTileDescriptions(geoBB, viewBounds);
 			HashSet<Integer> toRemove = new HashSet<>(mActiveTiles.keySet());
 			for (ITileDescription desc : requiredTiles) {
 				int id = desc.getIdentifier();
-				boolean exists = toRemove.remove(id);
+				boolean exists = mDirty ? false : toRemove.remove(id);
 				if (exists == false) {
 					LazyTileItem newTile = mTileFactory.createTileItem(desc);
 					mActiveTiles.put(id, newTile);
@@ -112,13 +116,13 @@ public class TileHandler implements IPaintListener, IGraphicsViewHandler{
 			}
 			//remove all tiles that are no longer required from both lists (mActiveTiles and scene)
 			for (Integer id : toRemove) {
-				
 				LazyTileItem t = mActiveTiles.remove(id);
 				if (t != null) {
 					scene.removeItem(t);
 					mTileFactory.unloadTileItem(t);
 				}
 			}
+			mDirty = false;
 		}else {
 			GVLog.debug("Missing Tile Factory");
 		}
@@ -128,6 +132,7 @@ public class TileHandler implements IPaintListener, IGraphicsViewHandler{
 
 	public void setFactory(ITileFactory value) {
 		mTileFactory = value;
+		mDirty = true;
 	}
 	
 	@Override

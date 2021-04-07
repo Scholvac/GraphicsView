@@ -12,7 +12,6 @@ import java.net.URLConnection;
 
 import javax.imageio.ImageIO;
 
-import org.apache.log4j.helpers.UtilLoggingLevel;
 import org.slf4j.Logger;
 
 import de.sos.gvc.gt.tiles.ITileDescription;
@@ -47,6 +46,8 @@ public class OSMTileDownloader implements ITileLoader<OSMTileDescription>, IByte
 	public OSMTileDownloader(String baseURL) {
 		mBaseURL = baseURL;
 	}
+	
+	public String getTemplate() { return mBaseURL;}
 	
 	public URL getURL(OSMTileDescription desc) {
 		try {

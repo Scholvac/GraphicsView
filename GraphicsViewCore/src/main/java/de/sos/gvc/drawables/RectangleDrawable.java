@@ -24,11 +24,11 @@ public class RectangleDrawable implements IDrawable {
 	public void paintItem(Graphics2D g, DrawableStyle style, IDrawContext ctx) {
 		if (style != null) {
 			if (style.hasFillPaint()) {
-				style.applyFillPaint(g, ctx);
+				style.applyFillPaint(g, ctx, mRectangle);
 				g.fill(mRectangle);
 			}
 			if (style.hasFillPaint()) {
-				style.applyLinePaint(g, ctx);
+				style.applyLinePaint(g, ctx, mRectangle);
 				g.draw(mRectangle);
 			}
 		}else {

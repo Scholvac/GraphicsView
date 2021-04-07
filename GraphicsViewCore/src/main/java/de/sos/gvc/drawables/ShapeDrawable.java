@@ -1,21 +1,9 @@
 package de.sos.gvc.drawables;
 
-import java.awt.BasicStroke;
 import java.awt.Graphics2D;
 import java.awt.Shape;
-import java.awt.Stroke;
-import java.awt.geom.AffineTransform;
-import java.awt.geom.FlatteningPathIterator;
-import java.awt.geom.GeneralPath;
-import java.awt.geom.Line2D;
-import java.awt.geom.NoninvertibleTransformException;
-import java.awt.geom.Path2D;
-import java.awt.geom.PathIterator;
-import java.awt.geom.Rectangle2D;
 
 import de.sos.gvc.IDrawContext;
-import de.sos.gvc.param.IParameter;
-import de.sos.gvc.param.Parameter;
 import de.sos.gvc.styles.DrawableStyle;
 
 

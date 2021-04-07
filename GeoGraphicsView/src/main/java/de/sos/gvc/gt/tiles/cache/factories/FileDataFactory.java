@@ -1,14 +1,11 @@
 package de.sos.gvc.gt.tiles.cache.factories;
 
 import java.awt.image.BufferedImage;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 
 import javax.imageio.ImageIO;
 
-import de.sos.gvc.gt.tiles.ITileDescription;
 import de.sos.gvc.gt.tiles.cache.CacheData;
 import de.sos.gvc.gt.tiles.cache.ICacheDataFactory;
 import de.sos.gvc.gt.tiles.osm.OSMTileDescription;

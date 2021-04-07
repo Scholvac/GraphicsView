@@ -10,7 +10,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.util.Collection;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 import java.util.function.Consumer;
 
 import javax.imageio.ImageIO;
@@ -25,7 +24,6 @@ import com.github.benmanes.caffeine.cache.LoadingCache;
 import com.github.benmanes.caffeine.cache.RemovalCause;
 import com.github.benmanes.caffeine.cache.RemovalListener;
 import com.github.benmanes.caffeine.cache.Weigher;
-
 
 import de.sos.gvc.gt.tiles.ITileDescription;
 import de.sos.gvc.gt.tiles.ITileFactory;

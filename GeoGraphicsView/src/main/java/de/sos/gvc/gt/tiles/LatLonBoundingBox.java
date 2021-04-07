@@ -1,5 +1,8 @@
 package de.sos.gvc.gt.tiles;
 
+import java.awt.geom.Point2D;
+
+import de.sos.gvc.gt.GeoUtils;
 import de.sos.gvc.gt.proj.LatLonPoint;
 
 /**
@@ -66,13 +69,38 @@ public class LatLonBoundingBox {
 	}
 
 
-
-	public LatLonPoint getCenter() {
+	public LatLonPoint getCenter(LatLonPoint store) {
 		double sn = getNorth() - getSouth();
 		double we = getEast() - getWest();
-		return new LatLonPoint.Double(getSouth() + sn / 2.0, getEast() + we / 2);
+		if (store == null)
+			return new LatLonPoint.Double(getSouth() + sn / 2.0, getEast() + we / 2);
+		store.setLatLon(getSouth() + sn / 2.0, getEast() + we / 2);
+		return store;
+	}
+	public LatLonPoint getCenter() {
+		return getCenter(null);
 	}
 	
+	
+	@Override
+	public String toString() {
+		return String.format("LL = [%1.5f, %1.5f]; UR = [%1.5f, %1.5f]", lowerLeft.getLatitude(), lowerLeft.getLongitude(), upperRight.getLatitude(), upperRight.getLongitude());
+	}
+
+	/** returns the width of this box in meter */
+	public double getWidth() {
+		Point2D ll = GeoUtils.getPosition(getLowerLeft());
+		Point2D lr = GeoUtils.getPosition(getLowerRight());
+		return lr.getX() - ll.getX();
+	}
+	/** returns the width of this box in meter */
+	public double getHeight() {
+		Point2D ll = GeoUtils.getPosition(getLowerLeft());
+		Point2D ul = GeoUtils.getPosition(getUpperLeft());
+		return ul.getY() - ll.getY();
+	}
+
+
 }
 
 //53.529999, 8.641456 

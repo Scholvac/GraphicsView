@@ -7,8 +7,8 @@ import java.util.Collection;
 
 import de.sos.gvc.gt.GeoUtils;
 import de.sos.gvc.gt.proj.LatLonPoint;
-import de.sos.gvc.gt.tiles.ITileProvider;
 import de.sos.gvc.gt.tiles.ITileLoader;
+import de.sos.gvc.gt.tiles.ITileProvider;
 import de.sos.gvc.gt.tiles.LatLonBoundingBox;
 import de.sos.gvc.gt.tiles.LazyTileItem;
 import de.sos.gvc.gt.tiles.cache.CacheData;

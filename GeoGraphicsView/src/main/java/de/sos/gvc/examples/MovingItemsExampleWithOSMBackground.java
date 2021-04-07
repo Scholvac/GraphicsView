@@ -30,6 +30,7 @@ import de.sos.gvc.handler.DefaultViewDragHandler;
 import de.sos.gvc.handler.MouseDelegateHandler;
 import de.sos.gvc.log.GVLog;
 import de.sos.gvc.param.ParameterContext;
+import de.sos.gvc.storage.ListStorage;
 import de.sos.gvc.storage.QuadTreeStorage;
 import de.sos.gvc.styles.DrawableStyle;
 
@@ -129,8 +130,8 @@ public class MovingItemsExampleWithOSMBackground {
 		}
 		//Create a new Scene and a new View 
 		//Advanced: Try out different Storage strategies (QuadTree or List Storage) 
-		GraphicsScene scene = new GraphicsScene(new QuadTreeStorage());
-//		GraphicsScene scene = new GraphicsScene(new ListStorage());
+//		GraphicsScene scene = new GraphicsScene(new QuadTreeStorage());
+		GraphicsScene scene = new GraphicsScene(new ListStorage());
 		GraphicsView view = new GraphicsView(scene, new ParameterContext());
 		
 		

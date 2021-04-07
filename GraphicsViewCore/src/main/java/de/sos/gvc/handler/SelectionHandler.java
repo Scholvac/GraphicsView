@@ -20,7 +20,6 @@ import de.sos.gvc.GraphicsView;
 import de.sos.gvc.IGraphicsViewHandler;
 import de.sos.gvc.Utils;
 import de.sos.gvc.handler.selection.BoundingBoxSelectionItem;
-import de.sos.gvc.handler.selection.SelectionBorderItem;
 import de.sos.gvc.param.IParameter;
 import de.sos.gvc.param.Parameter;
 

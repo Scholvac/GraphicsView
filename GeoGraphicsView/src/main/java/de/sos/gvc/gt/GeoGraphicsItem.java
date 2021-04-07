@@ -1,7 +1,6 @@
 package de.sos.gvc.gt;
 
 import java.awt.Shape;
-import java.awt.geom.AffineTransform;
 
 import de.sos.gvc.GraphicsItem;
 import de.sos.gvc.gt.proj.LatLonPoint;
@@ -43,7 +42,7 @@ public class GeoGraphicsItem extends GraphicsItem {
 
 			mLocalTransform.setToIdentity();
 			mLocalTransform.translate(x, y);
-			mLocalTransform.rotate(-r);
+			mLocalTransform.rotate(r);
 			mLocalTransform.scale(sx, sy);
 			
 			mInvalidLocalTransform = false;
@@ -52,7 +51,14 @@ public class GeoGraphicsItem extends GraphicsItem {
 	
 	
 	
-	
+	public static double getScaleCorrectionFromLatitude(final double lat) {
+		double y = lat;
+		if (Math.abs(y) > 85) 
+			y = 85;
+		int idx = (int)(y * 10);
+		if (idx < 0) idx = -idx; //the problem is symetric
+		return sCorrectionFactors[idx];
+	}
 	public static double getScaleCorrection(double y) {
 		LatLonPoint llp = GeoUtils.getLatLon(0, y);
 		y = llp.getLatitude();

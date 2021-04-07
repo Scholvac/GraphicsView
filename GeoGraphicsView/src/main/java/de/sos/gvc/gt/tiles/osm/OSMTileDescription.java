@@ -1,7 +1,5 @@
 package de.sos.gvc.gt.tiles.osm;
 
-import javax.management.MXBean;
-
 import de.sos.gvc.gt.proj.HashCodeUtil;
 import de.sos.gvc.gt.proj.LatLonPoint;
 import de.sos.gvc.gt.tiles.ITileDescription;

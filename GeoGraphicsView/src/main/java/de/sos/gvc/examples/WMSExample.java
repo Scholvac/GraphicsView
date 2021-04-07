@@ -15,10 +15,9 @@ import de.sos.gvc.gt.tiles.cache.MemoryCache;
 import de.sos.gvc.gt.tiles.cache.factories.BufferedImageFactory;
 import de.sos.gvc.gt.tiles.cache.factories.ByteDataFactory;
 import de.sos.gvc.gt.tiles.osm.OSMTileDescription;
-import de.sos.gvc.gt.tiles.osm.OSMTileFactory;
 import de.sos.gvc.gt.tiles.wms.WMSOptions;
-import de.sos.gvc.gt.tiles.wms.WMSTileFactory;
 import de.sos.gvc.gt.tiles.wms.WMSOptions.WMSVersion;
+import de.sos.gvc.gt.tiles.wms.WMSTileFactory;
 import de.sos.gvc.handler.DefaultViewDragHandler;
 import de.sos.gvc.handler.MouseDelegateHandler;
 import de.sos.gvc.param.ParameterContext;
@@ -42,7 +41,8 @@ public class WMSExample {
 		view.addHandler(new MouseDelegateHandler());
 		view.addHandler(new DefaultViewDragHandler());
 		
-		WMSOptions opt =new WMSOptions("http://chartserver4.sevencs.com:8080", WMSVersion.VERSION_1_1_1);
+		
+		WMSOptions opt =new WMSOptions("https://wms.sevencs.com", WMSVersion.VERSION_1_3_0);
 //		WMSOptions opt =new WMSOptions("10.53.1.24:8484", WMSVersion.VERSION_1_3_0);
 		
 		ITileProvider<OSMTileDescription> webCache = new WMSTileFactory(opt);

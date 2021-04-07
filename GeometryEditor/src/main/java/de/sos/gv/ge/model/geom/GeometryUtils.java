@@ -2,7 +2,6 @@ package de.sos.gv.ge.model.geom;
 
 import java.awt.Shape;
 import java.awt.geom.Arc2D;
-import java.awt.geom.GeneralPath;
 import java.awt.geom.Path2D;
 import java.awt.geom.Point2D;
 

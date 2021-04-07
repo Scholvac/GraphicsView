@@ -1,7 +1,6 @@
 package de.sos.gvc.styles;
 
 import java.awt.BasicStroke;
-import java.awt.Shape;
 
 public class ScaledStroke extends BasicStroke {
 

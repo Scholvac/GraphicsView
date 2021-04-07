@@ -1,45 +1,21 @@
 package de.sos.gvc.handler.selection;
 
-import java.awt.AWTException;
-import java.awt.BasicStroke;
-import java.awt.Color;
 import java.awt.Cursor;
 import java.awt.Graphics2D;
-import java.awt.Point;
-import java.awt.RadialGradientPaint;
-import java.awt.Robot;
-import java.awt.Shape;
-import java.awt.Stroke;
-import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
-import java.awt.event.MouseMotionAdapter;
 import java.awt.event.MouseMotionListener;
-import java.awt.geom.AffineTransform;
-import java.awt.geom.Arc2D;
-import java.awt.geom.Area;
-import java.awt.geom.NoninvertibleTransformException;
-import java.awt.geom.Path2D;
 import java.awt.geom.Point2D;
-import java.awt.geom.Rectangle2D;
-import java.beans.PropertyChangeEvent;
-import java.beans.PropertyChangeListener;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 
 import de.sos.gvc.GraphicsItem;
 import de.sos.gvc.IDrawContext;
-import de.sos.gvc.IDrawable;
-import de.sos.gvc.Utils;
-import de.sos.gvc.handler.SelectionHandler;
 import de.sos.gvc.handler.MouseDelegateHandler.DelegateMouseEvent;
-import de.sos.gvc.handler.SelectionHandler.IMoveCallback;
+import de.sos.gvc.handler.SelectionHandler;
 import de.sos.gvc.handler.SelectionHandler.ItemMoveEvent;
 import de.sos.gvc.handler.SelectionHandler.ItemRotateEvent;
 import de.sos.gvc.handler.SelectionHandler.ItemScaleEvent;
-import de.sos.gvc.param.IParameter;
-import de.sos.gvc.styles.DrawableStyle;
 
 
 /**

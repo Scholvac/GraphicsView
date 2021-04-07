@@ -21,7 +21,7 @@ import de.sos.gvc.styles.DrawableStyle;
 public class LazyTileItem<DESC extends ITileDescription> extends GraphicsItem 
 {
 	
-	public static Random rng = new Random(System.currentTimeMillis());
+//	public static Random rng = new Random(System.currentTimeMillis());
 
 	private DESC 				mDescription;
 	private BufferedImage		mImage = null;

@@ -3,8 +3,6 @@ package de.sos.gvc.examples;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.LinearGradientPaint;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.awt.geom.Point2D;
 import java.io.File;
 import java.io.IOException;

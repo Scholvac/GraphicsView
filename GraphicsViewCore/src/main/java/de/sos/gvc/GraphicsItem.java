@@ -1,6 +1,5 @@
 package de.sos.gvc;
 
-import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.Shape;
 import java.awt.event.MouseListener;
@@ -18,12 +17,9 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
-import org.slf4j.helpers.MarkerIgnoringBase;
-
 import de.sos.gvc.Utils.TmpVars;
 import de.sos.gvc.drawables.ShapeDrawable;
 import de.sos.gvc.drawables.ShapeDrawable.IShapeProvider;
-import de.sos.gvc.param.IParameter;
 import de.sos.gvc.param.ParameterContext;
 import de.sos.gvc.styles.DrawableStyle;
 
@@ -105,6 +101,10 @@ public class GraphicsItem implements IShapeProvider  {
 	
 	public static final String PROP_CHILD_ADDED				= "child added";
 	public static final String PROP_CHILD_REMOVED			= "child removed";
+	
+	
+	
+	private static final ParameterContext sDefaultContext 	= new ParameterContext();
 	
 	
 	
@@ -213,33 +213,35 @@ public class GraphicsItem implements IShapeProvider  {
 		this(null);
 	}
 	public GraphicsItem(Shape shape) {
-		this(shape, new ParameterContext());
+		this(shape, null);
 	}
 
 
-	public GraphicsItem(Shape shape, ParameterContext propertyContext) {				
+	public GraphicsItem(Shape shape, ParameterContext propertyContext) {
+		final ParameterContext pc = propertyContext != null ? propertyContext : sDefaultContext;
 		//ensure that we do have the basic properties
-		mVisible = propertyContext.getValue(PROP_VISIBLE, true);
-		mSelected = propertyContext.getValue(PROP_SELECTED, false);
-		mSelectable = propertyContext.getValue(PROP_SELECTABLE, true);
+		mVisible = pc.getValue(PROP_VISIBLE, true);
+		mSelected = pc.getValue(PROP_SELECTED, false);
+		mSelectable = pc.getValue(PROP_SELECTABLE, true);
 		
-		mStyle = propertyContext.getValue(PROP_STYLE, null);
-		mDrawable = propertyContext.getValue(PROP_DRAWABLE, null);
+		mStyle = pc.getValue(PROP_STYLE, null);
+		mDrawable = pc.getValue(PROP_DRAWABLE, null);
 		mParent = null;
 		
-		mCenterX = propertyContext.getValue(PROP_CENTER_X, 0.0);	
-		mCenterY = propertyContext.getValue(PROP_CENTER_Y, 0.0);
+		mCenterX = pc.getValue(PROP_CENTER_X, 0.0);	
+		mCenterY = pc.getValue(PROP_CENTER_Y, 0.0);
 
-		mRotation = propertyContext.getValue(PROP_ROTATION, 0.0);
+		mRotation = pc.getValue(PROP_ROTATION, 0.0);
 	
-		mScaleX = propertyContext.getValue(PROP_SCALE_X, 1.0);
-		mScaleY = propertyContext.getValue(PROP_SCALE_Y, 1.0);
+		mScaleX = pc.getValue(PROP_SCALE_X, 1.0);
+		mScaleY = pc.getValue(PROP_SCALE_Y, 1.0);
 
 		setShape(shape);
 		
-		mZOrder = propertyContext.getValue(PROP_Z_ORDER, 100.0f);
+		mZOrder = pc.getValue(PROP_Z_ORDER, 100.0f);
 		
-		propertyContext.registerListener(mChildListener);		
+		if (pc != sDefaultContext) //only listen if it is not the default pc
+			pc.registerListener(mChildListener);		
 	}
 
 	
@@ -468,7 +470,7 @@ public class GraphicsItem implements IShapeProvider  {
 			double sx = mScaleX, sy = mScaleY;
 			
 			mLocalTransform.translate(x, y);
-			mLocalTransform.rotate(-r);
+			mLocalTransform.rotate(r);
 			mLocalTransform.scale(sx, sy);
 			
 			mInvalidLocalTransform = false;
@@ -623,6 +625,7 @@ public class GraphicsItem implements IShapeProvider  {
 	public void markDirty() {
 		markDirtyTransform();
 		markDirtyBounds();
+		mAllEventDelegate.firePropertyChange("ManualRepaint", null, null);
 	}
 	
 	/**
@@ -854,11 +857,22 @@ public class GraphicsItem implements IShapeProvider  {
 	
 	public boolean isSelected() { return mSelected;}
 	
-	public void setSelectable(boolean b) {
-		if (mSelectable != b) {
-			mSelectable = b;
-			mAllEventDelegate.firePropertyChange(PROP_SELECTABLE, !b, b);
+	public void setSelectable(boolean selectable) {
+		if (mSelectable != selectable) {
+			mSelectable = selectable;
+			mAllEventDelegate.firePropertyChange(PROP_SELECTABLE, !selectable, selectable);
 		}
+	}
+	public void setSelectable(boolean selectable, boolean applyToChildren) {
+		if (mSelectable != selectable) {
+			mSelectable = selectable;
+			mAllEventDelegate.firePropertyChange(PROP_SELECTABLE, !selectable, selectable);
+		}
+		if (applyToChildren)
+			if (mChildren != null && mChildren.isEmpty() == false) {
+				for (GraphicsItem c : mChildren)
+					c.setSelectable(selectable, applyToChildren);
+			}
 	}
 	
 	public boolean isSelectable() { return mSelectable;}

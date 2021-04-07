@@ -1,8 +1,5 @@
 package de.sos.gv.ge.menu;
 
-import java.awt.MenuItem;
-import java.awt.PopupMenu;
-
 import javax.swing.JPopupMenu;
 
 import de.sos.gv.ge.actions.RemovePointAction;

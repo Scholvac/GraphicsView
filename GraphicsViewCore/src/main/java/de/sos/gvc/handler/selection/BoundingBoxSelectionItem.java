@@ -1,15 +1,11 @@
 package de.sos.gvc.handler.selection;
 
-import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Cursor;
-import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Image;
 import java.awt.Point;
-import java.awt.RadialGradientPaint;
 import java.awt.Shape;
-import java.awt.Stroke;
 import java.awt.Toolkit;
 import java.awt.event.MouseEvent;
 import java.awt.geom.AffineTransform;
@@ -20,7 +16,6 @@ import java.awt.geom.Rectangle2D;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.io.IOException;
-import java.util.List;
 
 import javax.imageio.ImageIO;
 
@@ -178,7 +173,7 @@ public class BoundingBoxSelectionItem extends AbstractSelectionItem { //TODO: ch
 		@Override
 		protected void fireEvent() {
 			GraphicsItem item = getSelectedItem();
-			Point2D startLoc = new Point2D.Double(mInitialItemSceneLocation.getY(), mInitialItemSceneLocation.getY());
+			Point2D startLoc = new Point2D.Double(mInitialItemSceneLocation.getX(), mInitialItemSceneLocation.getY());
 			Point2D endLoc = BoundingBoxSelectionItem.this.getSceneLocation();
 			fireMoveEvent(item, startLoc, endLoc);
 		}

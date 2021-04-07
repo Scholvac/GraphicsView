@@ -5,7 +5,6 @@ import java.util.Collection;
 
 import de.sos.gvc.gt.tiles.cache.CacheData;
 import de.sos.gvc.gt.tiles.cache.ICacheDataFactory;
-import de.sos.gvc.gt.tiles.cache.MultiCacheFactory.IByteTileLoader;
 
 /**
  * 

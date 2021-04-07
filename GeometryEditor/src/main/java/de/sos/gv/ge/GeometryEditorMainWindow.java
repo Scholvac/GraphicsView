@@ -1,19 +1,14 @@
 package de.sos.gv.ge;
 
+import java.awt.BorderLayout;
+import java.awt.Component;
 import java.awt.EventQueue;
-import java.awt.Rectangle;
-import java.security.spec.MGF1ParameterSpec;
 
 import javax.swing.JFrame;
-import javax.swing.JSplitPane;
-import java.awt.BorderLayout;
-import java.awt.Color;
-import java.awt.Component;
-
-import javax.swing.JPanel;
-import javax.swing.JToolBar;
 import javax.swing.JMenuBar;
-import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JSplitPane;
+import javax.swing.JToolBar;
 
 import de.sos.gv.ge.callbacks.GeometryInteractions;
 import de.sos.gv.ge.items.AxisItem;
@@ -22,18 +17,11 @@ import de.sos.gv.ge.items.GridItem;
 import de.sos.gv.ge.menu.DefaultContextMenuCallback;
 import de.sos.gv.ge.menu.MenuManager;
 import de.sos.gv.ge.model.geom.GeometryUtils;
-import de.sos.gvc.GraphicsItem;
 import de.sos.gvc.GraphicsScene;
 import de.sos.gvc.GraphicsView;
 import de.sos.gvc.handler.DefaultViewDragHandler;
 import de.sos.gvc.handler.MouseDelegateHandler;
 import de.sos.gvc.handler.SelectionHandler;
-import de.sos.gvc.styles.DrawableStyle;
-import de.sos.gvc.styles.ScaledStroke;
-
-import javax.swing.JButton;
-import javax.swing.ImageIcon;
-import javax.swing.JTextField;
 
 public class GeometryEditorMainWindow {
 

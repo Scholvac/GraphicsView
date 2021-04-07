@@ -11,18 +11,15 @@ import java.awt.event.MouseMotionListener;
 import java.awt.geom.Arc2D;
 import java.awt.geom.GeneralPath;
 import java.awt.geom.Line2D;
-import java.awt.geom.Path2D;
 import java.awt.geom.Point2D;
 
 import de.sos.gv.ge.MathUtils;
-import de.sos.gv.ge.items.ContourPointItem.ContourPointDrawable;
 import de.sos.gv.ge.model.geom.IGeometry;
 import de.sos.gvc.GraphicsItem;
 import de.sos.gvc.IDrawContext;
 import de.sos.gvc.IDrawable;
 import de.sos.gvc.drawables.ShapeDrawable;
 import de.sos.gvc.handler.MouseDelegateHandler.DelegateMouseEvent;
-import de.sos.gvc.param.IParameter;
 import de.sos.gvc.styles.DrawableStyle;
 
 /**
@@ -73,8 +70,9 @@ public class IntermediatePointItem extends GraphicsItem implements MouseMotionLi
 			if (mOldLocation != null) {
 				Point2D ill = scene2Local(mOldLocation);
 				
-				sIntermediateStyle.applyLinePaint(g, ctx);
-				g.draw(new Arc2D.Double(ill.getX()-5, ill.getY()-5, 10, 10, 0, 360, Arc2D.CHORD));
+				Arc2D.Double arc = new Arc2D.Double(ill.getX()-5, ill.getY()-5, 10, 10, 0, 360, Arc2D.CHORD);
+				sIntermediateStyle.applyLinePaint(g, ctx, arc);
+				g.draw(arc);
 			
 				Point2D prevPoint = mGeometry.getPoint(mIndex0);
 				Point2D nextPoint = mGeometry.getPoint(mIndex1);
@@ -118,7 +116,7 @@ public class IntermediatePointItem extends GraphicsItem implements MouseMotionLi
 	public void update() {
 		Point2D p0 = mGeometry.getPoint(mIndex0);
 		Point2D p1 = mGeometry.getPoint(mIndex1);
-		setSceneLocation(MathUtils.getIntermediatePosition(p0, p1));
+		setLocalLocation(MathUtils.getIntermediatePosition(p0, p1));
 		setRotation(MathUtils.getRotation(p0, p1));		
 	}
 	

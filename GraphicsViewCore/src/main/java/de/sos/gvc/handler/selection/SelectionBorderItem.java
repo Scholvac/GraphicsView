@@ -10,15 +10,11 @@ import java.awt.RadialGradientPaint;
 import java.awt.Robot;
 import java.awt.Shape;
 import java.awt.Stroke;
-import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
-import java.awt.event.MouseMotionAdapter;
 import java.awt.event.MouseMotionListener;
 import java.awt.geom.AffineTransform;
-import java.awt.geom.Arc2D;
 import java.awt.geom.Area;
-import java.awt.geom.NoninvertibleTransformException;
 import java.awt.geom.Path2D;
 import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
@@ -32,10 +28,9 @@ import de.sos.gvc.GraphicsItem;
 import de.sos.gvc.IDrawContext;
 import de.sos.gvc.IDrawable;
 import de.sos.gvc.Utils;
-import de.sos.gvc.handler.SelectionHandler;
 import de.sos.gvc.handler.MouseDelegateHandler.DelegateMouseEvent;
+import de.sos.gvc.handler.SelectionHandler;
 import de.sos.gvc.handler.SelectionHandler.ItemMoveEvent;
-import de.sos.gvc.param.IParameter;
 import de.sos.gvc.styles.DrawableStyle;
 
 
@@ -261,7 +256,7 @@ public class SelectionBorderItem extends GraphicsItem implements MouseListener, 
 					g.draw(mShape2);
 			}else {
 				if (style.hasFillPaint()) {
-					style.applyFillPaint(g, ctx);
+					style.applyFillPaint(g, ctx, mOriginalShape);
 					if (mOriginalShape != null)
 						g.fill(mOriginalShape);
 					if (mShape2 != null) {
@@ -269,7 +264,7 @@ public class SelectionBorderItem extends GraphicsItem implements MouseListener, 
 					}
 				}
 				if (style.hasLinePaint()) {
-					style.applyLinePaint(g, ctx);
+					style.applyLinePaint(g, ctx, mOriginalShape);
 					if (mOriginalShape != null)
 						g.draw(mOriginalShape);
 					if (mShape2 != null)

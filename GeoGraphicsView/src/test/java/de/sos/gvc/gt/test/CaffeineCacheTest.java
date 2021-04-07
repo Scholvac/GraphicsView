@@ -1,7 +1,5 @@
 package de.sos.gvc.gt.test;
 
-import static org.junit.Assert.assertEquals;
-
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -9,17 +7,14 @@ import java.io.File;
 import java.io.FileFilter;
 import java.io.IOException;
 import java.nio.file.Files;
-import java.nio.file.OpenOption;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
-import java.util.function.Function;
 
 import javax.imageio.ImageIO;
 
-import com.github.benmanes.caffeine.cache.AsyncCacheLoader;
 import com.github.benmanes.caffeine.cache.AsyncLoadingCache;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.CacheLoader;
@@ -30,7 +25,6 @@ import com.github.benmanes.caffeine.cache.RemovalListener;
 import com.github.benmanes.caffeine.cache.Weigher;
 
 import de.sos.gvc.gt.proj.LatLonPoint;
-import de.sos.gvc.gt.tiles.LatLonBoundingBox;
 import de.sos.gvc.gt.tiles.osm.OSMTileDescription;
 import de.sos.gvc.gt.tiles.osm.OSMTileDownloader;
 import de.sos.gvc.gt.tiles.osm.OSMTileFactory;

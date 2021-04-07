@@ -1,15 +1,16 @@
 package de.sos.gvc.styles;
 
-import java.awt.BasicStroke;
 import java.awt.Canvas;
-import java.awt.Color;
 import java.awt.Font;
 import java.awt.FontMetrics;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Paint;
+import java.awt.Shape;
 import java.awt.Stroke;
+import java.awt.TexturePaint;
 import java.awt.geom.Rectangle2D;
+import java.awt.image.BufferedImage;
 
 import de.sos.gvc.IDrawContext;
 
@@ -20,13 +21,17 @@ import de.sos.gvc.IDrawContext;
  */
 public class DrawableStyle {
 	
-	private String 	name = null;
-	private Paint	fillPaint = null;
+	private String 			name = null;
+	private Paint			mFillPaint = null;
 	
-	private Stroke	lineStroke = null;
-	private Paint	linePaint = null;
+	private Stroke			mLineStroke = null;
+	private Paint			mLinePaint = null;
 	
-	private Font	font = null;
+	private Font			mFont = null;
+	
+	private BufferedImage 	mTexture;
+	private TexturePaint	mTexturePaint;
+	
 	
 	public DrawableStyle() { this(null); }
 	
@@ -36,9 +41,9 @@ public class DrawableStyle {
 
 	public DrawableStyle(String name, Paint linePaint, Stroke lineStroke, Paint fillPaint) {
 		this.name = name;
-		this.linePaint = linePaint;
-		this.lineStroke = lineStroke;
-		this.fillPaint = fillPaint;
+		this.mLinePaint = linePaint;
+		this.mLineStroke = lineStroke;
+		this.mFillPaint = fillPaint;
 	}
 
 	public String getName() {
@@ -48,32 +53,40 @@ public class DrawableStyle {
 		this.name = name;
 	}
 
-	public void setFont(Font f) { this.font = f; }
-	public Font getFont() { return font;}
+	public void setFont(Font f) { this.mFont = f; }
+	public Font getFont() { return mFont;}
 	
 	
 	
 	public Paint getFillPaint() {
-		return fillPaint;
+		return mFillPaint;
 	}
 	public void setFillPaint(Paint fillPaint) {
-		this.fillPaint = fillPaint;
+		this.mFillPaint = fillPaint;
 	}
-	
+	public void setTexture(BufferedImage bimg) {
+		mTexture = bimg;
+	}
+	public BufferedImage getTexture() {
+		return mTexture;
+	}
+	public boolean hasTexture() { 
+		return mTexture != null; 
+	}
 
 	
 	public Stroke getLineStroke() {
-		return lineStroke;
+		return mLineStroke;
 	}
 	public void setLineStroke(Stroke lineStroke) {
-		this.lineStroke = lineStroke;
+		this.mLineStroke = lineStroke;
 	}
 
 	public Paint getLinePaint() {
-		return linePaint;
+		return mLinePaint;
 	}
 	public void setLinePaint(Paint linePaint) {
-		this.linePaint = linePaint;
+		this.mLinePaint = linePaint;
 	}
 
 
@@ -82,17 +95,36 @@ public class DrawableStyle {
 
 
 	public boolean hasFillPaint() {
-		return fillPaint != null;
+		return getFillPaint() != null || getTexture() != null;
 	}
 	public boolean hasLinePaint() {
-		return linePaint != null;
+		return getLinePaint() != null;
 	}
-	public void applyFillPaint(Graphics2D g, IDrawContext ctx) {
-		if (fillPaint != null) {
-			g.setPaint(fillPaint);
+	
+	
+	public void applyFillPaint(Graphics2D g, IDrawContext ctx, Shape shape) {
+		if (hasTexture()) {
+			Rectangle2D b = shape.getBounds2D();
+			if (mTexturePaint != null) { //check if we still have the same values
+				if (mTexturePaint.getImage() != mTexture)
+					mTexturePaint = null;
+				final Rectangle2D a = mTexturePaint.getAnchorRect();
+				if (a.getX() != b.getX() || a.getY() != b.getY() || a.getWidth() != b.getWidth() || a.getHeight() != -b.getHeight())
+					mTexturePaint = null;
+			}
+			if (mTexturePaint == null) {
+				mTexturePaint = new TexturePaint(getTexture(), new Rectangle2D.Double(b.getX(), b.getY(), b.getWidth(), -b.getHeight()));
+			}
+			g.setPaint(mTexturePaint);
+		}else {
+			final Paint fillPaint = getFillPaint();
+			if (fillPaint != null) {
+				g.setPaint(fillPaint);
+			}
 		}
 	}
-	public void applyLinePaint(Graphics2D g, IDrawContext ctx) {
+	public void applyLinePaint(Graphics2D g, IDrawContext ctx, Shape shape) {
+		final Stroke lineStroke = getLineStroke();
 		if (lineStroke != null) {
 			if (lineStroke instanceof ScaledStroke) {
 				double scale = ctx.getScale();
@@ -102,6 +134,7 @@ public class DrawableStyle {
 			}
 			g.setStroke(lineStroke);
 		}
+		final Paint linePaint = getLinePaint();
 		if (linePaint != null) {
 			g.setPaint(linePaint);
 		}
@@ -128,4 +161,6 @@ public class DrawableStyle {
 		int h = fm.getHeight();
 		return new Rectangle2D.Double(-w / 2.0, -h / 2.0, w, h);
 	}
+
+	
 }

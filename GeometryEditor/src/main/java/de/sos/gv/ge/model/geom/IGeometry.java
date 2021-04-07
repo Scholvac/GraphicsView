@@ -3,7 +3,6 @@ package de.sos.gv.ge.model.geom;
 import java.awt.geom.AffineTransform;
 import java.awt.geom.Point2D;
 import java.beans.PropertyChangeListener;
-import java.beans.PropertyChangeSupport;
 
 public interface IGeometry {
 

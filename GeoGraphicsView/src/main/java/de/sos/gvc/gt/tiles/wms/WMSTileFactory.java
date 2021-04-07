@@ -1,10 +1,7 @@
 package de.sos.gvc.gt.tiles.wms;
 
-import java.awt.geom.Point2D;
-
-import de.sos.gvc.gt.GeoUtils;
-import de.sos.gvc.gt.tiles.ITileProvider;
 import de.sos.gvc.gt.tiles.ITileLoader;
+import de.sos.gvc.gt.tiles.ITileProvider;
 import de.sos.gvc.gt.tiles.LatLonBoundingBox;
 import de.sos.gvc.gt.tiles.osm.OSMTileDescription;
 import de.sos.gvc.gt.tiles.osm.OSMTileFactory;

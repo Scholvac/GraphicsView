@@ -2,7 +2,6 @@ package de.sos.gvc.gt.tiles.cache;
 
 import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;
-import java.io.File;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -20,6 +19,7 @@ import de.sos.gvc.gt.tiles.ITileLoader;
 import de.sos.gvc.gt.tiles.ITileProvider;
 import de.sos.gvc.gt.tiles.LatLonBoundingBox;
 import de.sos.gvc.gt.tiles.LazyTileItem;
+import de.sos.gvc.gt.tiles.osm.OSMTileDescription;
 import de.sos.gvc.log.GVLog;
 
 
@@ -210,6 +210,9 @@ public class CacheTileFactory<DESC extends ITileDescription> implements ITileFac
 		} catch (InterruptedException e) {
 			e.printStackTrace();
 		}
+	}
+	public void setTileProvider(ITileProvider<DESC> provider) {
+		mFactory = provider;
 	}
 
 }

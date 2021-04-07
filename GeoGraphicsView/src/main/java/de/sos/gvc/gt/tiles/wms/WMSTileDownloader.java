@@ -3,12 +3,8 @@ package de.sos.gvc.gt.tiles.wms;
 import java.awt.geom.AffineTransform;
 import java.awt.image.AffineTransformOp;
 import java.awt.image.BufferedImage;
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
-
-import javax.imageio.ImageIO;
 
 import de.sos.gvc.gt.tiles.ITileLoader;
 import de.sos.gvc.gt.tiles.LatLonBoundingBox;
