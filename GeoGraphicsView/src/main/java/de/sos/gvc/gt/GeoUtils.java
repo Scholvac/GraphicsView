@@ -7,6 +7,7 @@ import de.sos.gvc.GraphicsView;
 import de.sos.gvc.gt.proj.AbstractGCT;
 import de.sos.gvc.gt.proj.LatLonPoint;
 import de.sos.gvc.gt.proj.MercatorMeterGCT;
+import de.sos.gvc.gt.tiles.LatLonBoundingBox;
 
 /**
  * 
@@ -61,6 +62,11 @@ public class GeoUtils {
 	}
 	public static Point2D getPosition(LatLonPoint ll, Point2D store) {
 		return mMercator.forward(ll.getLatitude(), ll.getLongitude(), store);
+	}
+	public static LatLonBoundingBox getLatLonBoundingBox(double minX, double minY, double maxX, double maxY) {
+		LatLonPoint ll = getLatLon(minX, maxY);
+		LatLonPoint ur = getLatLon(maxX, minY);
+		return new LatLonBoundingBox(ll, ur);
 	}
 
 }

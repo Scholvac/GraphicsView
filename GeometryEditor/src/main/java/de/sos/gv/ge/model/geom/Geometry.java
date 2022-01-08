@@ -5,9 +5,22 @@ import java.awt.geom.Point2D;
 import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeSupport;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 public class Geometry implements IGeometry {
 
+	public static IGeometry rectangle(double width, double height) {
+		Geometry geom = new Geometry(GeometryType.Polygon);
+		geom.addPoint(0, new Point2D.Double(-width, height));
+		geom.addPoint(1, new Point2D.Double( width, height));
+		geom.addPoint(2, new Point2D.Double( width,-height));
+		geom.addPoint(3, new Point2D.Double(-width,-height));
+//		geom.addPoint(0, new Point2D.Double(-width, height));
+		return geom;
+	}
+	 
+	
 	private GeometryType mType;
 	
 	private ArrayList<IGeometry>	mSubGeometries = null;
@@ -15,6 +28,9 @@ public class Geometry implements IGeometry {
 	
 	private PropertyChangeSupport	mPCS = null;
 
+	Geometry() {
+		mType = GeometryType.Point;
+	}
 	public Geometry(GeometryType type) {
 		mType = type;
 	}
@@ -29,7 +45,7 @@ public class Geometry implements IGeometry {
 	public void removeListener(PropertyChangeListener listener) {
 		if (mPCS != null)
 			mPCS.removePropertyChangeListener(listener);
-		if (mPCS.hasListeners(null))
+		if (!mPCS.hasListeners(null))
 			mPCS = null;
 	}
 	
@@ -60,6 +76,10 @@ public class Geometry implements IGeometry {
 	public GeometryType getType() {
 		return mType;
 	}
+	@Override
+	public void setType(GeometryType type) {
+		mType = type;
+	}
 
 	@Override
 	public void addPoint(int idx, Point2D point) {
@@ -79,6 +99,7 @@ public class Geometry implements IGeometry {
 
 	@Override
 	public Point2D replacePoint(int idx, Point2D point) {
+		System.out.println("Set Point: " + point);
 		Point2D oldPoint = mPoints.set(idx, point);
 		if (mPCS != null) {
 			mPCS.firePropertyChange("Points", oldPoint, point);
@@ -116,6 +137,8 @@ public class Geometry implements IGeometry {
 				sub.applyTransform(transform);
 		}
 	}
-	 
+
+
+
 
 }

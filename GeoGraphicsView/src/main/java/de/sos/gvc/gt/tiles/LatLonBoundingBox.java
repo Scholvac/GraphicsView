@@ -1,6 +1,7 @@
 package de.sos.gvc.gt.tiles;
 
 import java.awt.geom.Point2D;
+import java.util.Locale;
 
 import de.sos.gvc.gt.GeoUtils;
 import de.sos.gvc.gt.proj.LatLonPoint;
@@ -84,7 +85,7 @@ public class LatLonBoundingBox {
 	
 	@Override
 	public String toString() {
-		return String.format("LL = [%1.5f, %1.5f]; UR = [%1.5f, %1.5f]", lowerLeft.getLatitude(), lowerLeft.getLongitude(), upperRight.getLatitude(), upperRight.getLongitude());
+		return String.format(Locale.US, "LL = [%1.5f, %1.5f]; UR = [%1.5f, %1.5f]", lowerLeft.getLatitude(), lowerLeft.getLongitude(), upperRight.getLatitude(), upperRight.getLongitude());
 	}
 
 	/** returns the width of this box in meter */
@@ -98,6 +99,79 @@ public class LatLonBoundingBox {
 		Point2D ll = GeoUtils.getPosition(getLowerLeft());
 		Point2D ul = GeoUtils.getPosition(getUpperLeft());
 		return ul.getY() - ll.getY();
+	}
+	
+	public boolean contains(final LatLonPoint llpoint) {
+		final double x = llpoint.getLongitude();
+		final double y = llpoint.getLatitude();
+		
+		final double x0 = lowerLeft.getLongitude();
+		final double y0 = lowerLeft.getLatitude();
+		final double x1 = upperRight.getLongitude();
+		final double y1 = upperRight.getLatitude();
+		
+		return 	x >= x0 &&
+				y >= y0 &&
+				x <= x1 &&
+				y <= y1;
+	}
+	
+	public boolean contains(final LatLonBoundingBox llbb) {
+		final double tx0 = lowerLeft.getLongitude();
+		final double ty0 = lowerLeft.getLatitude();
+		final double tx1 = upperRight.getLongitude();
+		final double ty1 = upperRight.getLatitude();
+		
+		final double ox0 = llbb.getWest();
+		final double ox1 = llbb.getEast();
+		final double oy0 = llbb.getSouth();
+		final double oy1 = llbb.getNorth();
+	
+		return 	ox0 >= tx0 &&
+				oy0 >= ty0 &&
+				ox1 <= tx1 &&
+				oy1 <= ty1;
+	}
+	
+	public boolean intersects(final LatLonBoundingBox llbb) {
+		final double tx0 = lowerLeft.getLongitude();
+		final double ty0 = lowerLeft.getLatitude();
+		final double tx1 = upperRight.getLongitude();
+		final double ty1 = upperRight.getLatitude();
+		
+		final double ox0 = llbb.getWest();
+		final double ox1 = llbb.getEast();
+		final double oy0 = llbb.getSouth();
+		final double oy1 = llbb.getNorth();
+	
+		return 	ox1 > tx0 &&
+				oy1 > ty0 &&
+				ox0 < tx1 &&
+				oy0 < ty1;
+	}
+
+	public boolean containsOrIntersects(final LatLonBoundingBox llbb) {
+		final double tx0 = lowerLeft.getLongitude();
+		final double ty0 = lowerLeft.getLatitude();
+		final double tx1 = upperRight.getLongitude();
+		final double ty1 = upperRight.getLatitude();
+		
+		final double ox0 = llbb.getWest();
+		final double ox1 = llbb.getEast();
+		final double oy0 = llbb.getSouth();
+		final double oy1 = llbb.getNorth();
+	
+		return 
+//				(	ox0 <= tx0 && //contains
+//					oy0 <= ty0 &&
+//					ox1 >= tx1 &&
+//					oy1 >= ty1
+//				) ||
+				(	ox1 > tx0 && //intersects
+					oy1 > ty0 &&
+					ox0 < tx1 &&
+					oy0 < ty1
+				);
 	}
 
 

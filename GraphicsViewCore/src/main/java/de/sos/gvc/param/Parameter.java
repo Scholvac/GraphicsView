@@ -20,11 +20,15 @@ public class Parameter<T> extends AbstractParameter<T> {
 
 	protected T mValue;
 
-	public Parameter(String name, String description) {
+	
+	public Parameter(final String name) {
+		this(name, name);
+	}
+	public Parameter(final String name, final String description) {
 		this(name, description, true);
 	}
 
-	public Parameter(final String name, final String description, final boolean editable) {
+	public Parameter(String name, String description, boolean editable) {
 		this(name, description, editable, null);
 	}
 

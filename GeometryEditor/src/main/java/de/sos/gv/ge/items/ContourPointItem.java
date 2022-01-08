@@ -105,8 +105,10 @@ public class ContourPointItem extends GraphicsItem implements MouseMotionListene
 	@Override
 	public void mouseDragged(MouseEvent e) {
 		if (e.isConsumed() == false) {
-			 setSceneLocation(getView().getSceneLocation(e.getPoint()));
-			 e.consume();
+			final Point2D sl = getView().getSceneLocation(e.getPoint());
+			setSceneLocation(sl);
+			System.out.println("Mouse Dragged to: " + sl + " Scene Location: " + getSceneLocation() + " Index = "  + this.mIndex);			
+			e.consume();
 		}
 	}
 
@@ -149,6 +151,9 @@ public class ContourPointItem extends GraphicsItem implements MouseMotionListene
 		setStyle(sNormalStyle);
 		
 		//set the new position of this vertex item
+		markDirty();
+		updateWorldTransform();
+		System.out.println("Center of index: " + mIndex + " = " + getCenter());
 		mGeometry.replacePoint(mIndex, getCenter()); //get center is the position in local coordinates.
 		
 		mNextPoint = mPrevPoint = mOldLocation = null;

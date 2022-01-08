@@ -31,28 +31,27 @@ import de.sos.gvc.handler.MouseDelegateHandler;
 import de.sos.gvc.log.GVLog;
 import de.sos.gvc.param.ParameterContext;
 import de.sos.gvc.storage.ListStorage;
-import de.sos.gvc.storage.QuadTreeStorage;
 import de.sos.gvc.styles.DrawableStyle;
 
 /**
- * 
+ *
  * @author scholvac
  *
  */
 public class MovingItemsExampleWithOSMBackground {
-	
+
 	public static Random			mRandom = new Random(42);
-	
+
 	static class RandomItemSimulator {
 		GraphicsItem		mItem;
-		
+
 		double 				mSOG = mRandom.nextDouble() * 0.1;//[m/s]
-		
-		
+
+
 		public RandomItemSimulator(GraphicsItem item) {
 			mItem = item;
 		}
-		
+
 		public void update() {
 			float shallMove = mRandom.nextFloat();
 			if (shallMove > 0.63f)
@@ -76,22 +75,22 @@ public class MovingItemsExampleWithOSMBackground {
 			double sin = Math.sin(angle_radian);
 			double xx = fx * cos + fy * sin;
 			double yy = fx * -sin + fy * cos;
-			
+
 			double x = mItem.getCenterX() + xx;
 			double y = mItem.getCenterY() + yy;
 			//check if we are outside of the world (with some margin)
 			LatLonPoint llp = GeoUtils.getLatLon(x, y);
-			if (Math.abs(llp.getLatitude()) > 80) 
+			if (Math.abs(llp.getLatitude()) > 80)
 				y = 0;
 			if (Math.abs(llp.getLongitude()) > 170)
 				x = 0;
 			mItem.setCenter(x, y);
-		} 
+		}
 	}
-	
-	
+
+
 	/**
-	 * Create a simple item, that draws its shape (triangle) and has a random color 
+	 * Create a simple item, that draws its shape (triangle) and has a random color
 	 * @param width
 	 * @param height
 	 * @return
@@ -106,17 +105,17 @@ public class MovingItemsExampleWithOSMBackground {
 		p.lineTo(-w2, -h2);
 		p.closePath();
 		item.setShape(p);
-		
+
 		DrawableStyle style = new DrawableStyle();
 		style.setFillPaint(new Color(mRandom.nextFloat(), mRandom.nextFloat(), mRandom.nextFloat()));
 		style.setLinePaint(Color.BLACK);
 		item.setStyle(style);
-		
+
 		return item;
 	}
-	
-	
-	
+
+
+
 	public static void main(String[] args) {
 		GVLog.getInstance().initialize();
 		Logger l = GVLog.getLogger(Logger.ROOT_LOGGER_NAME);
@@ -128,43 +127,43 @@ public class MovingItemsExampleWithOSMBackground {
 				GVLog.getInstance().changeLogLevel(a, Level.INFO);
 			}
 		}
-		//Create a new Scene and a new View 
-		//Advanced: Try out different Storage strategies (QuadTree or List Storage) 
-//		GraphicsScene scene = new GraphicsScene(new QuadTreeStorage());
+		//Create a new Scene and a new View
+		//Advanced: Try out different Storage strategies (QuadTree or List Storage)
+		//		GraphicsScene scene = new GraphicsScene(new QuadTreeStorage());
 		GraphicsScene scene = new GraphicsScene(new ListStorage());
 		GraphicsView view = new GraphicsView(scene, new ParameterContext());
-		
-		
+
+
 		//Standard Handler
 		view.addHandler(new MouseDelegateHandler());
 		view.addHandler(new DefaultViewDragHandler());
-		
+
 		/**
-		 * Create new TileFactory Hierarchie, using different caches that shall speedup the loading and reuse of downloaded tiles. 
-		 * The most deepest backup solution will be the OSMTileFactory, that downloads tiles from the default OSM server (https://tile.openstreetmap.org/). 
+		 * Create new TileFactory Hierarchie, using different caches that shall speedup the loading and reuse of downloaded tiles.
+		 * The most deepest backup solution will be the OSMTileFactory, that downloads tiles from the default OSM server (https://tile.openstreetmap.org/).
 		 * The first real cache - byteCache - stores the downloaded image as compressed byte[], that is much smaller as the uncompressed BufferedImage. However
-		 * to use the data, it first has to be uncompressed into an image. 
-		 * The last cache - memImgCache - stores an uncompressed image that can directly be reused and thus is the fastest cache. On the other side it consumes the 
-		 * most amount of memory. 
-		 * 
+		 * to use the data, it first has to be uncompressed into an image.
+		 * The last cache - memImgCache - stores an uncompressed image that can directly be reused and thus is the fastest cache. On the other side it consumes the
+		 * most amount of memory.
+		 *
 		 * @see MemoryCache and OSMTileFactory
 		 */
 		ITileProvider<OSMTileDescription> webCache = new OSMTileFactory();
 		ITileProvider<OSMTileDescription> byteCache = new MemoryCache<>(new ByteDataFactory<>(), webCache);
 		ITileProvider<OSMTileDescription> memImgcache = new MemoryCache<>(new BufferedImageFactory<>(), byteCache);
 		ITileFactory<OSMTileDescription> factory = new CacheTileFactory<>(memImgcache, 8);
-		
+
 		view.addHandler(new TileHandler(factory));
-		
+
 		view.setScale(20);
-		
+
 		//create a number of items and simulations that shall be drawn to the view
 		double itemWith = 60;
 		double itemHeight = 100;
 		double xMargin = 100, yMargin = 100;
 		int numX = 200;
 		int numY = 200;
-		
+
 		ArrayList<RandomItemSimulator>	simulators = new ArrayList<>();
 		double xStep = itemWith + xMargin / 2.0;
 		double xStart = (-0.5 * numX) * (xStep);
@@ -182,7 +181,7 @@ public class MovingItemsExampleWithOSMBackground {
 				System.out.println(ic++);
 			}
 		}
-		
+
 		Thread t = new Thread() {
 			@Override
 			public void run() {
@@ -199,30 +198,30 @@ public class MovingItemsExampleWithOSMBackground {
 		};
 		t.setDaemon(true);
 		t.start();
-		
-		
-		
+
+
+
 		JFrame frame = new JFrame("Moving Items with OSM Background");
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		frame.setSize(800, 800);
 		frame.setLayout(new BorderLayout());
 		frame.add(view, BorderLayout.CENTER);
 		frame.setVisible(true);
-		
-//		Used for profiling
-//		new Thread() {
-//			@Override
-//			public void run() {
-//				try {
-//					Thread.sleep(60*1000);
-//				} catch (InterruptedException e) {
-//					// TODO Auto-generated catch block
-//					e.printStackTrace();
-//				}
-//				System.exit(1);
-//			}
-//		}.start();
-		
+
+		//		Used for profiling
+		//		new Thread() {
+		//			@Override
+		//			public void run() {
+		//				try {
+		//					Thread.sleep(60*1000);
+		//				} catch (InterruptedException e) {
+		//					// TODO Auto-generated catch block
+		//					e.printStackTrace();
+		//				}
+		//				System.exit(1);
+		//			}
+		//		}.start();
+
 	}
 
 }

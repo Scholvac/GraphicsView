@@ -11,6 +11,7 @@ import de.sos.gv.ge.model.geom.GeometryUtils;
 import de.sos.gv.ge.model.geom.IGeometry;
 import de.sos.gv.ge.model.geom.IGeometry.GeometryType;
 import de.sos.gvc.GraphicsItem;
+import de.sos.gvc.param.ParameterContext;
 import de.sos.gvc.styles.DrawableStyle;
 import de.sos.gvc.styles.ScaledStroke;
 
@@ -29,9 +30,12 @@ public class GeometryItem extends GraphicsItem implements PropertyChangeListener
 
 
 	
-		
+	
 	public GeometryItem(MenuManager mm, IGeometry geom) {
-		super(GeometryUtils.createShape(geom));
+		this(mm, geom, null);
+	}
+	public GeometryItem(MenuManager mm, IGeometry geom, ParameterContext context) {
+		super(GeometryUtils.createShape(geom), context);
 		mGeometry = geom;
 		mMenuManager = mm;
 		if (geom.getType() == GeometryType.LineString)

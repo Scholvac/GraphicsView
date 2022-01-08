@@ -187,11 +187,11 @@ public class GraphicsItem implements IShapeProvider  {
 	 * this variable is bound to changes of 
 	 * - mCenterX, mCenterY, mRotation
 	 */
-	protected final AffineTransform 						mLocalTransform = new AffineTransform();
+	protected final AffineTransform 					mLocalTransform = new AffineTransform();
 	protected boolean 									mInvalidLocalTransform = true;
 	
 	protected final AffineTransform						mWorldTransform = new AffineTransform();
-	protected boolean										mInvalidWorldTransform = true;
+	protected boolean									mInvalidWorldTransform = true;
 	
 //	private IParameter<GraphicsItem>					mParent;
 	private GraphicsItem								mParent;

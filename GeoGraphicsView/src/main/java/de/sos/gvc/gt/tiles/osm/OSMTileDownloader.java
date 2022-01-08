@@ -21,43 +21,48 @@ import de.sos.gvc.log.GVLog;
 
 
 /**
- * 
+ *
  * @author scholvac
  *
  */
 public class OSMTileDownloader implements ITileLoader<OSMTileDescription>, IByteTileLoader<OSMTileDescription>{
-	
+
 	public static interface IByteTileLoader<DESC extends ITileDescription> {
 		byte[] loadTile(DESC description);
 	}
 	private static final Logger	logger = GVLog.getLogger(OSMTileDownloader.class);
-	
+
 	private String			mBaseURL;
 	private int				mAttemps = 3;
 	private String 			mUserAgent = "GeoGraphView/1.0";
 	private int 			mConnectTimeOutMillis = 2000; //2sec
 	private int 			mReadTimeOutMillis = 2000; //2sec
-	
-	
-	
+	private boolean			mReplaceMode = false;
+
+
+
 	public OSMTileDownloader() {
 		this("http://tile.openstreetmap.org/");
 	}
 	public OSMTileDownloader(String baseURL) {
 		mBaseURL = baseURL;
+		if (baseURL.contains("{x}") && baseURL.contains("{y}") && baseURL.contains("{z}"))
+			mReplaceMode = true;
 	}
-	
+
 	public String getTemplate() { return mBaseURL;}
-	
+
 	public URL getURL(OSMTileDescription desc) {
 		try {
+			if (mReplaceMode)
+				return new URL(mBaseURL.replace("{x}", desc.getTileX()+"").replace("{y}", desc.getTileY()+"").replace("{z}", desc.getZoom()+""));
 			return new URL(mBaseURL + desc.getZoom() + "/" + desc.getTileX() + "/" + desc.getTileY() + ".png");
 		} catch (MalformedURLException e) {
 			e.printStackTrace();
 		}
 		return null;
 	}
-	
+
 	@Override
 	public BufferedImage getTileImage(OSMTileDescription tile) {
 		byte[] data = getCompressedTileImage(tile);
@@ -68,13 +73,13 @@ public class OSMTileDownloader implements ITileLoader<OSMTileDescription>, IByte
 			} catch (IOException e) {
 				e.printStackTrace();
 			}finally {
-				
+
 			}
 		}
 		return null;
 	}
-	
-	
+
+
 	public byte[] getCompressedTileImage(OSMTileDescription tile) {
 		int att = mAttemps;
 		URL url = getURL(tile);
@@ -100,7 +105,7 @@ public class OSMTileDownloader implements ITileLoader<OSMTileDescription>, IByte
 		}
 		return null;
 	}
-	
+
 	public byte[] getCompressedTileImage(URL url) throws IOException {
 		if (logger.isTraceEnabled()) logger.trace("Downloading Tile: {}", url);
 		URLConnection connection = url.openConnection();
@@ -126,7 +131,7 @@ public class OSMTileDownloader implements ITileLoader<OSMTileDescription>, IByte
 	}
 	@Override
 	public byte[] loadTile(OSMTileDescription description) {
-		
+
 		return new OSMTileDownloader().getCompressedTileImage(description);
 //		return getCompressedTileImage(description);
 	}
