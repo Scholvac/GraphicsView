@@ -39,9 +39,9 @@ public class DefaultViewDragHandler implements IGraphicsViewHandler, MouseListen
 		mView.removeMouseMotionListener(this);
 		mView.removeMouseWheelListener(this);
 	}
-	
-	
-	
+
+
+
 	@Override
 	public void mouseClicked(MouseEvent e) { }
 
@@ -67,14 +67,14 @@ public class DefaultViewDragHandler implements IGraphicsViewHandler, MouseListen
 		if (e.isConsumed() == false && mLastScreenPosition != null) {
 			double dx = e.getPoint().getX() - mLastScreenPosition.getX();
 			double dy = e.getPoint().getY() - mLastScreenPosition.getY();
-			double angle_radian = Math.toRadians(-mView.getRotationDegrees()); 
+			double angle_radian = Math.toRadians(-mView.getRotationDegrees());
 			//rotation matrix
 			double cos = Math.cos(angle_radian);
 			double sin = Math.sin(angle_radian);
 			double dxx = dx * cos + dy * -sin;
 			double dyy = dx * sin + dy * cos;
-			
-			
+
+
 			mLastScreenPosition.setLocation(e.getPoint());
 			double scaleX = mView.getScaleX();
 			double scaleY = mView.getScaleY();
@@ -95,11 +95,13 @@ public class DefaultViewDragHandler implements IGraphicsViewHandler, MouseListen
 	public void mouseWheelMoved(MouseWheelEvent e) {
 		if (e.isConsumed())
 			return ;
-		int dir = e.getWheelRotation();
+		final int dir = e.getWheelRotation();
+		if (dir == 0)
+			return ; //this may happen if the "mouse" accumulates until the first 'click', see MouseWheelEvent doc.
 		//scale x and y with same ratio
-		double factor = dir < 0 ? 0.8 : 1.2;
-		double scaleX = mView.getScaleX() * factor;
-		double scaleY = mView.getScaleY() * factor;
+		final double factor = dir < 0 ? 0.8 : 1.2;
+		final double scaleX = mView.getScaleX() * factor;
+		final double scaleY = mView.getScaleY() * factor;
 		mView.setScale(scaleX, scaleY);
 	}
 
