@@ -16,10 +16,10 @@ public abstract class AbstractParameter<T> implements IParameter<T> {
 
     // PropertyChangeListeners are not serialized.
     protected transient PropertyChangeSupport 	listeners = new PropertyChangeSupport(this);
-    
+
     private IParameter 							mParentProperty = null;
     private List<IParameter>						mChildProperties = null;
-    
+
     public AbstractParameter() {
 	}
     public AbstractParameter(AbstractParameter _copy){
@@ -70,7 +70,7 @@ public abstract class AbstractParameter<T> implements IParameter<T> {
     	if (mParentProperty != null && mParentProperty instanceof AbstractParameter)
     		((AbstractParameter)mParentProperty)._addChild(this);
     }
-    
+
     public void addChild(IParameter prop){
     	if (prop instanceof AbstractParameter){
     		((AbstractParameter) prop).setParentProperty(this);
@@ -85,7 +85,7 @@ public abstract class AbstractParameter<T> implements IParameter<T> {
 	}
 
     /**
-     * removes a child, without notifing the child about the changed parent 
+     * removes a child, without notifing the child about the changed parent
      * normally this method is called by the child when a new parent is set
      * @param child
      */
@@ -96,8 +96,8 @@ public abstract class AbstractParameter<T> implements IParameter<T> {
 
     /**
      * adds a new child to the internal list (creates the list if required) but only if the child is not yet part of the child list (e.g.
-     * the child will be added only once). 
-     * this method does not change the parent of the child, since it is normally called from the setParentProperty of the child 
+     * the child will be added only once).
+     * this method does not change the parent of the child, since it is normally called from the setParentProperty of the child
      * @param child
      */
 	private void _addChild(AbstractParameter child) {
@@ -106,13 +106,13 @@ public abstract class AbstractParameter<T> implements IParameter<T> {
 		if (!mChildProperties.contains(child))
 			mChildProperties.add(child);
 	}
-	
+
 
 	@Override
     public List<IParameter> getSubProperties() {
 		return mChildProperties;
     }
-	
+
 	@Override
 	public String toString() {
 		return "Parameter ["+getName()+" = " + get() + "]";

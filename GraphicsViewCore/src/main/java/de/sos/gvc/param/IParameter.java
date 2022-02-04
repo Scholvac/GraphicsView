@@ -5,7 +5,7 @@ import java.io.Serializable;
 import java.util.List;
 
 /**
- * 
+ *
  * @author scholvac
  *
  */
@@ -24,7 +24,7 @@ public interface IParameter<T> extends Serializable, Cloneable {
     public boolean isEditable();
 
     public String getCategory();
-    
+
     public void addPropertyChangeListener(PropertyChangeListener listener);
 
     public void removePropertyChangeListener(PropertyChangeListener listener);

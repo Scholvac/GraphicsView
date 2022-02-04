@@ -16,21 +16,21 @@ import de.sos.gvc.GraphicsView;
 import de.sos.gvc.IGraphicsViewHandler;
 
 /**
- * 
+ *
  * @author scholvac
  *
  */
 public class MouseDelegateHandler implements IGraphicsViewHandler, MouseListener, MouseMotionListener, MouseWheelListener
 {
 	private GraphicsView mView;
-	
+
 	private HashSet<MouseListener>				mPermMouseListener = new HashSet<>();
 	private HashSet<MouseMotionListener>		mPermMouseMotionListener = new HashSet<>();
 	private HashSet<MouseWheelListener>			mPermMouseWheelListener = new HashSet<>();
-	
+
 	/**
-	 * Specialized MouseEvent that is used if the MouseDelegateHandler notifies one of the MouseSupports. 
-	 * The DelegateMouseEvent provides the possibility to add permanent listener (mouse, motion and wheel) to the delegate handler. 
+	 * Specialized MouseEvent that is used if the MouseDelegateHandler notifies one of the MouseSupports.
+	 * The DelegateMouseEvent provides the possibility to add permanent listener (mouse, motion and wheel) to the delegate handler.
 	 * Those listener will be notified even if their Item is not "under" the mouse
 	 * @author sschweigert
 	 *
@@ -39,18 +39,18 @@ public class MouseDelegateHandler implements IGraphicsViewHandler, MouseListener
 		public DelegateMouseEvent(MouseEvent e) {
 			super(e.getComponent(), e.getID(), e.getWhen(), e.getModifiers(), e.getX(), e.getY(), e.getClickCount(), e.isPopupTrigger(), e.getButton());
 		}
-		
+
 		public boolean addPermanentMouseListener(MouseListener ml){ return mPermMouseListener.add(ml); }
 		public boolean addPermanentMouseMotionListener(MouseMotionListener mml) { return mPermMouseMotionListener.add(mml);}
 		public boolean addPermanentMouseWheelListener(MouseWheelListener mwl) { return mPermMouseWheelListener.add(mwl); }
-		
+
 		public boolean removePermanentMouseListener(MouseListener ml){ return mPermMouseListener.remove(ml); }
 		public boolean removePermanentMouseMotionListener(MouseMotionListener mml) { return mPermMouseMotionListener.remove(mml);}
 		public boolean removePermanentMouseWheelListener(MouseWheelListener mwl) { return mPermMouseWheelListener.remove(mwl); }
 	}
-	
-	
-	private IItemFilter		mMouseWheelSupportFilter = new IItemFilter() {		
+
+
+	private IItemFilter		mMouseWheelSupportFilter = new IItemFilter() {
 		@Override
 		public boolean accept(GraphicsItem item) {
 			if (item.getMouseWheelSupport() != null)
@@ -58,19 +58,19 @@ public class MouseDelegateHandler implements IGraphicsViewHandler, MouseListener
 			return false;
 		}
 	};
-	private IItemFilter 	mMouseMotionSupportFilter = new IItemFilter() {		
+	private IItemFilter 	mMouseMotionSupportFilter = new IItemFilter() {
 		@Override
 		public boolean accept(GraphicsItem item) {
 			return item.getMouseMotionSupport() != null;
 		}
 	};
-	private IItemFilter		mMouseSupportFilter = new IItemFilter() {		
+	private IItemFilter		mMouseSupportFilter = new IItemFilter() {
 		@Override
 		public boolean accept(GraphicsItem item) {
 			return item.getMouseSupport() != null;
 		}
 	};
-	
+
 
 	@Override
 	public void install(GraphicsView view) {
@@ -84,9 +84,9 @@ public class MouseDelegateHandler implements IGraphicsViewHandler, MouseListener
 	public void uninstall(GraphicsView view) {
 		mView.removeMouseListener(this);
 		mView.removeMouseMotionListener(this);
-		mView.removeMouseWheelListener(this);	
+		mView.removeMouseWheelListener(this);
 	}
-		
+
 	@Override
 	public void mouseWheelMoved(MouseWheelEvent e) {
 		double eps = getSelectionEpsilon();
@@ -111,7 +111,7 @@ public class MouseDelegateHandler implements IGraphicsViewHandler, MouseListener
 				mmhs.remove(support); //do not trigger again
 			}
 		}
-		if (mmhs.isEmpty() == false) {
+		if (!mmhs.isEmpty()) {
 			for (MouseMotionListener ml : mmhs)
 				try{
 					ml.mouseDragged(e);
@@ -133,7 +133,7 @@ public class MouseDelegateHandler implements IGraphicsViewHandler, MouseListener
 				mmhs.remove(support); //do not trigger again
 			}
 		}
-		if (mmhs.isEmpty() == false) {
+		if (!mmhs.isEmpty()) {
 			for (MouseMotionListener ml : mmhs)
 				ml.mouseMoved(e);
 		}
@@ -141,17 +141,17 @@ public class MouseDelegateHandler implements IGraphicsViewHandler, MouseListener
 	}
 
 	private HashSet<GraphicsItem> 	mEnteredItems = new HashSet<>();
-	
+
 	private void handleMouseEnterAndExit(MouseEvent e) {
 		double epsilon = getSelectionEpsilon();
 		List<GraphicsItem> items = mView.getAllItemsAt(e.getPoint(), epsilon, epsilon, mMouseSupportFilter);
 		DelegateMouseEvent dme = new DelegateMouseEvent(e);
 		if (items != null && !items.isEmpty()) {
 			//check all allready entered items, if they are still returned. if not we did leave them
-			if (mEnteredItems.isEmpty() == false) {
+			if (!mEnteredItems.isEmpty()) {
 				ArrayList<GraphicsItem> toRemove = new ArrayList<>();
 				for (GraphicsItem item : mEnteredItems)
-					if (items.contains(item) == false) {
+					if (!items.contains(item)) {
 						item.getMouseSupport().mouseExited(dme);
 						toRemove.add(item);
 					}
@@ -165,13 +165,13 @@ public class MouseDelegateHandler implements IGraphicsViewHandler, MouseListener
 			}
 		}else {
 			//we have no item selelected, thus we have left all items
-			if (mEnteredItems.isEmpty() == false) {
+			if (!mEnteredItems.isEmpty()) {
 				for (GraphicsItem item : mEnteredItems)
 					item.getMouseSupport().mouseExited(dme);
 				mEnteredItems.clear();
 			}
 		}
-		
+
 	}
 
 	@Override
@@ -191,7 +191,7 @@ public class MouseDelegateHandler implements IGraphicsViewHandler, MouseListener
 					mmhs.remove(support); //do not trigger again
 				});
 		}
-		if (mmhs.isEmpty() == false)
+		if (!mmhs.isEmpty())
 			for (MouseListener ml : mmhs)
 				ml.mouseClicked(dme);
 	}
@@ -209,7 +209,7 @@ public class MouseDelegateHandler implements IGraphicsViewHandler, MouseListener
 				mmhs.remove(support); //do not trigger again
 			}
 		}
-		if (mmhs.isEmpty() == false)
+		if (!mmhs.isEmpty())
 			for (MouseListener ml : mmhs)
 				ml.mouseClicked(dme);
 	}
@@ -227,11 +227,11 @@ public class MouseDelegateHandler implements IGraphicsViewHandler, MouseListener
 				mmhs.remove(support); //do not trigger again
 			}
 		}
-		if (mmhs.isEmpty() == false)
+		if (!mmhs.isEmpty())
 			for (MouseListener ml : mmhs)
 				ml.mouseReleased(dme);
 	}
-	
+
 	private double getSelectionEpsilon() {
 		return 2 * mView.getScaleX(); //TODO: expose 2 as an variable or property
 	}

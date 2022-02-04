@@ -9,7 +9,7 @@ import de.sos.gvc.index.IBIGNode;
 import de.sos.gvc.index.IndexEntry;
 
 /**
- * 
+ *
  * @author scholvac
  *
  */
@@ -37,7 +37,7 @@ public class BIGLeaf<T extends IndexEntry<?>> implements IBIGNode<T> {
 		}
 		return false;
 	}
-	
+
 	@Override
 	public BIGNodeType type() {
 		return BIGNodeType.LEAF;

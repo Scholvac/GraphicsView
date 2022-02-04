@@ -9,14 +9,14 @@ import de.sos.gvc.styles.DrawableStyle;
 
 
 /**
- * 
+ *
  * @author scholvac
  *
  */
 public class RectangleDrawable implements IDrawable {
 
 	private Rectangle2D mRectangle;
-	
+
 	public RectangleDrawable(Rectangle2D rect) {
 		mRectangle = rect;
 	}
@@ -36,5 +36,5 @@ public class RectangleDrawable implements IDrawable {
 		}
 	}
 
-	
+
 }

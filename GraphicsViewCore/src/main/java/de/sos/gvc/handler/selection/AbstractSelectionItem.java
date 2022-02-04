@@ -19,7 +19,7 @@ import de.sos.gvc.handler.SelectionHandler.ItemScaleEvent;
 
 
 /**
- * 
+ *
  * @author scholvac
  *
  */
@@ -28,36 +28,36 @@ public abstract class AbstractSelectionItem extends GraphicsItem {
 	public static enum MouseMode {
 		NONE, MOVE, ROTATE, SCALE
 	}
-	
+
 	public static enum CallbackMode {
-		MOVE, 
-		ROTATE, 
+		MOVE,
+		ROTATE,
 		SCALE
 	}
-	
+
 	public static final int SP_UL = 0; //ScalePoint_UpperLeft
 	public static final int SP_UR = 1;
 	public static final int SP_LR = 2;
 	public static final int SP_LL = 3;
-	
+
 	public final static int[] SCALE_POINT_CURSOR_TYPES = new int[] {
 			Cursor.NW_RESIZE_CURSOR, //UL
 			Cursor.SW_RESIZE_CURSOR,
 			Cursor.NW_RESIZE_CURSOR,
 			Cursor.SW_RESIZE_CURSOR
 	};
-	
-	
-	
+
+
+
 	abstract protected class AbstractSelectionWorkerItem extends GraphicsItem implements MouseListener, MouseMotionListener {
 		protected final boolean				mFixSize;
 		protected final Cursor				mActiveCursor;
 		protected final MouseMode			mTargetMode;
 		protected final CallbackMode		mCallbackMode;
 		protected boolean					mUsePermanentMotionListener = true;
-		
+
 		protected Point2D					mInitialPosition;
-		
+
 		private Cursor 						mOldCursor; //remmeber previous cursor to resotore ist
 		private MouseMode 					mOldMouseMode;
 
@@ -69,11 +69,11 @@ public abstract class AbstractSelectionItem extends GraphicsItem {
 			mUsePermanentMotionListener = useMotionListener;
 			setSelectable(false);
 			setSelected(false);
-			
+
 			setMouseSupport(this);
 			setMouseMotionSupport(this);
 		}
-		
+
 		@Override
 		public void draw(Graphics2D g, IDrawContext ctx) {
 			if (mFixSize)
@@ -100,7 +100,7 @@ public abstract class AbstractSelectionItem extends GraphicsItem {
 				e.consume();
 			}
 		}
-		
+
 		@Override
 		public void mousePressed(MouseEvent e) {
 			if (hasCallback(mCallbackMode) && mMouseMode == MouseMode.NONE) {
@@ -111,7 +111,7 @@ public abstract class AbstractSelectionItem extends GraphicsItem {
 				}
 				mOldMouseMode = mMouseMode;
 				mMouseMode = mTargetMode;
-				
+
 				e.consume();
 			}
 		}
@@ -125,43 +125,43 @@ public abstract class AbstractSelectionItem extends GraphicsItem {
 				}
 				mMouseMode = mOldMouseMode;
 				e.consume();
-				fireEvent();				
+				fireEvent();
 			}
 		}
-		
+
 		protected MouseMode getMouseMode() {
 			return mMouseMode;
 		}
-		
+
 		@Override
 		public void mouseClicked(MouseEvent e) {}
-		
+
 
 		@Override
 		public void mouseMoved(MouseEvent e) {}
-		
+
 		abstract protected void fireEvent();
 	}
-	
 
-		
-	
-	
+
+
+
+
 	private final SelectionHandler 			mCallbackManager;
-	
+
 	private MouseMode						mMouseMode = MouseMode.NONE;
-	
-	
+
+
 	public AbstractSelectionItem(SelectionHandler callbackManager) {
 		super();
 		mCallbackManager = callbackManager;
 		setSelectable(false);
 	}
 
-	
+
 	public abstract void setSelectedItem(GraphicsItem item);
 
-	
+
 	protected boolean hasCallback(CallbackMode cm) {
 		switch(cm) {
 		case MOVE : return mCallbackManager.hasMoveCallbacks();
@@ -170,7 +170,7 @@ public abstract class AbstractSelectionItem extends GraphicsItem {
 		}
 		return false;
 	}
-	
+
 	protected void fireMoveEvent(ItemMoveEvent event) {
 		mCallbackManager.fireMoveEvent(event);
 	}
@@ -178,16 +178,16 @@ public abstract class AbstractSelectionItem extends GraphicsItem {
 		ItemMoveEvent ime = new ItemMoveEvent(Arrays.asList(item), Arrays.asList(startLoc), Arrays.asList(endLoc));
 		fireMoveEvent(ime);
 	}
-	
+
 	protected void fireRotateEvent(GraphicsItem item, double startRotation, double endRotation) {
 		ItemRotateEvent ire = new ItemRotateEvent(Arrays.asList(item), Arrays.asList(startRotation), Arrays.asList(endRotation));
-		fireRotateEvent(ire);		
+		fireRotateEvent(ire);
 	}
 	protected void fireRotateEvent(ItemRotateEvent event) {
 		mCallbackManager.fireRotationEvent(event);
 	}
-	
-	
+
+
 	protected void fireScaleEvent(GraphicsItem item, Point2D[] oldVertices, Point2D[] newVertices) {
 		ArrayList<Point2D[]> ov = new ArrayList<>();
 		ov.add(oldVertices);
@@ -200,6 +200,6 @@ public abstract class AbstractSelectionItem extends GraphicsItem {
 		mCallbackManager.fireScaleEvent(event);
 	}
 
-	
-	
+
+
 }

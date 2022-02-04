@@ -5,7 +5,7 @@ import java.awt.Graphics2D;
 import de.sos.gvc.styles.DrawableStyle;
 
 /**
- * 
+ *
  * @author scholvac
  *
  */

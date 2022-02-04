@@ -17,7 +17,7 @@ public class StyleDatabase implements IStyleDatabase
 {
 
 	private HashMap<String, DrawableStyle> 		mStyles = new HashMap<>();
-	
+
 
 	@Override
 	public DrawableStyle addStyle(String name, DrawableStyle style) {
@@ -30,9 +30,9 @@ public class StyleDatabase implements IStyleDatabase
 	public DrawableStyle removeStyle(String name) {
 		return mStyles.remove(name);
 	}
-	
-	
-	
+
+
+
 
 	@Override
 	public DrawableStyle getStyle(String name) {
@@ -60,7 +60,8 @@ public class StyleDatabase implements IStyleDatabase
         	ByteArrayOutputStream baos = new ByteArrayOutputStream();
     		XMLEncoder encoder = new XMLEncoder(baos);
             encoder.setExceptionListener(new ExceptionListener() {
-                    public void exceptionThrown(Exception e) {
+                    @Override
+					public void exceptionThrown(Exception e) {
                         System.out.println("Exception! :"+e.toString());
                     }
             });
@@ -91,7 +92,8 @@ public class StyleDatabase implements IStyleDatabase
 	public void writeStyles(OutputStream stream) {
 		XMLEncoder encoder = new XMLEncoder(stream);
         encoder.setExceptionListener(new ExceptionListener() {
-                public void exceptionThrown(Exception e) {
+                @Override
+				public void exceptionThrown(Exception e) {
                     System.out.println("Exception! :"+e.toString());
                 }
         });

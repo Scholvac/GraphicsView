@@ -17,7 +17,7 @@ import de.sos.gvc.log.GVLog;
  *
  */
 public class BIGQuadTree<T extends IndexEntry<?>> {
-	
+
 	public interface IBIGQuadTreeHandler<T extends IndexEntry<?>> {
 		public void install(BIGQuadTree<T> qt);
 		public void uninstall(BIGQuadTree<T> qt);
@@ -33,7 +33,7 @@ public class BIGQuadTree<T extends IndexEntry<?>> {
 	}
 	@SuppressWarnings("rawtypes")
 	private final static class ComboundSplitHandler implements ISplitHandler {
-		ArrayList<ISplitHandler> 		mDelegates = new ArrayList<>();		
+		ArrayList<ISplitHandler> 		mDelegates = new ArrayList<>();
 		@Override
 		public boolean canSplit(IBIGNode node) {
 			for (ISplitHandler sh : mDelegates)
@@ -61,18 +61,18 @@ public class BIGQuadTree<T extends IndexEntry<?>> {
 		public void install(BIGQuadTree qt) { /*not used*/ }
 		@Override
 		public void uninstall(BIGQuadTree qt) {/*not used*/ }
-		
+
 	}
-	
-	
+
+
 	private IBIGNode<T>								mRoot = null;
 	private int 									mMaxEntryCount = 10;
-	private IBIGNodeFactory<T> 						mNodeFactory = new IBIGNode.DefaultBIGNodeFactroy<T>();
-	
+	private IBIGNodeFactory<T> 						mNodeFactory = new IBIGNode.DefaultBIGNodeFactroy<>();
+
 	private ISplitHandler<T> 							mSplitChecker;
 	private IBIGQTListener<T> 						mTreeListener;
 	private ArrayList<IBIGQuadTreeHandler<T>> 		mHandler = new ArrayList<>();
-	
+
 	public BIGQuadTree() {
 	}
 	public BIGQuadTree(int maxEntryCount, IBIGNodeFactory<T> factory) {
@@ -85,10 +85,10 @@ public class BIGQuadTree<T extends IndexEntry<?>> {
 		this(maxEntryCount, factory);
 		mRoot = mNodeFactory.createLeaf(geometry, null);
 	}
-	
-	
+
+
 	public IBIGNode<T> getRoot() { return mRoot; }
-	public void addSplitChecker(ISplitHandler<T> handler) { 
+	public void addSplitChecker(ISplitHandler<T> handler) {
 		if (mSplitChecker != null) {
 			if (mSplitChecker instanceof ComboundSplitHandler)
 				((ComboundSplitHandler)mSplitChecker).mDelegates.add(handler);
@@ -99,7 +99,7 @@ public class BIGQuadTree<T extends IndexEntry<?>> {
 				mSplitChecker = csh;
 			}
 		}else
-			mSplitChecker = handler; 
+			mSplitChecker = handler;
 	}
 	public void removeSplitChecker(ISplitHandler<T> handler) {
 		if (mSplitChecker == null) return ;
@@ -111,8 +111,8 @@ public class BIGQuadTree<T extends IndexEntry<?>> {
 			}
 		}
 	}
-	
-	public void addTreeListener(IBIGQTListener<T> handler) { 
+
+	public void addTreeListener(IBIGQTListener<T> handler) {
 		if (mTreeListener != null) {
 			if (mTreeListener instanceof ComboundTreeListener)
 				((ComboundTreeListener)mTreeListener).mDelegates.add(handler);
@@ -123,7 +123,7 @@ public class BIGQuadTree<T extends IndexEntry<?>> {
 				mTreeListener = csh;
 			}
 		}else
-			mTreeListener = handler; 
+			mTreeListener = handler;
 	}
 	public void removeTreeListener(IBIGQTListener<T> handler) {
 		if (mTreeListener == null) return ;
@@ -135,8 +135,8 @@ public class BIGQuadTree<T extends IndexEntry<?>> {
 			}
 		}
 	}
-	
-	
+
+
 	public void addHandler(IBIGQuadTreeHandler<T> handler) {
 		if (handler == null || mHandler.contains(handler))
 			return ;
@@ -144,12 +144,12 @@ public class BIGQuadTree<T extends IndexEntry<?>> {
 		mHandler.add(handler);
 	}
 	public void removeHandler(IBIGQuadTreeHandler<T> handler) {
-		if (handler == null || mHandler.contains(handler) == false)
+		if (handler == null || !mHandler.contains(handler))
 			return ;
 		if (mHandler.remove(handler))
-			handler.uninstall(this);		
+			handler.uninstall(this);
 	}
-	
+
 	public List<T> query(Rectangle2D area) {
 		return query(getRoot(), area, false);
 	}
@@ -182,28 +182,28 @@ public class BIGQuadTree<T extends IndexEntry<?>> {
 		}
 		return out;
 	}
-	
-	
-	
-	
+
+
+
+
 	public IBIGNode<T> insert(T entry) {
 		if (entry == null) return null;
 		Rectangle2D geometry = entry.getGeometry();
 		if (geometry == null) return null;
-		
+
 		if (mRoot == null) { //first item is null so we create a default item with the same size as the inserted entry
 			mRoot = mNodeFactory.createLeaf(geometry, null);
 			if (mTreeListener != null) mTreeListener.nodeCreated(mRoot);
 			((BIGLeaf<T>)mRoot).addEntry(entry); //this cast is only valid at this point
 			return mRoot;
 		}
-		
+
 		return insert(mRoot, entry);
 	}
 	private synchronized IBIGNode<T> insert(final IBIGNode<T> parent, T entry){
 		IBIGNode<T> node = parent;
 		Rectangle2D geometry = entry.getGeometry();
-		
+
 		Point2D center = new Point2D.Double(geometry.getCenterX(), geometry.getCenterY());
 		while(node != null && node.type() != BIGNodeType.LEAF) {
 			int idx = node.findNextIndex(center);
@@ -219,7 +219,7 @@ public class BIGQuadTree<T extends IndexEntry<?>> {
 				node = c;
 			}
 		}
-		
+
 		if (node != null) {
 			if (node.type() == BIGNodeType.LEAF) {
 				((BIGLeaf<T>)node).addEntry(entry);
@@ -229,22 +229,22 @@ public class BIGQuadTree<T extends IndexEntry<?>> {
 					split(node);
 			}
 		}
-		return node;//something went wrong		
+		return node;//something went wrong
 	}
 
 	private void split(IBIGNode<T> node) {
 		Rectangle2D geom = node.getQTBounds();
 		if (mSplitChecker != null) {
-			if (mSplitChecker.canSplit(node) == false)
+			if (!mSplitChecker.canSplit(node))
 				return ;
 		}
-		
+
 		IBIGNode<T> newNode = mNodeFactory.createNode(geom, node.getParent());
 
 		for (T entry : node.getValues()) {
 			insert(newNode, entry);
 		}
-		
+
 		//check if we did insert all into the same child, thus just increase the depth but did not win anything
 		int maxValueCount = 0;
 		for (int i = 0; i < 4; i++) {
@@ -273,7 +273,7 @@ public class BIGQuadTree<T extends IndexEntry<?>> {
 				mTreeListener.nodeRemoved(node);
 			}
 		}
-		
+
 	}
 	protected void replaceRoot(IBIGNode<T> newNode) {
 		mRoot = newNode;
@@ -282,8 +282,8 @@ public class BIGQuadTree<T extends IndexEntry<?>> {
 		GVLog.warn("Need to balance the Tree");
 		return false;
 	}
-	
-	
+
+
 	public boolean remove(T entry) {
 		return false;
 	}
@@ -308,12 +308,12 @@ public class BIGQuadTree<T extends IndexEntry<?>> {
 					return true;
 			}
 		}
-		//if we reached this point, we could not find the entry in the expected subtree. 
+		//if we reached this point, we could not find the entry in the expected subtree.
 		//that may happen, if the geometry of the entry has changed between insertion and deletion, without notifing the tree
 		//TODO: search the whole tree
 		return false;
 	}
-	
+
 	public void updateItem(T item, Rectangle2D oldGeom, IBIGNode<T> oldNode) {
 		Rectangle2D newGeom = item.getGeometry();
 		Point2D newCenter = new Point2D.Double(newGeom.getCenterX(), newGeom.getCenterY());
@@ -325,7 +325,7 @@ public class BIGQuadTree<T extends IndexEntry<?>> {
 		}else {
 			//find the first parent that contains the new center and do a normal remove and insert from that points
 			IBIGNode<T> parent = oldNode.getParent();
-			while(parent != null && parent.getQTBounds().contains(newCenter) == false)
+			while(parent != null && !parent.getQTBounds().contains(newCenter))
 				parent = parent.getParent();
 			if (parent == null)
 				parent = getRoot();
@@ -335,8 +335,8 @@ public class BIGQuadTree<T extends IndexEntry<?>> {
 			insert(parent, item);
 		}
 	}
-	
 
-	
-	
+
+
+
 }

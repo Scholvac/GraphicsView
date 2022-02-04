@@ -33,7 +33,7 @@ public class BoundingBoxSelectionItem extends AbstractSelectionItem { //TODO: ch
 		private Point2D[] 		mInitialVertices;
 		private Point2D[]		mNewVertices;
 		private int				mScalePointID;
-		
+
 		public ScalePointItem(Shape shape, int scalePointID, CallbackMode cm, MouseMode mm, Cursor cursor, boolean useMotionListener) {
 			super(true, cm, mm, cursor, useMotionListener);
 			setShape(shape);
@@ -46,12 +46,12 @@ public class BoundingBoxSelectionItem extends AbstractSelectionItem { //TODO: ch
 			mInitialVertices = getVertices();
 		}
 
-		
+
 		@Override
 		public void mouseDragged(MouseEvent e) {
 			if (getMouseMode() != MouseMode.SCALE)
 				return ;
-			
+
 			Point2D[] vertices = getVertices();
 			Point2D loc = getView().getSceneLocation(e.getPoint());
 			try {
@@ -89,27 +89,27 @@ public class BoundingBoxSelectionItem extends AbstractSelectionItem { //TODO: ch
 			GraphicsItem item = getSelectedItem();
 			fireScaleEvent(item, mInitialVertices, mNewVertices);
 		}
-		
+
 		Point2D[] getVertices() {
 			Rectangle2D localBounds = mSelectedItem.getBoundingBox(); //getLocalBounds();
-			return Utils.getVertices(localBounds);	
+			return Utils.getVertices(localBounds);
 		}
-		
+
 	}
 	protected class RotatePointItem extends AbstractSelectionWorkerItem {
-		
+
 		private double 	mInitialRotation;
 		private double 	mLastXPosition;
-		
+
 		public RotatePointItem(Shape shape, CallbackMode cm, MouseMode mm, Cursor cursor, boolean useMotionListener) {
 			super(true, cm, mm, cursor, useMotionListener);
 			setShape(shape);
 		}
-		
+
 		@Override
 		public void mousePressed(MouseEvent e) {
 			super.mousePressed(e);
-			
+
 			mInitialRotation = BoundingBoxSelectionItem.this.getSceneRotation();
 			mLastXPosition = e.getLocationOnScreen().getX();
 		}
@@ -119,11 +119,11 @@ public class BoundingBoxSelectionItem extends AbstractSelectionItem { //TODO: ch
 				return ;
 			Point los = e.getLocationOnScreen();
 			double cx = los.getX();
-			
+
 			double dx = cx - mLastXPosition;
 			double currentRotation = BoundingBoxSelectionItem.this.getSceneRotation();
 			BoundingBoxSelectionItem.this.setSceneRotation(currentRotation + dx * 0.4);
-			
+
 			mLastXPosition = cx;
 			e.consume();
 		}
@@ -134,40 +134,40 @@ public class BoundingBoxSelectionItem extends AbstractSelectionItem { //TODO: ch
 			fireRotateEvent(item, mInitialRotation, newRotation);
 		}
 	}
-	
+
 	protected class MovePointItem extends AbstractSelectionWorkerItem {
-		
+
 		private double 				mOffsetX = 0;
 		private double 				mOffsetY = 0;
 		private final Point2D		mMouseSceneLocation = new Point2D.Double(0, 0);
 		private final Point2D		mInitialItemSceneLocation = new Point2D.Double();
-		
+
 		public MovePointItem(CallbackMode cm, MouseMode mm, Cursor cursor, boolean useMotionListener) {
 			super(false, cm, mm, cursor, useMotionListener);
 		}
-		
+
 		@Override
 		public void mousePressed(MouseEvent e) {
 			super.mousePressed(e);
-			
+
 			BoundingBoxSelectionItem.this.getSceneLocation(mInitialItemSceneLocation);
-			
+
 			getView().getSceneLocation(e.getPoint(), mMouseSceneLocation);
 			mOffsetX = mInitialItemSceneLocation.getX() - mMouseSceneLocation.getX();
 			mOffsetY = mInitialItemSceneLocation.getY() - mMouseSceneLocation.getY();
 		}
-		
+
 		@Override
 		public void mouseDragged(MouseEvent e) {
 			if (getMouseMode() != MouseMode.MOVE)
 				return ;
-			
+
 			getView().getSceneLocation(e.getPoint(), mMouseSceneLocation);
 			double x = mMouseSceneLocation.getX() + mOffsetX;
 			double y = mMouseSceneLocation.getY() + mOffsetY;
-			
+
 			BoundingBoxSelectionItem.this.setSceneLocation(x, y);
-			
+
 			e.consume();
 		}
 		@Override
@@ -178,7 +178,7 @@ public class BoundingBoxSelectionItem extends AbstractSelectionItem { //TODO: ch
 			fireMoveEvent(item, startLoc, endLoc);
 		}
 	}
-	
+
 	/** inactive item (red dot) at the center of the bounding volume, marks the center point of rotation and scale operations */
 	class CenterPointItem extends GraphicsItem {
 		public CenterPointItem() {
@@ -190,35 +190,35 @@ public class BoundingBoxSelectionItem extends AbstractSelectionItem { //TODO: ch
 			super.draw(g, ctx);
 		}
 	}
-	
+
 	class RebuildListener implements PropertyChangeListener {
 		@Override
 		public void propertyChange(PropertyChangeEvent evt) {
 			rebuild();
 		}
 	}
-	
-	
+
+
 	private static DrawableStyle		sBoundingBoxStyle = null;
 	private static DrawableStyle		sScalePointStyle = null;
 	private static DrawableStyle		sCenterItemSyle = null;
-		
+
 	private final ScalePointItem[]		mScalePointItems = new ScalePointItem[4];
 	private final RotatePointItem		mRotatePointItem;
 	private final MovePointItem			mMovePointItem;
 	private final CenterPointItem		mCenterItem;
 	private final RebuildListener		mRebuildListener = new RebuildListener();
-	
+
 	private GraphicsItem 				mSelectedItem;
-	
-	
+
+
 	public BoundingBoxSelectionItem(SelectionHandler callbackManager) {
 		super(callbackManager);
-		
+
 		mMovePointItem = new MovePointItem(CallbackMode.MOVE, MouseMode.MOVE, new Cursor(Cursor.MOVE_CURSOR), true);
 		mMovePointItem.setStyle(getBoundingBoxStyle());
 		addItem(mMovePointItem);
-		
+
 		Rectangle2D controlPointShape = new Rectangle2D.Double(-5, -5, 10, 10);
 		for (int i = 0; i < 4; i++) {
 			mScalePointItems[i] = new ScalePointItem(controlPointShape, i, CallbackMode.SCALE, MouseMode.SCALE, new Cursor(SCALE_POINT_CURSOR_TYPES[i]), true);
@@ -226,7 +226,7 @@ public class BoundingBoxSelectionItem extends AbstractSelectionItem { //TODO: ch
 			addItem(mScalePointItems[i]);
 		}
 
-		Cursor rotateCursor = null;		
+		Cursor rotateCursor = null;
 		try {
 			Image rotateCursorImage = ImageIO.read(getClass().getClassLoader().getResource("Rotate-Icon.png"));
 			rotateCursor = Toolkit.getDefaultToolkit().createCustomCursor(rotateCursorImage, new Point(16, 16), "Rotate");
@@ -236,16 +236,16 @@ public class BoundingBoxSelectionItem extends AbstractSelectionItem { //TODO: ch
 		mRotatePointItem = new RotatePointItem(controlPointShape, CallbackMode.ROTATE, MouseMode.ROTATE, rotateCursor, true);
 		mRotatePointItem.setStyle(getScalePointStyle());
 		addItem(mRotatePointItem);
-		
+
 		mCenterItem = new CenterPointItem();
 		mCenterItem.setCenter(0,0);
 		mCenterItem.setStyle(getCenterItemStyle());
 		addItem(mCenterItem);
-		
+
 		setStyle(getBoundingBoxStyle());
 	}
 
-	
+
 	@Override
 	protected void onRemovedFromScene(GraphicsScene scene) {
 		super.onRemovedFromScene(scene);
@@ -272,23 +272,23 @@ public class BoundingBoxSelectionItem extends AbstractSelectionItem { //TODO: ch
 			setVisible(false);
 			return ;
 		}
-		
+
 		mSelectedItem.addPropertyChangeListener(GraphicsItem.PROP_CENTER_X, mRebuildListener);
 		mSelectedItem.addPropertyChangeListener(GraphicsItem.PROP_CENTER_Y, mRebuildListener);
 		mSelectedItem.addPropertyChangeListener(GraphicsItem.PROP_ROTATION, mRebuildListener);
 		mSelectedItem.addPropertyChangeListener(GraphicsItem.PROP_SCALE_X, mRebuildListener);
 		mSelectedItem.addPropertyChangeListener(GraphicsItem.PROP_SCALE_Y, mRebuildListener);
-		
+
 		rebuild();
 	}
-	
-	
+
+
 	private void rebuild() {
-		
+
 		setSceneLocation(mSelectedItem.getSceneLocation());
 		setSceneRotation(mSelectedItem.getSceneRotation());
 		//@note: Some of the items may have a scale correction to handle the scale derivation of Web-Mercator
-		//see GeoGraphicsItem. However at this point we have no access to this correction factor thus we have 
+		//see GeoGraphicsItem. However at this point we have no access to this correction factor thus we have
 		//to read it from the transformation matrix
 		AffineTransform at = mSelectedItem.getWorldTransform();
 		//@note: The method at.getScaleX() does only works fine, if the matrix does not contain any rotation
@@ -299,25 +299,25 @@ public class BoundingBoxSelectionItem extends AbstractSelectionItem { //TODO: ch
 		double sx = Math.sqrt(sx1*sx1+sx2*sx2);
 		double sy1 = at.getScaleY(), sy2 = at.getShearY();
 		double sy = Math.sqrt(sy1*sy1 + sy2*sy2);
-		
+
 		setSceneScale(sx, sy);
-		
+
 		Rectangle2D localBounds = mSelectedItem.getBoundingBox(); //getLocalBounds();
 		Point2D[] localVertices = Utils.getVertices(localBounds);
-		
+
 		setVertices(localBounds, localVertices);
 	}
-	
+
 	public void setVertices(Rectangle2D localBounds, Point2D[] localVertices) {
 		for (int i = 0; i < 4; i++)
 			mScalePointItems[i].setCenter(localVertices[i]);
-		
+
 		mMovePointItem.setCenter(0, 0);
 		mMovePointItem.setShape(getShape(localVertices));
-		
+
 		double h = localBounds.getHeight() / 2.0 + localBounds.getHeight() / 5.0;
 		mRotatePointItem.setCenter(localBounds.getCenterX(), localBounds.getCenterY() + h);
-		
+
 		//mark each item to be dirty => bounds and matrices will be re-calculated
 		mRotatePointItem.markDirty();
 		mMovePointItem.markDirty();
@@ -325,13 +325,13 @@ public class BoundingBoxSelectionItem extends AbstractSelectionItem { //TODO: ch
 		mCenterItem.setCenter(localBounds.getCenterX(), localBounds.getCenterY());
 		for (int i = 0; i < 4; i++) mScalePointItems[i].markDirty();
 	}
-	
-	
+
+
 	public GraphicsItem getSelectedItem() {
 		return mSelectedItem;
 	}
 
-	
+
 	protected DrawableStyle getBoundingBoxStyle() {
 		if (sBoundingBoxStyle == null) {
 			sBoundingBoxStyle = new DrawableStyle();
@@ -345,7 +345,7 @@ public class BoundingBoxSelectionItem extends AbstractSelectionItem { //TODO: ch
 		}
 		return sBoundingBoxStyle;
 	}
-	
+
 	protected DrawableStyle getScalePointStyle() {
 		if (sScalePointStyle == null) {
 			sScalePointStyle = new DrawableStyle("ControlPointStyle", null, null, Color.BLUE);
@@ -358,8 +358,8 @@ public class BoundingBoxSelectionItem extends AbstractSelectionItem { //TODO: ch
 		}
 		return sCenterItemSyle;
 	}
-	
-	
+
+
 	private Path2D getShape(Point2D[] vertices) {
 		Path2D 	p = new Path2D.Double();
 		p.moveTo(vertices[0].getX(), vertices[0].getY());

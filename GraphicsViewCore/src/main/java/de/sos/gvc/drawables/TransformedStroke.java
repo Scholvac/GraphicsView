@@ -63,7 +63,8 @@ public class TransformedStroke
      * of scaling (i.e. thickness of the lines), as translation and rotation
      * are undone after the stroking.
      */
-    public Shape createStrokedShape(Shape s) {
+    @Override
+	public Shape createStrokedShape(Shape s) {
         Shape sTrans = transform.createTransformedShape(s);
         Shape sTransStroked = stroke.createStrokedShape(sTrans);
         Shape sStroked = inverse.createTransformedShape(sTransStroked);

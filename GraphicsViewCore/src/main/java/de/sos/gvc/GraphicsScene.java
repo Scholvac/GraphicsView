@@ -15,7 +15,7 @@ import de.sos.gvc.storage.ListStorage;
 import de.sos.gvc.storage.QuadTreeStorage;
 
 /**
- * 
+ *
  * @author scholvac
  *
  */
@@ -27,11 +27,11 @@ public class GraphicsScene {
 		/** called if the dirty state change from clean to dirty */
 		void notifyDirty();
 	}
-	
+
 	public interface IItemFilter {
 		public boolean accept(GraphicsItem item);
 	}
-	
+
 
 	public static class ComboundItemFilter implements IItemFilter {
 		private IItemFilter[] mFilter;
@@ -52,8 +52,8 @@ public class GraphicsScene {
 			}
 		}
 	}
-	
-	
+
+
 	public static class RectangleSelectionFilter implements IItemFilter {
 		private Rectangle2D 		mQuery;
 		private boolean 			mSceneCoordinates;
@@ -66,7 +66,7 @@ public class GraphicsScene {
 			mQuery = rect;
 			mSceneCoordinates = sceneCoordinates;
 		}
-		
+
 		@Override
 		public boolean accept(GraphicsItem item) {
 			Shape s = item.getShape();
@@ -98,7 +98,7 @@ public class GraphicsScene {
 			mQuery = rect;
 			mSceneCoordinates = sceneCoordinates;
 		}
-		
+
 		@Override
 		public boolean accept(GraphicsItem item) {
 			Shape s = item.getShape();
@@ -122,10 +122,10 @@ public class GraphicsScene {
 			return false;
 		}
 	}
-	
+
 	class ItemListener implements PropertyChangeListener {
-//		IParameter<Boolean> mDP = null;
-//		public ItemListener(IParameter<Boolean> dp) { mDP = dp;}
+		//		IParameter<Boolean> mDP = null;
+		//		public ItemListener(IParameter<Boolean> dp) { mDP = dp;}
 		@Override
 		public void propertyChange(PropertyChangeEvent evt) {
 			if (!mDirty) {
@@ -133,28 +133,28 @@ public class GraphicsScene {
 			}
 		}
 	}
-	
+
 	/** Property - key to get notified (with PropertyChangeEvent) about adding and removing of new Items into the Root item list */
-	public static final String						ITEM_LIST_PROPERTY 					= "ItemListProperty";			
-	
+	public static final String						ITEM_LIST_PROPERTY 					= "ItemListProperty";
+
 	private IItemStorage							mItemStore = new QuadTreeStorage();
 	private ItemListener							mItemListener;
 
 	private List<GraphicsView> 						mViews = new ArrayList<>();
-	
+
 	private boolean									mDirty = true;
 	private ArrayList<DirtyListener>				mDirtyListener = new ArrayList<>();
-	
+
 	private transient PropertyChangeSupport 		mPropertySupport = new PropertyChangeSupport(this);
-	
+
 	public GraphicsScene() {
-		 this(new ListStorage());
+		this(new ListStorage());
 	}
 	public GraphicsScene(IItemStorage itemStore) {
 		mItemStore = itemStore;
 		mItemListener = new ItemListener();
 	}
-	
+
 	public void addPropertyListener(final PropertyChangeListener pcl) {
 		if (pcl != null)
 			mPropertySupport.addPropertyChangeListener(pcl);
@@ -169,22 +169,22 @@ public class GraphicsScene {
 	public void removePropertyListener(final String propertyName, final PropertyChangeListener pcl) {
 		mPropertySupport.removePropertyChangeListener(propertyName, pcl);
 	}
-	
-	
-	
+
+
+
 	public boolean registerDirtyListener(DirtyListener dl) {
-		if (dl != null && mDirtyListener.contains(dl) == false)
+		if (dl != null && !mDirtyListener.contains(dl))
 			return mDirtyListener.add(dl);
 		return false;
 	}
 	public boolean removeDirtyListener(DirtyListener dl) {
-		if (dl == null || mDirtyListener.contains(dl) == false)
+		if (dl == null || !mDirtyListener.contains(dl))
 			return true;
 		return mDirtyListener.remove(dl);
 	}
-	
-	
-	
+
+
+
 
 	/**
 	 * Adds a view that displays the scene to its internal list
@@ -196,7 +196,7 @@ public class GraphicsScene {
 	void _removeView(GraphicsView view) {
 		mViews.remove(view);
 	}
-	
+
 	public boolean addItem(GraphicsItem... items) {
 		boolean result = true;
 		for (GraphicsItem item : items)
@@ -204,7 +204,7 @@ public class GraphicsScene {
 		return result;
 	}
 	public boolean addItem(final GraphicsItem item) {
-		if (item == null) 
+		if (item == null)
 			return false;
 		if (item.getScene() == this)
 			return true;//alread inside but no notification
@@ -212,7 +212,7 @@ public class GraphicsScene {
 			item._setScene(this);
 			item.addPropertyChangeListener(mItemListener);
 			markDirty();
-			
+
 			mPropertySupport.firePropertyChange(ITEM_LIST_PROPERTY, null, item);
 			return true;
 		}
@@ -222,20 +222,20 @@ public class GraphicsScene {
 		if (!mDirty) {
 			mDirty = true;
 			//notify listener
-			for (int i = 0; i < mDirtyListener.size(); i++)
-				mDirtyListener.get(i).notifyDirty();
-		}		
+			for (DirtyListener element : mDirtyListener)
+				element.notifyDirty();
+		}
 	}
-	
-	/** Resets the dirty state. 
+
+	/** Resets the dirty state.
 	 * @note this method shall only be called by the GraphicsView after drawing the current scene
 	 */
 	void markClean() {
 		if (mDirty) {
 			mDirty = false;
 			//notify listener
-			for (int i = 0; i < mDirtyListener.size(); i++)
-				mDirtyListener.get(i).notifyClean();
+			for (DirtyListener element : mDirtyListener)
+				element.notifyClean();
 		}
 	}
 
@@ -245,11 +245,11 @@ public class GraphicsScene {
 			item.removePropertyChangeListener(mItemListener);
 			item._setScene(null);
 			markDirty();
-			
+
 			mPropertySupport.firePropertyChange(ITEM_LIST_PROPERTY, item, null);
 			return true;
 		}
-		return false;				
+		return false;
 	}
 
 	public List<GraphicsItem> getItems(Rectangle2D rect){
@@ -260,9 +260,9 @@ public class GraphicsScene {
 	}
 	public List<GraphicsItem> getAllItems(Rectangle2D rect, IItemFilter filter) {
 		List<GraphicsItem> topLevel = getItems(rect, null);
-		return getAllItems(rect, topLevel, filter);	
+		return getAllItems(rect, topLevel, filter);
 	}
-	
+
 	/**
 	 * Return all (top level features but also child items that match the following conditions
 	 * 1) item is visible
@@ -277,14 +277,14 @@ public class GraphicsScene {
 		ArrayList<GraphicsItem> out = new ArrayList<>();
 		//first find all top level features and iterate only their children. all other would not meet the 2) condition
 		List<GraphicsItem> openList = getItems(rect, items, null); //@note do not use the filter here, to not exclude childen whose parent does not fit the fiilter but the child itself would pass the filter
-		while(openList.isEmpty() == false) {
+		while(!openList.isEmpty()) {
 			GraphicsItem first = openList.remove(0);
 			if (filter == null || filter.accept(first))
 				out.add(first);
 			if (first.hasChildren()) {
 				for (GraphicsItem child : first.getChildren()) {
 					//we do not now if the child is part of the box, may it another child that let the parent be inside the box
-					if (child.isVisible() == false) 
+					if (!child.isVisible())
 						continue;
 					Rectangle2D wb = child.getSceneBounds();
 					if (rect.contains(wb) || rect.intersects(wb)) {
@@ -298,7 +298,7 @@ public class GraphicsScene {
 	}
 
 	/**
-	 * return all top level (Items that have no parent) that are 
+	 * return all top level (Items that have no parent) that are
 	 * 1) visible
 	 * 2) within the rectangle
 	 * 3) match the filter (may be a combound filter)
@@ -316,30 +316,30 @@ public class GraphicsScene {
 				if (filter == null || filter.accept(item))
 					out.add(item);
 			}else {
-//				System.out.println("Skip: " + rect + " AND: " + wb);
-//				System.out.println("Compare: \n\t" + rect2WKT(rect) + "\n\t" + rect2WKT(wb) + "\n");
+				//				System.out.println("Skip: " + rect + " AND: " + wb);
+				//				System.out.println("Compare: \n\t" + rect2WKT(rect) + "\n\t" + rect2WKT(wb) + "\n");
 			}
-		}			
+		}
 		return out;
 	}
 
-	
+
 	public static String rect2WKT(Rectangle2D r) {
 		Point2D[] v = getVertices(r);
-		String out = "POLYGON((";
+		StringBuilder out = new StringBuilder("POLYGON((");
 		for (Point2D p : v) {
-			out += p.getX() + " " + p.getY() + ", ";
+			out.append(p.getX()).append(" ").append(p.getY()).append(", ");
 		}
-		out += v[0].getX() + " " + v[0].getY();
-		out += "))";
-		return out;
+		out.append(v[0].getX()).append(" ").append(v[0].getY());
+		out.append("))");
+		return out.toString();
 	}
 	public static Point2D[] getVertices(Rectangle2D r) {
 		return new Point2D[] {
-			new Point2D.Double(r.getMinX(), r.getMinY()),
-			new Point2D.Double(r.getMinX(), r.getMaxY()),
-			new Point2D.Double(r.getMaxX(), r.getMaxY()),
-			new Point2D.Double(r.getMaxX(), r.getMinY()),
+				new Point2D.Double(r.getMinX(), r.getMinY()),
+				new Point2D.Double(r.getMinX(), r.getMaxY()),
+				new Point2D.Double(r.getMaxX(), r.getMaxY()),
+				new Point2D.Double(r.getMaxX(), r.getMinY()),
 		};
 	}
 
@@ -356,8 +356,4 @@ public class GraphicsScene {
 		return mViews;
 	}
 
-
-
-
-	
 }

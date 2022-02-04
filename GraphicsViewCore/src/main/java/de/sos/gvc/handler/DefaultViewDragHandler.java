@@ -47,7 +47,7 @@ public class DefaultViewDragHandler implements IGraphicsViewHandler, MouseListen
 
 	@Override
 	public void mousePressed(MouseEvent e) {
-		if (e.isConsumed() == false) {
+		if (!e.isConsumed()) {
 			mLastScreenPosition = e.getPoint();
 		}
 	}
@@ -64,7 +64,7 @@ public class DefaultViewDragHandler implements IGraphicsViewHandler, MouseListen
 
 	@Override
 	public void mouseDragged(MouseEvent e) {
-		if (e.isConsumed() == false && mLastScreenPosition != null) {
+		if (!e.isConsumed() && mLastScreenPosition != null) {
 			double dx = e.getPoint().getX() - mLastScreenPosition.getX();
 			double dy = e.getPoint().getY() - mLastScreenPosition.getY();
 			double angle_radian = Math.toRadians(-mView.getRotationDegrees());

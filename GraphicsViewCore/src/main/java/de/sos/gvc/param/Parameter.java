@@ -2,25 +2,25 @@ package de.sos.gvc.param;
 
 
 /**
- * 
+ *
  * @author scholvac
  *
  */
 public class Parameter<T> extends AbstractParameter<T> {
 
 	/**
-	 * 
+	 *
 	 */
 	private static final long serialVersionUID = -8405591448562089600L;
-	
-	
+
+
 	private final String mName;
 	private final String mDescription;
 	private final boolean mEditable;
 
 	protected T mValue;
 
-	
+
 	public Parameter(final String name) {
 		this(name, name);
 	}
@@ -77,12 +77,12 @@ public class Parameter<T> extends AbstractParameter<T> {
 				mValue = value;
 				firePropertyChange(oldValue, mValue);
 			}
-			else if (value.equals(mValue) == false) { //also need to check for equals, otherwise primitive values (double, float, ...) will always be encapsuled into other Wrapper instances
+			else if (!value.equals(mValue)) { //also need to check for equals, otherwise primitive values (double, float, ...) will always be encapsuled into other Wrapper instances
 				Object oldValue = mValue;
 				mValue = value;
 				firePropertyChange(oldValue, mValue);
 			}
-		}	
+		}
 	}
 
 	@Override

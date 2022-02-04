@@ -8,7 +8,7 @@ import de.sos.gvc.index.IBIGNode;
 
 
 /**
- * 
+ *
  * @author scholvac
  *
  */

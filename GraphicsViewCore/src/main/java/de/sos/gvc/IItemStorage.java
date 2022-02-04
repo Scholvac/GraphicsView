@@ -15,7 +15,7 @@ public interface IItemStorage {
 	public boolean contains(GraphicsItem item);
 	public boolean addItem(GraphicsItem item);
 	public boolean removeItem(GraphicsItem item);
-	
+
 	public List<GraphicsItem> getAllItems(); //may return an unmodifiable list
 	public List<GraphicsItem> getItems(Rectangle2D rect, IItemFilter filter);
 }

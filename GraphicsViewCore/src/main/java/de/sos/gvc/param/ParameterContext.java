@@ -8,7 +8,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * 
+ *
  * @author scholvac
  *
  */
@@ -19,12 +19,12 @@ public class ParameterContext {
 	public IParameter getProperty(String name) {
 		return getProperty(name, null);
 	}
-	
+
 	public <T> IParameter<T> getProperty(String name, T defaultValue) {
 		IParameter property = mProperties.get(name);
-		
+
 		if(property == null) {
-			
+
 			property = new Parameter<>(name, null);
 			for (PropertyChangeListener pcl : mListener) {
 				property.addPropertyChangeListener(pcl);
@@ -32,22 +32,22 @@ public class ParameterContext {
 			property.set(defaultValue);
 			mProperties.put(name, property);
 		}
-		
+
 		return property;
-		
+
 	}
-	
+
 	@SuppressWarnings("unchecked")
 	public <T> T getValue(String name, T defaultValue) {
-		
+
 		IParameter property = getProperty(name, defaultValue);
 		return property.get() == null ? defaultValue : (T) property.get();
 	}
-	
+
 	public boolean hasProperty(String name) {
 		return mProperties.get(name) != null;
 	}
-	
+
 	@SuppressWarnings("unchecked")
 	public <T> T getValue(String name) {
 		return (T)getProperty(name, null).get();
@@ -62,15 +62,14 @@ public class ParameterContext {
 	}
 
 	public void registerListener(PropertyChangeListener listener) {
-		if (listener == null) return ;
-		if (mListener.contains(listener))
+		if ((listener == null) || mListener.contains(listener))
 			return ;
 		for (IParameter p : mProperties.values()){
 			p.addPropertyChangeListener(listener);
 		}
 		mListener.add(listener);
 	}
-	
+
 	public void removeListener(PropertyChangeListener listener) {
 		if (listener == null) return ;
 		mListener.remove(listener);

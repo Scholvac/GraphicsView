@@ -23,7 +23,7 @@ import de.sos.gvc.index.impl.DefaultEntry;
 
 
 /**
- * 
+ *
  * @author scholvac
  *
  */
@@ -31,7 +31,7 @@ public class QuadTreeStorage implements IItemStorage {
 
 	private final class MyGraphicsItemIndex extends DefaultEntry<GraphicsItem>{
 		IBIGNode<MyGraphicsItemIndex> 	node;
-		PropertyChangeListener			pcl = new PropertyChangeListener() {			
+		PropertyChangeListener			pcl = new PropertyChangeListener() {
 			@Override
 			public void propertyChange(PropertyChangeEvent evt) {
 				mDirtySet.add(MyGraphicsItemIndex.this);
@@ -44,18 +44,18 @@ public class QuadTreeStorage implements IItemStorage {
 			value.addPropertyChangeListener(GraphicsItem.PROP_CENTER_Y, pcl);
 			value.addPropertyChangeListener(GraphicsItem.PROP_ROTATION, pcl); //in this case we may not need to relocate the item (as the center should not change) but the real bounding box of the node changes
 		}
-		
+
 		public void cleanUp() {
 			mValue.removePropertyChangeListener(GraphicsItem.PROP_CENTER_X, pcl);
 			mValue.removePropertyChangeListener(GraphicsItem.PROP_CENTER_Y, pcl);
 			mValue.removePropertyChangeListener(GraphicsItem.PROP_ROTATION, pcl);
 		}
-		
+
 		public void updateGeometry() {
 			mBound = mValue.getSceneBounds();
-		}	
+		}
 	}
-	
+
 	class MyTreeHandler implements IBIGQTListener<MyGraphicsItemIndex>, ISplitHandler<MyGraphicsItemIndex> {
 
 		@Override
@@ -87,24 +87,24 @@ public class QuadTreeStorage implements IItemStorage {
 		@Override
 		public void nodeCreated(IBIGNode<MyGraphicsItemIndex> node) { }
 		@Override
-		public void nodeRemoved(IBIGNode<MyGraphicsItemIndex> node) { }		
+		public void nodeRemoved(IBIGNode<MyGraphicsItemIndex> node) { }
 	}
-	
-	
+
+
 	private Set<MyGraphicsItemIndex>					mDirtySet = ConcurrentHashMap.newKeySet();
 	BIGQuadTree<MyGraphicsItemIndex>					mTree = new BIGQuadTree<>(40, null);
 	private HashMap<GraphicsItem, MyGraphicsItemIndex>	mItemDataMap = new HashMap<>();
-	
-	private double										mMinimumQuadrantArea = Double.NaN; 
+
+	private double										mMinimumQuadrantArea = Double.NaN;
 	private MyTreeHandler								mMyTreeHandler = new MyTreeHandler();
-	
-	
+
+
 	public QuadTreeStorage() {
 		mTree = new BIGQuadTree<>(new Rectangle2D.Double(-1e8, -1e8, 2e8, 2e8), 40, null);
 		mMinimumQuadrantArea = Double.NaN;
 		mMyTreeHandler.install(mTree);
 	}
-	
+
 	@Override
 	public boolean contains(GraphicsItem item) {
 		return mItemDataMap.containsKey(item);
@@ -112,20 +112,18 @@ public class QuadTreeStorage implements IItemStorage {
 
 	@Override
 	public boolean addItem(GraphicsItem item) {
-		if (item == null) 
+		if ((item == null) || contains(item))
 			return false;
-		if (contains(item))
-			return false;
-		
+
 		if (mMinimumQuadrantArea != mMinimumQuadrantArea) { //has not been defined yet, so we use the doubled area of the first added item
 			Rectangle2D b = item.getSceneBounds();
 			mMinimumQuadrantArea = 2.0 * b.getWidth() * b.getHeight();
 		}
-		
+
 		MyGraphicsItemIndex entry = new MyGraphicsItemIndex(item);
 		mItemDataMap.put(item, entry);
 		mTree.insert(entry);
-		
+
 		return true;
 	}
 

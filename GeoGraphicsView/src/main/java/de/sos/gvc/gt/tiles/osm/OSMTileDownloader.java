@@ -111,29 +111,29 @@ public class OSMTileDownloader implements ITileLoader<OSMTileDescription>, IByte
 		URLConnection connection = url.openConnection();
 		connection.setConnectTimeout(mConnectTimeOutMillis);
 		connection.setReadTimeout(mReadTimeOutMillis);
-        connection.setRequestProperty("User-Agent", mUserAgent);
-        InputStream ins = connection.getInputStream();
+		connection.setRequestProperty("User-Agent", mUserAgent);
+		InputStream ins = connection.getInputStream();
 
-        ByteArrayOutputStream bout = new ByteArrayOutputStream();
-        byte[] buf = new byte[256];
-        while (true)
-        {
-            int n = ins.read(buf);
-            if (n == -1)
-                break;
-            bout.write(buf, 0, n);
-        }
-        ins.close();
+		ByteArrayOutputStream bout = new ByteArrayOutputStream();
+		byte[] buf = new byte[256];
+		while (true)
+		{
+			int n = ins.read(buf);
+			if (n == -1)
+				break;
+			bout.write(buf, 0, n);
+		}
+		ins.close();
 
-        byte[] data = bout.toByteArray();
-        bout.close();
-        return data;
+		byte[] data = bout.toByteArray();
+		bout.close();
+		return data;
 	}
 	@Override
 	public byte[] loadTile(OSMTileDescription description) {
 
 		return new OSMTileDownloader().getCompressedTileImage(description);
-//		return getCompressedTileImage(description);
+		//		return getCompressedTileImage(description);
 	}
 
 

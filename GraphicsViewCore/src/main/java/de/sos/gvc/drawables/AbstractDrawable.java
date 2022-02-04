@@ -12,13 +12,13 @@ import de.sos.gvc.IDrawable;
 import de.sos.gvc.styles.DrawableStyle;
 
 /**
- * 
+ *
  * @author scholvac
  *
  */
 public abstract class AbstractDrawable implements IDrawable {
 	protected TransformedStroke 			mTransformedStroke = null;
-	
+
 	protected void drawStyled(final Graphics2D g, final Shape shape, final DrawableStyle style, final IDrawContext ctx) {
 		if (style == null) {
 			g.draw(shape);
@@ -32,7 +32,7 @@ public abstract class AbstractDrawable implements IDrawable {
 				if (shape instanceof Line2D) {
 					g.draw(shape);
 				}else {
-					
+
 					if (style.getLineStroke() != null) {
 						if (mTransformedStroke == null) {
 							try {
@@ -51,9 +51,9 @@ public abstract class AbstractDrawable implements IDrawable {
 						}
 					}else
 						mTransformedStroke = null;
-					
-					
-					
+
+
+
 					Stroke os = g.getStroke();
 					float scale = (float)ctx.getScale();
 					Stroke ls = mTransformedStroke;
@@ -61,16 +61,16 @@ public abstract class AbstractDrawable implements IDrawable {
 						if (scale > 1)
 							ls = new BasicStroke(1);//scale);
 						else
-							ls = new BasicStroke((float) (scale));
-					
+							ls = new BasicStroke((scale));
+
 					g.setStroke(ls);
 					g.draw(shape);
-					
-					
-					g.setStroke(os);						
+
+
+					g.setStroke(os);
 				}
 			}
 		}
 	}
-	
+
 }

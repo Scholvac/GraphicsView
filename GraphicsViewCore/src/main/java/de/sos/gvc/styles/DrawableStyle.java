@@ -15,26 +15,26 @@ import java.awt.image.BufferedImage;
 import de.sos.gvc.IDrawContext;
 
 /**
- * 
+ *
  * @author scholvac
  *
  */
 public class DrawableStyle {
-	
+
 	private String 			name = null;
 	private Paint			mFillPaint = null;
-	
+
 	private Stroke			mLineStroke = null;
 	private Paint			mLinePaint = null;
-	
+
 	private Font			mFont = null;
-	
+
 	private BufferedImage 	mTexture;
 	private TexturePaint	mTexturePaint;
-	
-	
+
+
 	public DrawableStyle() { this(null); }
-	
+
 	public DrawableStyle(String name) {
 		this(name, null, null, null);
 	}
@@ -55,9 +55,9 @@ public class DrawableStyle {
 
 	public void setFont(Font f) { this.mFont = f; }
 	public Font getFont() { return mFont;}
-	
-	
-	
+
+
+
 	public Paint getFillPaint() {
 		return mFillPaint;
 	}
@@ -70,11 +70,11 @@ public class DrawableStyle {
 	public BufferedImage getTexture() {
 		return mTexture;
 	}
-	public boolean hasTexture() { 
-		return mTexture != null; 
+	public boolean hasTexture() {
+		return mTexture != null;
 	}
 
-	
+
 	public Stroke getLineStroke() {
 		return mLineStroke;
 	}
@@ -100,8 +100,8 @@ public class DrawableStyle {
 	public boolean hasLinePaint() {
 		return getLinePaint() != null;
 	}
-	
-	
+
+
 	public void applyFillPaint(Graphics2D g, IDrawContext ctx, Shape shape) {
 		if (hasTexture()) {
 			Rectangle2D b = shape.getBounds2D();
@@ -139,10 +139,10 @@ public class DrawableStyle {
 			g.setPaint(linePaint);
 		}
 	}
-	
-	
-	
-	
+
+
+
+
 	public Rectangle2D getBounds(Graphics g, String text) {
 		if (g == null) return null;
 		Font f = getFont(); if (f == null) f = g.getFont();
@@ -150,7 +150,7 @@ public class DrawableStyle {
 		if (fm == null) return null;
 		return fm.getStringBounds(text, g);
 	}
-	
+
 	public Rectangle2D getBounds(String text) {
 		//we have to create a new graphics context
 		Canvas c = new Canvas();
@@ -162,5 +162,5 @@ public class DrawableStyle {
 		return new Rectangle2D.Double(-w / 2.0, -h / 2.0, w, h);
 	}
 
-	
+
 }

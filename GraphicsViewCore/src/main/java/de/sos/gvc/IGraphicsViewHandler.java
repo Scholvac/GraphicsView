@@ -1,7 +1,7 @@
 package de.sos.gvc;
 
 /**
- * 
+ *
  * @author scholvac
  *
  */

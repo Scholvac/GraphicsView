@@ -16,24 +16,24 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * 
- * There are two ways of logging within GVLog. 
+ *
+ * There are two ways of logging within GVLog.
  * 1) Using the GVLog's static methods for easy logging, without need to create a logger for each class. Thereby the GVLog automatically detects the calling class
- * 2) Use the GVLog method to create a static logger for a specific classifier. 
- * 
+ * 2) Use the GVLog method to create a static logger for a specific classifier.
+ *
  * The second method should be used if heavily logging is required and performance becomes an issue, since the static methods of GVLog do need to detect the Loggers name
- * at every method invocation. 
- * 
+ * at every method invocation.
+ *
  * @author scholvac
  *
  */
-public class GVLog { 
-	
+public class GVLog {
+
 	public static interface GVLogFactory {
 		public void initialize(final URL url);
 		public Logger createLogger(final String qualifiedName);
 	}
-	
+
 	private static class DefaultSLF4JLogFactory implements GVLogFactory {
 		@Override
 		public void initialize(URL url) {
@@ -60,24 +60,24 @@ public class GVLog {
 			return LoggerFactory.getLogger(qualifiedName);
 		}
 	}
-	
+
 	private static GVLog theInstance = new GVLog();
 	private GVLogFactory mLoggerFactory = new DefaultSLF4JLogFactory();
-	
-	
+
+
 	public static GVLog getInstance() {
 		return theInstance;
 	}
-	
+
 	private boolean mInitialized = false;
-	
+
 	private int		mIntendation = 0;
 	private String	mIntendationStr = "";
-	
+
 	private GVLog(){
 	}
-	
-	
+
+
 	public void initialize(final File logFile){
 		URL url = null;
 		if (logFile != null && logFile.exists()){
@@ -112,13 +112,13 @@ public class GVLog {
 	public static void setIntendation(final int intendation){
 		if (theInstance == null)
 			return ;
-		
+
 		int oldInt = theInstance.mIntendation;
-		theInstance.mIntendation = intendation; 
+		theInstance.mIntendation = intendation;
 		if (theInstance.mIntendation < 0) theInstance.mIntendation = 0;
 		theInstance.mIntendationStr = "";
 		for (int i = 0; i < theInstance.mIntendation; i++) theInstance.mIntendationStr += "\t";
-		
+
 		Logger l = getLogger(Logger.ROOT_LOGGER_NAME);
 		Enumeration app = org.apache.log4j.Logger.getRootLogger().getAllAppenders();
 		while(app.hasMoreElements()){
@@ -137,8 +137,8 @@ public class GVLog {
 			}
 		}
 	}
-	
-	
+
+
 	public Appender getAppender(String name) {
 		Logger l = getLogger(Logger.ROOT_LOGGER_NAME);
 		Enumeration app = org.apache.log4j.Logger.getRootLogger().getAllAppenders();
@@ -162,8 +162,8 @@ public class GVLog {
 			GVLog.error("Failed to change appender threshold");
 		}
 	}
-	
-	
+
+
 	public static void error(final int intendationDelta, final String message){
 		if (theInstance != null) addIndentation(intendationDelta);
 		error(message);
@@ -224,7 +224,7 @@ public class GVLog {
 		debug(message);
 		if (theInstance != null) addIndentation(intendationDelta);
 	}
-	
+
 	public static void debug(final String message)
 	{
 		try{
@@ -264,7 +264,7 @@ public class GVLog {
 	 */
 	public static Logger getLogger(String fqcn) {
 		try{
-			if (theInstance != null && theInstance.mInitialized == false)
+			if (theInstance != null && !theInstance.mInitialized)
 				theInstance.initialize();
 			if (theInstance != null && theInstance.mLoggerFactory != null)
 				return theInstance.mLoggerFactory.createLogger(fqcn);
@@ -274,7 +274,7 @@ public class GVLog {
 			return null;
 		}
 	}
-	
+
 	public static Logger getLogger(Class<?> clazz) {
 		return getLogger(clazz.getName());
 	}
@@ -289,10 +289,10 @@ public class GVLog {
 	}
 
 
-	
+
 	/**
 	 * Allows to register a custumized GVLogFactory to create a new Logger
-	 * @warn this method should not be used unless you are sure that you need it, also it will be applied system wide, e.g. changes the logging of the whole system. 
+	 * @warn this method should not be used unless you are sure that you need it, also it will be applied system wide, e.g. changes the logging of the whole system.
 	 * @param fac
 	 */
 	public void registerLogFactory(GVLogFactory fac){
@@ -300,6 +300,6 @@ public class GVLog {
 	}
 
 
-	
-	
+
+
 }

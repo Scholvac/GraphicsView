@@ -9,7 +9,7 @@ import de.sos.gvc.index.IndexEntry;
 
 
 /**
- * 
+ *
  * @author scholvac
  *
  */
@@ -20,20 +20,20 @@ public class BIGNode<T extends IndexEntry<?>> implements IBIGNode<T> {
 	private Rectangle2D[]			mQuadrants;
 	private IBIGNode<T>[]			mChildren;
 	private IBIGNode<T>				mParent;
-	
+
 	public BIGNode(Rectangle2D geom, IBIGNode<T> parent) {
 		mBounds = geom;
 		mParent = parent;
 		double x = geom.getMinX(), y = geom.getMinY();
 		double w2 = geom.getWidth() / 2.0, h2 = geom.getHeight() / 2.0;
 		mQuadrants = new Rectangle2D[] {
-				new Rectangle2D.Double(x, y, w2, h2), 
+				new Rectangle2D.Double(x, y, w2, h2),
 				new Rectangle2D.Double(x+w2, y, w2, h2),
 				new Rectangle2D.Double(x, y + h2, w2, h2),
 				new Rectangle2D.Double(x+w2, y + h2, w2, h2)
 		};
 	}
-	
+
 	@Override
 	public BIGNodeType type() {
 		return BIGNodeType.NODE;
