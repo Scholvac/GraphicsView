@@ -1,5 +1,0 @@
-This package is derived from BBN OpenMap(tm), see: https://github.com/OpenMap-java/openmap
-
-What has been done: 
-Basically all unnessary functions and links to other classes have been removed, as much as possible. 
-This also includes that all constants have been moved from "OtherMath.java" to ProjMath.java
