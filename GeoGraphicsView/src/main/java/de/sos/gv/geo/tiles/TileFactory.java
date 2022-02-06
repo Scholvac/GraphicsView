@@ -42,7 +42,10 @@ public class TileFactory {
 
 
 	public TileFactory(ITileCache cache) {
-		this(cache, "TileFactoryWorker", 4);
+		this(cache, 4);
+	}
+	public TileFactory(ITileCache cache, final int threadCount) {
+		this(cache, "TileFactoryWorker", threadCount);
 	}
 	public TileFactory(ITileCache cache, final String threadName, final int threadCount) {
 		try {
@@ -55,6 +58,7 @@ public class TileFactory {
 		setTileCache(cache);
 		createExecutor(threadName, threadCount);
 	}
+
 
 	public void setTileCache(ITileCache cache) { mTileCache = cache;}
 	public void setNumberOfThreads(final int count) { createExecutor(mThreadName, count);}
