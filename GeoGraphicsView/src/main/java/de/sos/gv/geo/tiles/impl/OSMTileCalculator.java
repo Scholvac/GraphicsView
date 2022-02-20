@@ -45,7 +45,7 @@ public class OSMTileCalculator implements ITileCalculator {
 		for (int i = 0; i < 20; i++) {
 			double zoomMeterPerPixel = ( 156543.03 * cos_llRadLat ) / FastMath.pow(2, i);//Exact length of the equator (according to wikipedia) is 40075.016686 km in WGS-84. At zoom 0, one pixel would equal 156543.03 meters (assuming a tile size of 256 px):
 			if (zoomMeterPerPixel <= reqMeterPerPixel)
-				return i-1;
+				return i-2;
 		}
 		return -1;
 	}

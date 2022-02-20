@@ -16,6 +16,7 @@ public interface IItemStorage {
 	public boolean addItem(GraphicsItem item);
 	public boolean removeItem(GraphicsItem item);
 
-	public List<GraphicsItem> getAllItems(); //may return an unmodifiable list
+	/** Returns an possible unmodifiable list of all registered (root) GraphicsItems. */
+	public List<GraphicsItem> getAllItems();
 	public List<GraphicsItem> getItems(Rectangle2D rect, IItemFilter filter);
 }

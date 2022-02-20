@@ -422,4 +422,11 @@ public class GraphicsView extends JPanel {
 		setScale(scaleX, scaleY);
 	}
 
+
+	/** Forward the cleared notification to all IGraphicsViewHandler that may relay on Scene content */
+	public void notifySceneCleared() {
+		for (IGraphicsViewHandler handler : mHandler)
+			handler.notifySceneCleared();
+	}
+
 }

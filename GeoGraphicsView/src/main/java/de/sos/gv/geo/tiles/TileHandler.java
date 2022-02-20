@@ -119,4 +119,10 @@ public class TileHandler implements IGraphicsViewHandler, IPaintListener {
 	@Override
 	public void postPaint(Graphics2D graphics, IDrawContext context) {} //not used
 
+	@Override
+	public void notifySceneCleared() {
+		mActiveTiles.values().forEach(ti -> mFactory.release(ti));
+		mActiveTiles.clear();
+		mTileUpdateRequired = true;
+	}
 }

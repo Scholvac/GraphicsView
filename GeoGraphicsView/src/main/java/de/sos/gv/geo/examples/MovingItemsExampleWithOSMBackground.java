@@ -1,4 +1,5 @@
 package de.sos.gv.geo.examples;
+
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.geom.Path2D;
@@ -38,13 +39,12 @@ import de.sos.gvc.styles.DrawableStyle;
  */
 public class MovingItemsExampleWithOSMBackground {
 
-	public static Random			mRandom = new Random(42);
+	public static Random mRandom = new Random(42);
 
 	static class RandomItemSimulator {
-		GraphicsItem		mItem;
+		GraphicsItem mItem;
 
-		double 				mSOG = mRandom.nextDouble() * 0.1;//[m/s]
-
+		double mSOG = mRandom.nextDouble() * 0.1;// [m/s]
 
 		public RandomItemSimulator(GraphicsItem item) {
 			mItem = item;
@@ -53,8 +53,8 @@ public class MovingItemsExampleWithOSMBackground {
 		public void update() {
 			float shallMove = mRandom.nextFloat();
 			if (shallMove > 0.63f)
-				return ;
-			//prop of 0.1 to change the course
+				return;
+			// prop of 0.1 to change the course
 			float p = mRandom.nextFloat();
 			if (p < 0.4f) {
 				float dcog = (mRandom.nextFloat() * 100) - 50; // +-5°
@@ -65,9 +65,12 @@ public class MovingItemsExampleWithOSMBackground {
 			if (p < 0.05f) {
 				float dsog = ((mRandom.nextFloat() * 200) - 100) * 100f;
 				mSOG += dsog;
-				if (mSOG > 1000) mSOG = 1000; if (mSOG < -1000) mSOG = -1000;
+				if (mSOG > 1000)
+					mSOG = 1000;
+				if (mSOG < -1000)
+					mSOG = -1000;
 			}
-			//integrate new position
+			// integrate new position
 			double fx = 0, fy = -mSOG, angle_radian = -mItem.getRotationRadians();
 			double cos = Math.cos(angle_radian);
 			double sin = Math.sin(angle_radian);
@@ -76,7 +79,7 @@ public class MovingItemsExampleWithOSMBackground {
 
 			double x = mItem.getCenterX() + xx;
 			double y = mItem.getCenterY() + yy;
-			//check if we are outside of the world (with some margin)
+			// check if we are outside of the world (with some margin)
 			LatLonPoint llp = GeoUtils.getLatLon(x, y);
 			if (Math.abs(llp.getLatitude()) > 80)
 				y = 0;
@@ -86,9 +89,9 @@ public class MovingItemsExampleWithOSMBackground {
 		}
 	}
 
-
 	/**
 	 * Create a simple item, that draws its shape (triangle) and has a random color
+	 *
 	 * @param width
 	 * @param height
 	 * @return
@@ -112,47 +115,46 @@ public class MovingItemsExampleWithOSMBackground {
 		return item;
 	}
 
-
-
 	public static void main(String[] args) {
 		GVLog.getInstance().initialize();
 		Logger l = GVLog.getLogger(Logger.ROOT_LOGGER_NAME);
 		Enumeration app = org.apache.log4j.Logger.getRootLogger().getAllAppenders();
-		while(app.hasMoreElements()){
+		while (app.hasMoreElements()) {
 			Object obj = app.nextElement();
-			if (obj instanceof Appender){
-				Appender a = (Appender)obj;
+			if (obj instanceof Appender) {
+				Appender a = (Appender) obj;
 				GVLog.getInstance().changeLogLevel(a, Level.INFO);
 			}
 		}
-		//Create a new Scene and a new View
-		//Advanced: Try out different Storage strategies (QuadTree or List Storage)
-		//		GraphicsScene scene = new GraphicsScene(new QuadTreeStorage());
+		// Create a new Scene and a new View
+		// Advanced: Try out different Storage strategies (QuadTree or List Storage)
+		// GraphicsScene scene = new GraphicsScene(new QuadTreeStorage());
 		GraphicsScene scene = new GraphicsScene(new ListStorage());
 		GraphicsView view = new GraphicsView(scene, new ParameterContext());
 
-
-		//Standard Handler
+		// Standard Handler
 		view.addHandler(new MouseDelegateHandler());
 		view.addHandler(new DefaultViewDragHandler());
 
 		/**
-		 * Create a cache cascade: RAM (10 MB) -> HDD (100MB) -> WEB and initializes a standard TileFactory with 4 threads.
-		 * For more informations on how to initialize the Tile Background, see OSMExample
+		 * Create a cache cascade: RAM (10 MB) -> HDD (100MB) -> WEB and initializes a
+		 * standard TileFactory with 4 threads. For more informations on how to
+		 * initialize the Tile Background, see OSMExample
 		 */
-		ITileCache cache = ITileCache.build(TileImageProvider.OSM, new ImageCache(10*1024*1024), new FileCache(new File("./.cache"), 100*1024*1024));
+		ITileCache cache = ITileCache.build(TileImageProvider.OSM, new ImageCache(10 * 1024 * 1024),
+				new FileCache(new File("./.cache"), 100 * 1024 * 1024));
 		view.addHandler(new TileHandler(new TileFactory(cache)));
 
 		view.setScale(20);
 
-		//create a number of items and simulations that shall be drawn to the view
+		// create a number of items and simulations that shall be drawn to the view
 		double itemWith = 60;
 		double itemHeight = 100;
 		double xMargin = 100, yMargin = 100;
 		int numX = 200;
 		int numY = 200;
 
-		ArrayList<RandomItemSimulator>	simulators = new ArrayList<>();
+		ArrayList<RandomItemSimulator> simulators = new ArrayList<>();
 		double xStep = itemWith + xMargin / 2.0;
 		double xStart = (-0.5 * numX) * (xStep);
 		double yStep = itemHeight + yMargin / 2.0;
@@ -161,11 +163,12 @@ public class MovingItemsExampleWithOSMBackground {
 		for (int ix = 0; ix < numX; ix++) {
 			double x = xStart + xStep * ix;
 			for (int iy = 0; iy < numY; iy++) {
-				double y = yStart + yStep * iy;;
+				double y = yStart + yStep * iy;
+				;
 				GraphicsItem item = createItem(itemWith, itemHeight);
-				item.setCenter(x,y);
+				item.setCenter(x, y);
 				scene.addItem(item);
-				simulators.add(new RandomItemSimulator(item)); //create a simulator that moves the item randomly
+				simulators.add(new RandomItemSimulator(item)); // create a simulator that moves the item randomly
 				System.out.println(ic++);
 			}
 		}
@@ -173,7 +176,7 @@ public class MovingItemsExampleWithOSMBackground {
 		Thread t = new Thread() {
 			@Override
 			public void run() {
-				while(true) {
+				while (true) {
 					simulators.parallelStream().forEach(RandomItemSimulator::update);
 					try {
 						Thread.sleep(200);
@@ -187,8 +190,6 @@ public class MovingItemsExampleWithOSMBackground {
 		t.setDaemon(true);
 		t.start();
 
-
-
 		JFrame frame = new JFrame("Moving Items with OSM Background");
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		frame.setSize(800, 800);
@@ -196,19 +197,19 @@ public class MovingItemsExampleWithOSMBackground {
 		frame.add(view, BorderLayout.CENTER);
 		frame.setVisible(true);
 
-		//		Used for profiling
-		//		new Thread() {
-		//			@Override
-		//			public void run() {
-		//				try {
-		//					Thread.sleep(60*1000);
-		//				} catch (InterruptedException e) {
-		//					// TODO Auto-generated catch block
-		//					e.printStackTrace();
-		//				}
-		//				System.exit(1);
-		//			}
-		//		}.start();
+		// Used for profiling
+		// new Thread() {
+		// @Override
+		// public void run() {
+		// try {
+		// Thread.sleep(60*1000);
+		// } catch (InterruptedException e) {
+		// // TODO Auto-generated catch block
+		// e.printStackTrace();
+		// }
+		// System.exit(1);
+		// }
+		// }.start();
 
 	}
 

@@ -356,4 +356,13 @@ public class GraphicsScene {
 		return mViews;
 	}
 
+	public void clear() {
+		List<GraphicsItem> itemsToRemove = mItemStore.getAllItems();
+		for (GraphicsItem item : itemsToRemove)
+			removeItem(item);
+		for (GraphicsView view : mViews)
+			view.notifySceneCleared(); //some view's may cache items (e.g. tiles) and become notified to update caches...
+		markDirty();
+	}
+
 }
