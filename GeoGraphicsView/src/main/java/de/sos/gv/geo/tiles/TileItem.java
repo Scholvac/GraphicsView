@@ -38,7 +38,7 @@ public class TileItem extends GraphicsItem {
 			int y = (int)mBoundingBox.getY();
 			int w = (int)mBoundingBox.getWidth();
 			int h = (int)mBoundingBox.getHeight();
-			g.drawImage(mImage, x, y, w, h, null);
+			g.drawImage(mImage, x-1, y+1, w+1, h-1, null);
 		}
 
 	}

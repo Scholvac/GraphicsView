@@ -664,9 +664,7 @@ public class GraphicsItem implements IShapeProvider  {
 	 * @param scene
 	 */
 	void _setScene(GraphicsScene scene){
-		if (scene != mScene) {
-			if (mScene != null) onRemovedFromScene(mScene);
-		}
+		if ((scene != mScene) && (mScene != null)) onRemovedFromScene(mScene);
 		mScene = scene;
 		if (mScene != null)
 			onAddedToScene(mScene);
@@ -723,12 +721,7 @@ public class GraphicsItem implements IShapeProvider  {
 
 		if (hasChildren()) {
 			List<GraphicsItem> children = new ArrayList<>(getChildren());
-			Collections.sort(children, new Comparator<GraphicsItem>() {
-				@Override
-				public int compare(GraphicsItem o1, GraphicsItem o2) {
-					return Float.compare(o1.getZOrder(), o2.getZOrder());
-				}
-			});
+			Collections.sort(children, Comparator.comparing(GraphicsItem::getZOrder));
 			synchronized (children) {
 				for (GraphicsItem child : children) {
 					if (child.isVisible())
@@ -853,11 +846,10 @@ public class GraphicsItem implements IShapeProvider  {
 			mSelectable = selectable;
 			mAllEventDelegate.firePropertyChange(PROP_SELECTABLE, !selectable, selectable);
 		}
-		if (applyToChildren)
-			if (mChildren != null && !mChildren.isEmpty()) {
-				for (GraphicsItem c : mChildren)
-					c.setSelectable(selectable, applyToChildren);
-			}
+		if (applyToChildren && (mChildren != null && !mChildren.isEmpty())) {
+			for (GraphicsItem c : mChildren)
+				c.setSelectable(selectable, applyToChildren);
+		}
 	}
 
 	public boolean isSelectable() { return mSelectable;}
