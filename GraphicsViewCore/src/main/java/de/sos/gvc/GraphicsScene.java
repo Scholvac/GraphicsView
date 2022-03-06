@@ -35,18 +35,18 @@ public class GraphicsScene {
 
 	public static class ComboundItemFilter implements IItemFilter {
 		private IItemFilter[] mFilter;
-		public ComboundItemFilter(IItemFilter ...filters) {
+		public ComboundItemFilter(final IItemFilter ...filters) {
 			mFilter = filters;
 		}
 		@Override
-		public boolean accept(GraphicsItem item) {
+		public boolean accept(final GraphicsItem item) {
 			try {
-				for (IItemFilter f : mFilter){
+				for (final IItemFilter f : mFilter){
 					if (!f.accept(item))
 						return false;
 				}
 				return true;
-			}catch(Exception e) {
+			}catch(final Exception e) {
 				e.printStackTrace();
 				return false;
 			}
@@ -58,27 +58,27 @@ public class GraphicsScene {
 		private Rectangle2D 		mQuery;
 		private boolean 			mSceneCoordinates;
 
-		public RectangleSelectionFilter(Point2D point, double epsilon, boolean sceneCoordinates) {
+		public RectangleSelectionFilter(final Point2D point, final double epsilon, final boolean sceneCoordinates) {
 			this(new Rectangle2D.Double(point.getX() - epsilon/2.0, point.getY()-epsilon/2.0, epsilon, epsilon), sceneCoordinates);
 		}
 
-		public RectangleSelectionFilter(Rectangle2D rect, boolean sceneCoordinates) {
+		public RectangleSelectionFilter(final Rectangle2D rect, final boolean sceneCoordinates) {
 			mQuery = rect;
 			mSceneCoordinates = sceneCoordinates;
 		}
 
 		@Override
-		public boolean accept(GraphicsItem item) {
-			Shape s = item.getShape();
+		public boolean accept(final GraphicsItem item) {
+			final Shape s = item.getShape();
 			if (s == null) return false;
 			if (mSceneCoordinates) {
 				//first check the bounding box, if that fit, we also check the shape, otherwise we can skip the expensive test
-				Rectangle2D sb = item.getSceneBounds();
+				final Rectangle2D sb = item.getSceneBounds();
 				if (sb.contains(mQuery) || sb.intersects(mQuery)) {
 					return true;
 				}
 			}else {
-				Rectangle2D sb = item.getLocalBounds();
+				final Rectangle2D sb = item.getLocalBounds();
 				if (sb.contains(mQuery) || sb.intersects(mQuery)) {
 					return true;
 				}
@@ -90,31 +90,31 @@ public class GraphicsScene {
 		private Rectangle2D 		mQuery;
 		private boolean 			mSceneCoordinates;
 
-		public ShapeSelectionFilter(Point2D point, double epsilon, boolean sceneCoordinates) {
+		public ShapeSelectionFilter(final Point2D point, final double epsilon, final boolean sceneCoordinates) {
 			this(new Rectangle2D.Double(point.getX() - epsilon/2.0, point.getY()-epsilon/2.0, epsilon, epsilon), sceneCoordinates);
 		}
 
-		public ShapeSelectionFilter(Rectangle2D rect, boolean sceneCoordinates) {
+		public ShapeSelectionFilter(final Rectangle2D rect, final boolean sceneCoordinates) {
 			mQuery = rect;
 			mSceneCoordinates = sceneCoordinates;
 		}
 
 		@Override
-		public boolean accept(GraphicsItem item) {
-			Shape s = item.getShape();
+		public boolean accept(final GraphicsItem item) {
+			final Shape s = item.getShape();
 			if (s == null) return false;
 			if (mSceneCoordinates) {
 				//first check the bounding box, if that fit, we also check the shape, otherwise we can skip the expensive test
-				Rectangle2D sb = item.getSceneBounds();
+				final Rectangle2D sb = item.getSceneBounds();
 				if (sb.contains(mQuery) || sb.intersects(mQuery)) {
-					Rectangle2D sceneLocal = Utils.inverseTransform(mQuery, item.getWorldTransform()); //its faster to convert the 4 points of the query into the coordinates of the shape as converting the complex shape
+					final Rectangle2D sceneLocal = Utils.inverseTransform(mQuery, item.getWorldTransform()); //its faster to convert the 4 points of the query into the coordinates of the shape as converting the complex shape
 					if (s.contains(sceneLocal) || s.intersects(sceneLocal))
 						return true;
 				}
 			}else {
-				Rectangle2D sb = item.getLocalBounds();
+				final Rectangle2D sb = item.getLocalBounds();
 				if (sb.contains(mQuery) || sb.intersects(mQuery)) {
-					Rectangle2D localLocal = Utils.inverseTransform(mQuery, item.getLocalTransform()); //its faster to convert the 4 points of the query into the coordinates of the shape as converting the complex shape
+					final Rectangle2D localLocal = Utils.inverseTransform(mQuery, item.getLocalTransform()); //its faster to convert the 4 points of the query into the coordinates of the shape as converting the complex shape
 					if (s.contains(localLocal) || s.intersects(localLocal))
 						return true;
 				}
@@ -127,7 +127,7 @@ public class GraphicsScene {
 		//		IParameter<Boolean> mDP = null;
 		//		public ItemListener(IParameter<Boolean> dp) { mDP = dp;}
 		@Override
-		public void propertyChange(PropertyChangeEvent evt) {
+		public void propertyChange(final PropertyChangeEvent evt) {
 			if (!mDirty) {
 				markDirty();
 			}
@@ -150,7 +150,7 @@ public class GraphicsScene {
 	public GraphicsScene() {
 		this(new ListStorage());
 	}
-	public GraphicsScene(IItemStorage itemStore) {
+	public GraphicsScene(final IItemStorage itemStore) {
 		mItemStore = itemStore;
 		mItemListener = new ItemListener();
 	}
@@ -172,12 +172,12 @@ public class GraphicsScene {
 
 
 
-	public boolean registerDirtyListener(DirtyListener dl) {
+	public boolean registerDirtyListener(final DirtyListener dl) {
 		if (dl != null && !mDirtyListener.contains(dl))
 			return mDirtyListener.add(dl);
 		return false;
 	}
-	public boolean removeDirtyListener(DirtyListener dl) {
+	public boolean removeDirtyListener(final DirtyListener dl) {
 		if (dl == null || !mDirtyListener.contains(dl))
 			return true;
 		return mDirtyListener.remove(dl);
@@ -190,16 +190,16 @@ public class GraphicsScene {
 	 * Adds a view that displays the scene to its internal list
 	 * @param view
 	 */
-	void _addView(GraphicsView view) {
+	void _addView(final GraphicsView view) {
 		mViews.add(view);
 	}
-	void _removeView(GraphicsView view) {
+	void _removeView(final GraphicsView view) {
 		mViews.remove(view);
 	}
 
-	public boolean addItem(GraphicsItem... items) {
+	public boolean addItem(final GraphicsItem... items) {
 		boolean result = true;
-		for (GraphicsItem item : items)
+		for (final GraphicsItem item : items)
 			result = result & addItem(item);
 		return result;
 	}
@@ -222,7 +222,7 @@ public class GraphicsScene {
 		if (!mDirty) {
 			mDirty = true;
 			//notify listener
-			for (DirtyListener element : mDirtyListener)
+			for (final DirtyListener element : mDirtyListener)
 				element.notifyDirty();
 		}
 	}
@@ -234,11 +234,18 @@ public class GraphicsScene {
 		if (mDirty) {
 			mDirty = false;
 			//notify listener
-			for (DirtyListener element : mDirtyListener)
+			for (final DirtyListener element : mDirtyListener)
 				element.notifyClean();
 		}
 	}
 
+	public boolean removeItem(final GraphicsItem ...items) {
+		if (items == null) return false;
+		boolean res = true;
+		for (final GraphicsItem item : items)
+			res &= removeItem(item);
+		return res;
+	}
 	public boolean removeItem(final GraphicsItem item) {
 		if (item == null) return false;
 		if (mItemStore.removeItem(item)) {
@@ -252,14 +259,14 @@ public class GraphicsScene {
 		return false;
 	}
 
-	public List<GraphicsItem> getItems(Rectangle2D rect){
+	public List<GraphicsItem> getItems(final Rectangle2D rect){
 		return mItemStore.getItems(rect, null);
 	}
-	public List<GraphicsItem> getItems(Rectangle2D rect, IItemFilter filter){
+	public List<GraphicsItem> getItems(final Rectangle2D rect, final IItemFilter filter){
 		return mItemStore.getItems(rect, filter);
 	}
-	public List<GraphicsItem> getAllItems(Rectangle2D rect, IItemFilter filter) {
-		List<GraphicsItem> topLevel = getItems(rect, null);
+	public List<GraphicsItem> getAllItems(final Rectangle2D rect, final IItemFilter filter) {
+		final List<GraphicsItem> topLevel = getItems(rect, null);
 		return getAllItems(rect, topLevel, filter);
 	}
 
@@ -273,20 +280,20 @@ public class GraphicsScene {
 	 * @param filter
 	 * @return
 	 */
-	public List<GraphicsItem> getAllItems(Rectangle2D rect, List<GraphicsItem> items, IItemFilter filter) {
-		ArrayList<GraphicsItem> out = new ArrayList<>();
+	public List<GraphicsItem> getAllItems(final Rectangle2D rect, final List<GraphicsItem> items, final IItemFilter filter) {
+		final ArrayList<GraphicsItem> out = new ArrayList<>();
 		//first find all top level features and iterate only their children. all other would not meet the 2) condition
-		List<GraphicsItem> openList = getItems(rect, items, null); //@note do not use the filter here, to not exclude childen whose parent does not fit the fiilter but the child itself would pass the filter
+		final List<GraphicsItem> openList = getItems(rect, items, null); //@note do not use the filter here, to not exclude childen whose parent does not fit the fiilter but the child itself would pass the filter
 		while(!openList.isEmpty()) {
-			GraphicsItem first = openList.remove(0);
+			final GraphicsItem first = openList.remove(0);
 			if (filter == null || filter.accept(first))
 				out.add(first);
 			if (first.hasChildren()) {
-				for (GraphicsItem child : first.getChildren()) {
+				for (final GraphicsItem child : first.getChildren()) {
 					//we do not now if the child is part of the box, may it another child that let the parent be inside the box
 					if (!child.isVisible())
 						continue;
-					Rectangle2D wb = child.getSceneBounds();
+					final Rectangle2D wb = child.getSceneBounds();
 					if (rect.contains(wb) || rect.intersects(wb)) {
 						openList.add(child);
 					}
@@ -307,11 +314,11 @@ public class GraphicsScene {
 	 * @param filter
 	 * @return
 	 */
-	public List<GraphicsItem> getItems(Rectangle2D rect, Collection<GraphicsItem> items, IItemFilter filter) {
-		ArrayList<GraphicsItem> out = new ArrayList<>();
-		for (GraphicsItem item : items) {
+	public List<GraphicsItem> getItems(final Rectangle2D rect, final Collection<GraphicsItem> items, final IItemFilter filter) {
+		final ArrayList<GraphicsItem> out = new ArrayList<>();
+		for (final GraphicsItem item : items) {
 			if (!item.isVisible()) continue;
-			Rectangle2D wb = item.getSceneBounds();
+			final Rectangle2D wb = item.getSceneBounds();
 			if (intersect(wb, rect)) {
 				if (filter == null || filter.accept(item))
 					out.add(item);
@@ -324,17 +331,17 @@ public class GraphicsScene {
 	}
 
 
-	public static String rect2WKT(Rectangle2D r) {
-		Point2D[] v = getVertices(r);
-		StringBuilder out = new StringBuilder("POLYGON((");
-		for (Point2D p : v) {
+	public static String rect2WKT(final Rectangle2D r) {
+		final Point2D[] v = getVertices(r);
+		final StringBuilder out = new StringBuilder("POLYGON((");
+		for (final Point2D p : v) {
 			out.append(p.getX()).append(" ").append(p.getY()).append(", ");
 		}
 		out.append(v[0].getX()).append(" ").append(v[0].getY());
 		out.append("))");
 		return out.toString();
 	}
-	public static Point2D[] getVertices(Rectangle2D r) {
+	public static Point2D[] getVertices(final Rectangle2D r) {
 		return new Point2D[] {
 				new Point2D.Double(r.getMinX(), r.getMinY()),
 				new Point2D.Double(r.getMinX(), r.getMaxY()),
@@ -343,7 +350,7 @@ public class GraphicsScene {
 		};
 	}
 
-	private boolean intersect(Rectangle2D a, Rectangle2D b) {
+	private boolean intersect(final Rectangle2D a, final Rectangle2D b) {
 		return b.intersects(a) || b.contains(a);
 	}
 
@@ -357,10 +364,10 @@ public class GraphicsScene {
 	}
 
 	public void clear() {
-		List<GraphicsItem> itemsToRemove = mItemStore.getAllItems();
-		for (GraphicsItem item : itemsToRemove)
+		final List<GraphicsItem> itemsToRemove = mItemStore.getAllItems();
+		for (final GraphicsItem item : itemsToRemove)
 			removeItem(item);
-		for (GraphicsView view : mViews)
+		for (final GraphicsView view : mViews)
 			view.notifySceneCleared(); //some view's may cache items (e.g. tiles) and become notified to update caches...
 		markDirty();
 	}

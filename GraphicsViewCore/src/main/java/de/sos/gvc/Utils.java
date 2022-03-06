@@ -1,6 +1,8 @@
 package de.sos.gvc;
 
+import java.awt.Shape;
 import java.awt.geom.AffineTransform;
+import java.awt.geom.GeneralPath;
 import java.awt.geom.NoninvertibleTransformException;
 import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
@@ -14,78 +16,78 @@ import java.util.List;
  */
 public class Utils {
 
-	public static Rectangle2D transform(Rectangle2D rect, AffineTransform transform, Rectangle2D store) {
+	public static Rectangle2D transform(final Rectangle2D rect, final AffineTransform transform, final Rectangle2D store) {
 		double mix = rect.getMinX();
 		double max = rect.getMaxX();
 		double miy = rect.getMinY();
 		double may = rect.getMaxY();
 		//build all 4 vertices
-		double[] vertices = new double[] {
+		final double[] vertices = {
 				mix, may, //ul
 				max, may, //ur
 				max, miy, //lr
 				mix, miy  //ll
 		};
-		double[] newVertices = new double[8];
+		final double[] newVertices = new double[8];
 		transform.transform(vertices, 0, newVertices, 0, 4);
 		mix = miy = Double.MAX_VALUE;
 		max = may = -Double.MAX_VALUE;
 		for (int i = 0; i < 8; i+=2) {
-			double x = newVertices[i], y = newVertices[i+1];
+			final double x = newVertices[i], y = newVertices[i+1];
 			mix = Math.min(x, mix);
 			max = Math.max(x, max);
 			miy = Math.min(y, miy);
 			may = Math.max(y, may);
 		}
-		double w = max - mix;
-		double h = may - miy;
+		final double w = max - mix;
+		final double h = may - miy;
 		if (store == null)
 			return new Rectangle2D.Double(mix, miy, w, h);
 		store.setRect(mix, miy, w, h);
 		return store;
 	}
-	public static Rectangle2D transform(Rectangle2D rect, AffineTransform transform) {
+	public static Rectangle2D transform(final Rectangle2D rect, final AffineTransform transform) {
 		return transform(rect, transform, null);
 	}
 
-	public static Rectangle2D inverseTransform(Rectangle2D rect, AffineTransform transform) {
+	public static Rectangle2D inverseTransform(final Rectangle2D rect, final AffineTransform transform) {
 		double mix = rect.getMinX();
 		double max = rect.getMaxX();
 		double miy = rect.getMinY();
 		double may = rect.getMaxY();
 		//build all 4 vertices
-		double[] vertices = new double[] {
+		final double[] vertices = {
 				mix, may, //ul
 				max, may, //ur
 				max, miy, //lr
 				mix, miy  //ll
 		};
-		double[] newVertices = new double[8];
+		final double[] newVertices = new double[8];
 		try {
 			transform.inverseTransform(vertices, 0, newVertices, 0, 4);
-		} catch (NoninvertibleTransformException e) {
+		} catch (final NoninvertibleTransformException e) {
 			e.printStackTrace();
 			return null;
 		}
 		mix = miy = Double.MAX_VALUE;
 		max = may = -Double.MAX_VALUE;
 		for (int i = 0; i < 8; i+=2) {
-			double x = newVertices[i], y = newVertices[i+1];
+			final double x = newVertices[i], y = newVertices[i+1];
 			mix = Math.min(x, mix);
 			max = Math.max(x, max);
 			miy = Math.min(y, miy);
 			may = Math.max(y, may);
 		}
-		double w = max - mix;
-		double h = may - miy;
+		final double w = max - mix;
+		final double h = may - miy;
 		return new Rectangle2D.Double(mix, miy, w, h);
 	}
 
-	public static Point2D[] getVertices(Rectangle2D rect) {
-		double mix = rect.getMinX();
-		double max = rect.getMaxX();
-		double miy = rect.getMinY();
-		double may = rect.getMaxY();
+	public static Point2D[] getVertices(final Rectangle2D rect) {
+		final double mix = rect.getMinX();
+		final double max = rect.getMaxX();
+		final double miy = rect.getMinY();
+		final double may = rect.getMaxY();
 
 		return new Point2D[] {
 				new Point2D.Double(mix, may),
@@ -95,26 +97,26 @@ public class Utils {
 		};
 	}
 
-	public static List<Rectangle2D> verticesToRectangle(List<Point2D[]> verticesList) {
-		ArrayList<Rectangle2D> out = new ArrayList<>();
-		for (Point2D[] vertices : verticesList) {
+	public static List<Rectangle2D> verticesToRectangle(final List<Point2D[]> verticesList) {
+		final ArrayList<Rectangle2D> out = new ArrayList<>();
+		for (final Point2D[] vertices : verticesList) {
 			out.add(verticesToRectangle(vertices));
 		}
 		return out;
 	}
 
-	public static Rectangle2D verticesToRectangle(Point2D[] vertices) {
+	public static Rectangle2D verticesToRectangle(final Point2D[] vertices) {
 		double mix = Double.MAX_VALUE, miy = Double.MAX_VALUE;
 		double max = -Double.MAX_EXPONENT, may = -Double.MAX_VALUE;
 		for (int i = 0; i < vertices.length; i++) {
-			double x = vertices[i].getX(), y = vertices[i].getY();
+			final double x = vertices[i].getX(), y = vertices[i].getY();
 			mix = Math.min(x, mix);
 			max = Math.max(x, max);
 			miy = Math.min(y, miy);
 			may = Math.max(y, may);
 		}
-		double w = max - mix;
-		double h = may - miy;
+		final double w = max - mix;
+		final double h = may - miy;
 		return new Rectangle2D.Double(mix, miy, w, h);
 	}
 
@@ -151,7 +153,7 @@ public class Utils {
 		};
 
 		public static TmpVars get() {
-			TmpVarsStack stack = varsLocal.get();
+			final TmpVarsStack stack = varsLocal.get();
 			TmpVars instance = stack.tempVars[stack.index];
 			if (instance == null) {
 				// Create new
@@ -176,7 +178,7 @@ public class Utils {
 				throw new IllegalStateException("This instance of TempVars was already released!");
 			}
 			isUsed = false;
-			TmpVarsStack stack = varsLocal.get();
+			final TmpVarsStack stack = varsLocal.get();
 			// Return it to the stack
 			stack.index--;
 			// Check if it is actually there
@@ -186,6 +188,80 @@ public class Utils {
 		}
 	}
 
+
+	///////////////////////////////////////////////////////////////////////////////////////////
+	//					Vector operations
+	///////////////////////////////////////////////////////////////////////////////////////////
+
+	public static Point2D.Double centerOf(final Point2D.Double start, final Point2D.Double end) {
+		final Point2D.Double vector = direction(start, end);
+		final double length = length(vector);
+		mul(vector, .5/length, vector);
+		return vector;
+	}
+	public static Point2D.Double mul(final Point2D.Double vector, final double factor, final Point2D.Double result) {
+		result.x = vector.x * factor;
+		result.y = vector.y * factor;
+		return result;
+	}
+	public static Point2D.Double add(final Point2D.Double center, final Point2D.Double double1) {
+		return add(center, double1, new Point2D.Double());
+	}
+	public static Point2D.Double add(final Point2D.Double vector, final Point2D.Double v2, final Point2D.Double result) {
+		result.x = vector.x + v2.x;
+		result.y = vector.y + v2.y;
+		return result;
+	}
+	public static double length(final Point2D.Double v) {
+		return Math.sqrt(lengthSq(v));
+	}
+	public static double lengthSq(final Point2D.Double v) {
+		return v.x*v.x + v.y*v.y;
+	}
+	public static Point2D.Double normalize(final Point2D.Double vector, final Point2D.Double result) {
+		return mul(vector, 1.0/length(vector), result);
+	}
+	public static Point2D.Double direction(final Point2D.Double start, final Point2D.Double end) {
+		return direction(start, end, new Point2D.Double());
+	}
+	public static Point2D.Double direction(final Point2D.Double start, final Point2D.Double end, final Point2D.Double result) {
+		result.x = end.x-start.x;
+		result.y = end.y-start.y;
+		return result;
+	}
+	public static double angleBetweenDeg(final Point2D.Double v2, final Point2D.Double v1) {
+		final double[] v12 = {v2.getX() - v1.getX(), v2.getY() - v1.getY()};
+		final double deg = Math.toDegrees(Math.acos(v12[1] / Math.sqrt(v12[0]*v12[0] + v12[1]*v12[1])));
+		return v12[0]<0.0 ? -deg : deg;
+	}
+
+
+	///////////////////////////////////////////////////////////////////////////////////////////
+	//					Geometry
+	///////////////////////////////////////////////////////////////////////////////////////////
+
+	public static Shape wkt2Shape(final String wkt) {
+		final int idx1 = wkt.lastIndexOf("(")+1;
+		final int idx2 = wkt.indexOf(")");
+		final String coords1 = wkt.substring(idx1, idx2);
+		final String coordArr[] = coords1.split(",");
+		final GeneralPath path = new GeneralPath();
+		final String fc[] = coordArr[0].split(" ");
+		final double fx = Float.parseFloat(fc[0]);
+		final double fy = Float.parseFloat(fc[1]);
+		path.moveTo(fx, fy);
+
+		for (int i = 1; i < coordArr.length; i++) {
+			final String c[] = coordArr[i].trim().split(" ");
+			final float cx = Float.parseFloat(c[0]);
+			final float cy = Float.parseFloat(c[1]);
+			path.lineTo(cx, cy);
+		}
+
+		if (coordArr[0].trim().equals(coordArr[coordArr.length-1].trim()))
+			path.closePath();
+		return path;
+	}
 
 
 }

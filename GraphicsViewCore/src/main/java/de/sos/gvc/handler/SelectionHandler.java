@@ -36,18 +36,18 @@ public class SelectionHandler implements IGraphicsViewHandler, MouseListener {
 		public final List<Point2D>						newSceneLocations;
 		public final List<Point2D>						moveDistance;
 
-		public ItemMoveEvent(List<GraphicsItem> items, List<Point2D> move) {
+		public ItemMoveEvent(final List<GraphicsItem> items, final List<Point2D> move) {
 			this.items = items;
 			oldSceneLocations = new ArrayList<>();
 			newSceneLocations = new ArrayList<>();
 			this.moveDistance = move;
 			for (int i = 0; i < move.size(); i++) {
-				Point2D p = items.get(i).getSceneLocation();
+				final Point2D p = items.get(i).getSceneLocation();
 				oldSceneLocations.add(new Point2D.Double(p.getX(), p.getY()));
 				newSceneLocations.add(new Point2D.Double(p.getX() + move.get(i).getX(), p.getY() + move.get(i).getY()));
 			}
 		}
-		public ItemMoveEvent(List<GraphicsItem> items, List<Point2D> oldLoc, List<Point2D> newLoc) {
+		public ItemMoveEvent(final List<GraphicsItem> items, final List<Point2D> oldLoc, final List<Point2D> newLoc) {
 			this.items = items;
 			this.oldSceneLocations = oldLoc;
 			this.newSceneLocations = newLoc;
@@ -56,6 +56,12 @@ public class SelectionHandler implements IGraphicsViewHandler, MouseListener {
 				moveDistance.add(new Point2D.Double(newLoc.get(i).getX() - oldLoc.get(i).getX(), newLoc.get(i).getY()-oldLoc.get(i).getY()));
 		}
 	}
+
+	public interface ISelectionCallback {
+		/** notifies that an item has been selected. */
+		public void onItemSelected(final List<GraphicsItem> items);
+	}
+
 	public interface IMoveCallback {
 		public void onItemMoved(ItemMoveEvent event);
 	}
@@ -68,7 +74,7 @@ public class SelectionHandler implements IGraphicsViewHandler, MouseListener {
 		private List<Rectangle2D> 					mOldSceneBounds;
 		private List<Rectangle2D> 					mNewSceneBounds;
 
-		public ItemScaleEvent(List<GraphicsItem> items, List<Point2D[]> oldVertices, List<Point2D[]> newVertices) {
+		public ItemScaleEvent(final List<GraphicsItem> items, final List<Point2D[]> oldVertices, final List<Point2D[]> newVertices) {
 			this.items = items;
 			this.oldSceneVertices = oldVertices;
 			this.newSceneVertices = newVertices;
@@ -86,10 +92,10 @@ public class SelectionHandler implements IGraphicsViewHandler, MouseListener {
 		}
 
 
-		public double[] getScaleFactors(int i) {
-			Rectangle2D or = getOldSceneBounds().get(i), nr = getNewSceneBounds().get(i);
-			double ow = or.getWidth(), nw = nr.getWidth();
-			double oh = or.getHeight(), nh = nr.getHeight();
+		public double[] getScaleFactors(final int i) {
+			final Rectangle2D or = getOldSceneBounds().get(i), nr = getNewSceneBounds().get(i);
+			final double ow = or.getWidth(), nw = nr.getWidth();
+			final double oh = or.getHeight(), nh = nr.getHeight();
 			return new double[] { nw / ow, nh / oh};
 		}
 	}
@@ -112,7 +118,7 @@ public class SelectionHandler implements IGraphicsViewHandler, MouseListener {
 		 */
 		public final  List<Double> endAngles;
 
-		public ItemRotateEvent(List<GraphicsItem> items, List<Double> startAngles, List<Double> endAngles) {
+		public ItemRotateEvent(final List<GraphicsItem> items, final List<Double> startAngles, final List<Double> endAngles) {
 			this.items = items;
 			this.startAngles = startAngles;
 			this.endAngles = endAngles;
@@ -125,70 +131,83 @@ public class SelectionHandler implements IGraphicsViewHandler, MouseListener {
 
 	private GraphicsView 				mView;
 	private GraphicsItem 				mLastSelectedItem 		= null;
-//	private SelectionBorderItem			mSelectionMarker 		= null;
+	//	private SelectionBorderItem			mSelectionMarker 		= null;
 	private GraphicsItem				mSelectionMarker		= null;
 
 	private IParameter<Double>			mEpsilon 				= new Parameter<>("Epsilon", "Selection Tolerance", true, 5.0);
 	private IItemFilter 				mSelectableFilter 		= new IItemFilter() {
 		@Override
-		public boolean accept(GraphicsItem item) {
+		public boolean accept(final GraphicsItem item) {
 			return item.isSelectable();
 		}
 	};
-	private ArrayList<IMoveCallback>	mMoveCallbacks = new ArrayList<>();
-	private ArrayList<IScaleCallback>	mScaleCallbacks = new ArrayList<>();
-	private ArrayList<IRotateCallback>	mRotationCallbacks = new ArrayList<>();
+	private ArrayList<IMoveCallback>		mMoveCallbacks = new ArrayList<>();
+	private ArrayList<IScaleCallback>		mScaleCallbacks = new ArrayList<>();
+	private ArrayList<IRotateCallback>		mRotationCallbacks = new ArrayList<>();
+	private ArrayList<ISelectionCallback>	mSelectionCallbacks = new ArrayList<>();
 
 
 	public SelectionHandler() {
-//		mSelectionMarker = new SelectionBorderItem(this);
+		//		mSelectionMarker = new SelectionBorderItem(this);
 	}
 
-	public void addMoveCallback(IMoveCallback mh) {
-		if (mh != null && !mMoveCallbacks.contains(mh))
-		mMoveCallbacks.add(mh);
+	/** register a new selection callback. The callback will be notified, if a new item was selected.
+	 * @note: this interface prevent the caller from register a listener on each GraphicsItem.
+	 */
+	public void addSelectionCallback(final ISelectionCallback sh) {
+		if (sh != null && !mSelectionCallbacks.contains(sh))
+			mSelectionCallbacks.add(sh);
 	}
-	public void removeMoveCallback(IMoveCallback mh) {
+	public void removeSelectionCallback(final ISelectionCallback sh) {
+		mSelectionCallbacks.remove(sh);
+	}
+	public boolean hasSelectionCallbacks() { return mSelectionCallbacks != null && mSelectionCallbacks.isEmpty() == false;}
+
+	public void addMoveCallback(final IMoveCallback mh) {
+		if (mh != null && !mMoveCallbacks.contains(mh))
+			mMoveCallbacks.add(mh);
+	}
+	public void removeMoveCallback(final IMoveCallback mh) {
 		mMoveCallbacks.remove(mh);
 	}
 	public boolean hasMoveCallbacks() { return mMoveCallbacks != null && !mMoveCallbacks.isEmpty(); }
 
-	public void addScaleCallback(IScaleCallback sc) {
+	public void addScaleCallback(final IScaleCallback sc) {
 		if (sc != null && !mScaleCallbacks.contains(sc))
-		mScaleCallbacks.add(sc);
+			mScaleCallbacks.add(sc);
 	}
-	public void removeScaleCallback(IScaleCallback sc) {
+	public void removeScaleCallback(final IScaleCallback sc) {
 		mScaleCallbacks.remove(sc);
 	}
 	public boolean hasScaleCallbacks() { return mScaleCallbacks != null && !mScaleCallbacks.isEmpty(); }
 
-	public void addRotationCallback(IRotateCallback rc) {
+	public void addRotationCallback(final IRotateCallback rc) {
 		if (rc != null && !mRotationCallbacks.contains(rc))
-		mRotationCallbacks.add(rc);
+			mRotationCallbacks.add(rc);
 	}
-	public void removeRotationCallback(IRotateCallback rc) {
+	public void removeRotationCallback(final IRotateCallback rc) {
 		mRotationCallbacks.remove(rc);
 	}
 	public boolean hasRotationCallbacks() { return mRotationCallbacks != null && !mRotationCallbacks.isEmpty(); }
 
 	@Override
-	public void install(GraphicsView view) {
+	public void install(final GraphicsView view) {
 		mView = view;
 		mView.addMouseListener(this);
 	}
 
 	@Override
-	public void uninstall(GraphicsView view) {
+	public void uninstall(final GraphicsView view) {
 		mView.removeMouseListener(this);
 		mView = null;
 	}
 
 
 	@Override
-	public void mouseClicked(MouseEvent e) {
+	public void mouseClicked(final MouseEvent e) {
 		if (e.isConsumed())
 			return ;
-		GraphicsItem item = getBestFit(e.getPoint());
+		final GraphicsItem item = getBestFit(e.getPoint());
 		if (item == mLastSelectedItem) {
 			return ; //do nothing also do not consume the event to give other the chance to work on the selected item
 		}
@@ -196,21 +215,23 @@ public class SelectionHandler implements IGraphicsViewHandler, MouseListener {
 
 		if (mLastSelectedItem != null)
 			uninstallSelectionMarker(); //since its not the same, we do a cleanup and eventually reinitialize it in the next step
-		if (item != null)
+		if (item != null) {
 			installSelectionMarker(item);
+			fireSelectionEvent(item);
+		}
 
 		e.consume();
 	}
 
-	protected GraphicsItem getSelectionMarker(GraphicsItem item) {
+	protected GraphicsItem getSelectionMarker(final GraphicsItem item) {
 		//return new ShapeSelectionMarker(this, item);
-//		SelectionBorderItem sbi = new SelectionBorderItem(this);
-		BoundingBoxSelectionItem sbi = new BoundingBoxSelectionItem(this);
+		//		SelectionBorderItem sbi = new SelectionBorderItem(this);
+		final BoundingBoxSelectionItem sbi = new BoundingBoxSelectionItem(this);
 		sbi.setSelectedItem(item);
 		return sbi;
 	}
 
-	private void installSelectionMarker(GraphicsItem item) {
+	private void installSelectionMarker(final GraphicsItem item) {
 		mLastSelectedItem = item; //remember for next time
 
 		mSelectionMarker = getSelectionMarker(item);
@@ -219,9 +240,9 @@ public class SelectionHandler implements IGraphicsViewHandler, MouseListener {
 			mView.getScene().addItem(mSelectionMarker);
 		}
 
-//		mSelectionMarker.setSelectedItem(item);
-//		mSelectionMarker.setVisible(true);
-//		mView.getScene().addItem(mSelectionMarker);
+		//		mSelectionMarker.setSelectedItem(item);
+		//		mSelectionMarker.setVisible(true);
+		//		mView.getScene().addItem(mSelectionMarker);
 		item.setSelected(true);
 		onItemSelected(item); //notify subclasses
 	}
@@ -229,7 +250,7 @@ public class SelectionHandler implements IGraphicsViewHandler, MouseListener {
 	 * 	This method may be overwritten by subclasses, to get notified if an item has been selected
 	 * @param item
 	 */
-	protected void onItemSelected(GraphicsItem item) {
+	protected void onItemSelected(final GraphicsItem item) {
 		// This method may be overwritten by subclasses, to get notified if an item has been selected
 	}
 	private void uninstallSelectionMarker() {
@@ -243,43 +264,38 @@ public class SelectionHandler implements IGraphicsViewHandler, MouseListener {
 
 		}
 		mSelectionMarker = null;
-//		mSelectionMarker.setSelectedItem(null);
-//		mSelectionMarker.setVisible(false);
-//		mView.getScene().removeItem(mSelectionMarker);
+		//		mSelectionMarker.setSelectedItem(null);
+		//		mSelectionMarker.setVisible(false);
+		//		mView.getScene().removeItem(mSelectionMarker);
 	}
 
 	/**
 	 * This method may be overwritten by subclasses, to get notified if an item has been deselected
 	 * @param item
 	 */
-	protected void onItemDeselected(GraphicsItem item) {
+	protected void onItemDeselected(final GraphicsItem item) {
 		// This method may be overwritten by subclasses, to get notified if an item has been deselected
 	}
-	private GraphicsItem getBestFit(Point point) {
-		Point2D scene = mView.getSceneLocation(point, null);
-		double eps = mEpsilon.get() * mView.getScaleX();
+	private GraphicsItem getBestFit(final Point point) {
+		final Point2D scene = mView.getSceneLocation(point, null);
+		final double eps = mEpsilon.get() * mView.getScaleX();
 
-		List<GraphicsItem> items = mView.getAllItemsAt(point, eps, eps, null);
+		final List<GraphicsItem> items = mView.getAllItemsAt(point, eps, eps, null);
 		if (items == null || items.isEmpty())
 			return null;
 
-		Optional<GraphicsItem> optItem = items.stream().filter(p -> mSelectableFilter.accept(p)).sorted(new Comparator<GraphicsItem>() {
-			@Override
-			public int compare(GraphicsItem o1, GraphicsItem o2) {
-				return -Float.compare(o1.getZOrder(), o2.getZOrder());
-			}
-		}).filter(predicate -> {
-			Shape s = predicate.getShape();
+		final Optional<GraphicsItem> optItem = items.stream().filter(p -> mSelectableFilter.accept(p)).sorted(Comparator.comparing(GraphicsItem::getZOrder).reversed()).filter(predicate -> {
+			final Shape s = predicate.getShape();
 			if (s != null) {
-				AffineTransform wt = predicate.getWorldTransform();
+				final AffineTransform wt = predicate.getWorldTransform();
 				try {
-					Point2D localScene = wt.inverseTransform(scene, null);
-					Rectangle2D r = new Rectangle2D.Double(localScene.getX(), localScene.getY(), 3*eps, 3*eps);
+					final Point2D localScene = wt.inverseTransform(scene, null);
+					final Rectangle2D r = new Rectangle2D.Double(localScene.getX(), localScene.getY(), 3*eps, 3*eps);
 					boolean res = s.contains(r);
 					if (!res)
 						res = s.intersects(r);
 					return res;
-				} catch (NoninvertibleTransformException e) {
+				} catch (final NoninvertibleTransformException e) {
 					e.printStackTrace();
 				}
 			}
@@ -291,65 +307,72 @@ public class SelectionHandler implements IGraphicsViewHandler, MouseListener {
 	}
 
 	@Override
-	public void mousePressed(MouseEvent e) {
+	public void mousePressed(final MouseEvent e) {
 		// TODO Auto-generated method stub
 
 	}
 
 	@Override
-	public void mouseReleased(MouseEvent e) {
+	public void mouseReleased(final MouseEvent e) {
 	}
 
 	@Override
-	public void mouseEntered(MouseEvent e) {
+	public void mouseEntered(final MouseEvent e) {
 		// TODO Auto-generated method stub
 
 	}
 
 	@Override
-	public void mouseExited(MouseEvent e) {
+	public void mouseExited(final MouseEvent e) {
 		// TODO Auto-generated method stub
 
 	}
 
-	public void fireMoveEvent(ItemMoveEvent evt) {
-		for (IMoveCallback mc : mMoveCallbacks) {
+	public void fireMoveEvent(final ItemMoveEvent evt) {
+		for (final IMoveCallback mc : mMoveCallbacks) {
 			mc.onItemMoved(evt);
 		}
 	}
 
-	public ItemMoveEvent createMoveEvent(MouseEvent e) {
-		List<GraphicsItem> items = Arrays.asList(mLastSelectedItem);
-		Point2D ol = mLastSelectedItem.getSceneLocation();
-		List<Point2D> oldLoc = Arrays.asList(new Point2D.Double(ol.getX(), ol.getY()));
-		List<Point2D> newLoc = Arrays.asList(mSelectionMarker.getSceneLocation());
-		ItemMoveEvent evt = new ItemMoveEvent(items, oldLoc, newLoc);
+	public ItemMoveEvent createMoveEvent(final MouseEvent e) {
+		final List<GraphicsItem> items = Arrays.asList(mLastSelectedItem);
+		final Point2D ol = mLastSelectedItem.getSceneLocation();
+		final List<Point2D> oldLoc = Arrays.asList(new Point2D.Double(ol.getX(), ol.getY()));
+		final List<Point2D> newLoc = Arrays.asList(mSelectionMarker.getSceneLocation());
+		final ItemMoveEvent evt = new ItemMoveEvent(items, oldLoc, newLoc);
 		return evt;
 	}
 
 
 
-	public void fireScaleEvent(ItemScaleEvent evt) {
-		for (IScaleCallback sc : mScaleCallbacks) {
+	public void fireSelectionEvent(final GraphicsItem item) {
+		final List<GraphicsItem> listOfItems = Arrays.asList(item);
+		for (final ISelectionCallback sc : mSelectionCallbacks) {
+			sc.onItemSelected(listOfItems);
+		}
+	}
+
+	public void fireScaleEvent(final ItemScaleEvent evt) {
+		for (final IScaleCallback sc : mScaleCallbacks) {
 			sc.onItemScaled(evt);
 		}
 	}
 
-	public void fireScaleEvent(Point2D[] oldVertices, Point2D[] newVertices) {
-		ArrayList<Point2D[]> ov = new ArrayList<>();
+	public void fireScaleEvent(final Point2D[] oldVertices, final Point2D[] newVertices) {
+		final ArrayList<Point2D[]> ov = new ArrayList<>();
 		ov.add(oldVertices);
-		ArrayList<Point2D[]> nv = new ArrayList<>();
+		final ArrayList<Point2D[]> nv = new ArrayList<>();
 		nv.add(newVertices);
 		fireScaleEvent(new ItemScaleEvent(Arrays.asList(mLastSelectedItem), ov, nv));
 	}
 
 
-	public void fireRotationEvent(ItemRotateEvent evt) {
-		for (IRotateCallback sc : mRotationCallbacks) {
+	public void fireRotationEvent(final ItemRotateEvent evt) {
+		for (final IRotateCallback sc : mRotationCallbacks) {
 			sc.onItemRotated(evt);
 		}
 	}
-	public void fireRotateEvent(double startDegrees, double endDegrees) {
+	public void fireRotateEvent(final double startDegrees, final double endDegrees) {
 		fireRotationEvent(new ItemRotateEvent(Arrays.asList(mLastSelectedItem), Arrays.asList(startDegrees), Arrays.asList(endDegrees)));
 	}
 

@@ -9,6 +9,7 @@ import java.awt.geom.AffineTransform;
 import java.awt.geom.NoninvertibleTransformException;
 import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
+import java.awt.image.BufferedImage;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeSupport;
@@ -18,8 +19,11 @@ import java.util.Comparator;
 import java.util.List;
 
 import de.sos.gvc.Utils.TmpVars;
+import de.sos.gvc.drawables.ImageDrawable;
 import de.sos.gvc.drawables.ShapeDrawable;
 import de.sos.gvc.drawables.ShapeDrawable.IShapeProvider;
+import de.sos.gvc.drawables.TextDrawable;
+import de.sos.gvc.param.Parameter;
 import de.sos.gvc.param.ParameterContext;
 import de.sos.gvc.styles.DrawableStyle;
 
@@ -76,6 +80,37 @@ import de.sos.gvc.styles.DrawableStyle;
  *
  */
 public class GraphicsItem implements IShapeProvider  {
+
+	/**
+	 * Creates a new Graphics item with the size of the image and assigns an ImageDrawable
+	 * @param image
+	 * @return null if the image is null
+	 */
+	public static GraphicsItem createFromImage(final BufferedImage image) {
+		if (image == null) return null;
+		final double w = image.getWidth();
+		final double h = image.getHeight();
+		final Rectangle2D.Double rect = new Rectangle2D.Double(-w/2, -h/2, w, h);
+		final GraphicsItem item = new GraphicsItem(rect);
+		item.setDrawable(new ImageDrawable(rect, image));
+		return item;
+	}
+	public static GraphicsItem createFromWKT(final String wkt) {
+		if (wkt == null || wkt.isBlank())
+			return null;
+		final Shape shape = Utils.wkt2Shape(wkt);
+		if (shape == null)
+			return null;
+		return new GraphicsItem(shape);
+	}
+	public static GraphicsItem createFromText(final String text) {
+		final GraphicsItem gi = new GraphicsItem();
+		gi.setDrawable(new TextDrawable(new Parameter<>("Label", "Label of text item", true, text)));
+		return gi;
+	}
+	public static GraphicsItem createFromShape(final Shape shape) {
+		return new GraphicsItem(shape);
+	}
 	//inherit from IShapeProvider to support the default behaviour if no Drawable is set, the item's shape is drawn
 
 	public static final String PROP_VISIBLE 				= "VISIBLE";
@@ -199,7 +234,7 @@ public class GraphicsItem implements IShapeProvider  {
 
 	private PropertyChangeListener						mChildListener = new PropertyChangeListener() { //listen to events of child items and delegates them
 		@Override
-		public void propertyChange(PropertyChangeEvent evt) {
+		public void propertyChange(final PropertyChangeEvent evt) {
 			mAllEventDelegate.firePropertyChange(evt);
 		}
 	};
@@ -209,12 +244,12 @@ public class GraphicsItem implements IShapeProvider  {
 	public GraphicsItem() {
 		this(null);
 	}
-	public GraphicsItem(Shape shape) {
+	public GraphicsItem(final Shape shape) {
 		this(shape, null);
 	}
 
 
-	public GraphicsItem(Shape shape, ParameterContext propertyContext) {
+	public GraphicsItem(final Shape shape, final ParameterContext propertyContext) {
 		final ParameterContext pc = propertyContext != null ? propertyContext : sDefaultContext;
 		//ensure that we do have the basic properties
 		mVisible = pc.getValue(PROP_VISIBLE, true);
@@ -250,16 +285,16 @@ public class GraphicsItem implements IShapeProvider  {
 	 * Adds a listener that will be notified for all event of this Items as well as all events of children and childs of childs
 	 * @param pcl
 	 */
-	public void addPropertyChangeListener(PropertyChangeListener pcl) {
+	public void addPropertyChangeListener(final PropertyChangeListener pcl) {
 		mAllEventDelegate.addPropertyChangeListener(pcl);
 	}
-	public void removePropertyChangeListener(PropertyChangeListener pcl) {
+	public void removePropertyChangeListener(final PropertyChangeListener pcl) {
 		mAllEventDelegate.removePropertyChangeListener(pcl);
 	}
-	public void addPropertyChangeListener(String evtName, PropertyChangeListener pcl) {
+	public void addPropertyChangeListener(final String evtName, final PropertyChangeListener pcl) {
 		mAllEventDelegate.addPropertyChangeListener(evtName, pcl);
 	}
-	public void removePropertyChangeListener(String evtName, PropertyChangeListener pcl) {
+	public void removePropertyChangeListener(final String evtName, final PropertyChangeListener pcl) {
 		mAllEventDelegate.removePropertyChangeListener(evtName, pcl);
 	}
 
@@ -286,9 +321,9 @@ public class GraphicsItem implements IShapeProvider  {
 	public double getScaleY() { return mScaleY;}
 	public double getLocalScaleY() { return mScaleY;}
 
-	public void setCenterX(double x) {
+	public void setCenterX(final double x) {
 		if (x != mCenterX) {
-			double old = mCenterX;
+			final double old = mCenterX;
 			mCenterX = x;
 
 			mInvalidLocalTransform = mInvalidWorldTransform = true;
@@ -297,9 +332,9 @@ public class GraphicsItem implements IShapeProvider  {
 			mAllEventDelegate.firePropertyChange(PROP_CENTER_X, old, mCenterX);
 		}
 	}
-	public void setCenterY(double y) {
+	public void setCenterY(final double y) {
 		if (y != mCenterY) {
-			double old = mCenterY;
+			final double old = mCenterY;
 			mCenterY = y;
 
 			mInvalidLocalTransform = mInvalidWorldTransform = true;
@@ -308,20 +343,20 @@ public class GraphicsItem implements IShapeProvider  {
 			mAllEventDelegate.firePropertyChange(PROP_CENTER_Y, old, mCenterY);
 		}
 	}
-	public void setCenter(double x, double y) {
+	public void setCenter(final double x, final double y) {
 		setCenterX(x);
 		setCenterY(y);
 	}
-	public void setCenter(Point2D loc) { setCenter(loc.getX(), loc.getY()); }
+	public void setCenter(final Point2D loc) { setCenter(loc.getX(), loc.getY()); }
 	public Point2D getCenter() { return getLocalLocation(); }
 
-	public void setLocalLocation(Point2D loc) { setCenter(loc.getX(), loc.getY()); }
+	public void setLocalLocation(final Point2D loc) { setCenter(loc.getX(), loc.getY()); }
 	public Point2D getLocalLocation() { return new Point2D.Double(getCenterX(), getCenterY()); }
 
 
-	public void setRotation(double rot_deg) {
+	public void setRotation(final double rot_deg) {
 		if (rot_deg != mRotation) {
-			double old = mRotation;
+			final double old = mRotation;
 			mRotation = rot_deg;
 
 			mInvalidLocalTransform = mInvalidWorldTransform = true;
@@ -336,7 +371,7 @@ public class GraphicsItem implements IShapeProvider  {
 	public double getLocalRotationRad() { return Math.toRadians(getRotation()); }
 
 	public double getSceneRotation() {
-		GraphicsItem p = getParent();
+		final GraphicsItem p = getParent();
 		if (p != null) {
 			//@note the world transform does not allow to calculate the rotation out of the transformation matrix, thus we use this recursive call
 			return p.getSceneRotation() + getLocalRotation();
@@ -351,9 +386,9 @@ public class GraphicsItem implements IShapeProvider  {
 	public void setLocalRotationRad(final double rot_rad) { setRotation(Math.toDegrees(rot_rad));}
 
 	public void setSceneRotation(final double rot_deg) {
-		GraphicsItem p = getParent();
+		final GraphicsItem p = getParent();
 		if (p != null) {
-			double rot = rot_deg - p.getSceneRotation();
+			final double rot = rot_deg - p.getSceneRotation();
 			setRotation(rot);
 		}
 		setRotation(rot_deg);
@@ -364,12 +399,12 @@ public class GraphicsItem implements IShapeProvider  {
 
 	public void setLocalScaleX(final double scaleX) { setScaleX(scaleX); }
 	public void setLocalScaleY(final double scaleY) { setScaleY(scaleY); }
-	public void setLocalScale(final double x, double y) { setScaleX(x); setScaleY(y); }
+	public void setLocalScale(final double x, final double y) { setScaleX(x); setScaleY(y); }
 	public void setLocalScale(final double xAndy) { setScale(xAndy, xAndy); }
 
 	public void setScaleX(final double scaleX) {
 		if (scaleX != mScaleX) {
-			double old = mScaleX;
+			final double old = mScaleX;
 			mScaleX = scaleX;
 
 			mInvalidLocalTransform = mInvalidWorldTransform = true;
@@ -380,7 +415,7 @@ public class GraphicsItem implements IShapeProvider  {
 	}
 	public void setScaleY(final double scaleY) {
 		if (scaleY != mScaleY) {
-			double old = mScaleY;
+			final double old = mScaleY;
 			mScaleY = scaleY;
 
 			mInvalidLocalTransform = mInvalidWorldTransform = true;
@@ -417,10 +452,10 @@ public class GraphicsItem implements IShapeProvider  {
 	public void setSceneScale(final double xAndy) { setSceneScale(xAndy, xAndy); }
 
 	public Point2D getSceneLocation() { return getSceneLocation(null);}
-	public Point2D getSceneLocation(Point2D store) {
+	public Point2D getSceneLocation(final Point2D store) {
 		doCheckUpdateWorldTransform();
-		double x = mWorldTransform.getTranslateX();
-		double y = mWorldTransform.getTranslateY();
+		final double x = mWorldTransform.getTranslateX();
+		final double y = mWorldTransform.getTranslateY();
 		if (store == null)
 			return new Point2D.Double(x, y);
 		store.setLocation(x, y);
@@ -437,9 +472,9 @@ public class GraphicsItem implements IShapeProvider  {
 			setLocalLocation(sceneLoc);
 		else {
 			try {
-				Point2D loc = getParent().getWorldTransform().inverseTransform(sceneLoc, null);
+				final Point2D loc = getParent().getWorldTransform().inverseTransform(sceneLoc, null);
 				setLocalLocation(loc);
-			}catch(Exception e) {
+			}catch(final Exception e) {
 				e.printStackTrace();
 			}
 		}
@@ -463,8 +498,8 @@ public class GraphicsItem implements IShapeProvider  {
 		synchronized (mLocalTransform) {
 			mLocalTransform.setToIdentity();
 
-			double x = mCenterX, y = mCenterY, r = getRotationRadians();
-			double sx = mScaleX, sy = mScaleY;
+			final double x = mCenterX, y = mCenterY, r = getRotationRadians();
+			final double sx = mScaleX, sy = mScaleY;
 
 			mLocalTransform.translate(x, y);
 			mLocalTransform.rotate(r);
@@ -487,12 +522,12 @@ public class GraphicsItem implements IShapeProvider  {
 		if (mParent == null) {
 			updateWorldTransform();
 		}else {
-			TmpVars vars = Utils.TmpVars.get();
-			GraphicsItem[] stack = vars.itemStack;
+			final TmpVars vars = Utils.TmpVars.get();
+			final GraphicsItem[] stack = vars.itemStack;
 			GraphicsItem rootNode = this;
 			int i = 0;
 			while (true) {
-				GraphicsItem  hisParent = rootNode.mParent;
+				final GraphicsItem  hisParent = rootNode.mParent;
 				if (hisParent == null) {
 					if (rootNode.mInvalidWorldTransform)
 						rootNode.updateWorldTransform();
@@ -516,7 +551,7 @@ public class GraphicsItem implements IShapeProvider  {
 	 * @note This method assumes that all parent (if any) have a valid worldTransform
 	 */
 	protected void updateWorldTransform() {
-		GraphicsItem parent = getParent();
+		final GraphicsItem parent = getParent();
 		if (parent == null) {
 			synchronized (mWorldTransform) {
 				mWorldTransform.setTransform(getLocalTransform());
@@ -531,7 +566,7 @@ public class GraphicsItem implements IShapeProvider  {
 		}
 
 		if (!mChildren.isEmpty())
-			for (GraphicsItem child : mChildren)
+			for (final GraphicsItem child : mChildren)
 				child.notifyParentWorldTransformChanged();
 
 	}
@@ -540,7 +575,7 @@ public class GraphicsItem implements IShapeProvider  {
 	private void notifyParentWorldTransformChanged() {
 		markDirtyTransform();
 		if (!mChildren.isEmpty())
-			for (GraphicsItem child : mChildren)
+			for (final GraphicsItem child : mChildren)
 				child.notifyParentWorldTransformChanged();
 	}
 
@@ -555,10 +590,10 @@ public class GraphicsItem implements IShapeProvider  {
 	 * @param store the instance to store the result into (may be null)
 	 * @return location in local coordinates
 	 */
-	public Point2D scene2Local(final Point2D sceneLoc, Point2D store) {
+	public Point2D scene2Local(final Point2D sceneLoc, final Point2D store) {
 		try {
 			return getWorldTransform().inverseTransform(sceneLoc, store);
-		} catch (NoninvertibleTransformException e) {
+		} catch (final NoninvertibleTransformException e) {
 			e.printStackTrace();
 			return null;
 		}
@@ -595,14 +630,14 @@ public class GraphicsItem implements IShapeProvider  {
 	 */
 	public Rectangle2D getSceneBounds() {
 		if (mInvalidWorldBound) {
-			Rectangle2D lb = getLocalBounds();
+			final Rectangle2D lb = getLocalBounds();
 
 			Utils.transform(lb, getWorldTransform(), mWorldBounds);
 
 			if (mChildren != null && !mChildren.isEmpty()) {
 				synchronized (mChildren) {
-					for (GraphicsItem child : mChildren) {
-						Rectangle2D cb = child.getSceneBounds();
+					for (final GraphicsItem child : mChildren) {
+						final Rectangle2D cb = child.getSceneBounds();
 						if (cb != null)
 							Rectangle2D.union(mWorldBounds, cb, mWorldBounds);
 					}
@@ -653,7 +688,7 @@ public class GraphicsItem implements IShapeProvider  {
 	 * @return
 	 */
 	public Rectangle2D getBoundingBox() {
-		Rectangle2D wt = getSceneBounds();
+		final Rectangle2D wt = getSceneBounds();
 		return Utils.inverseTransform(wt, getWorldTransform());
 	}
 
@@ -663,8 +698,8 @@ public class GraphicsItem implements IShapeProvider  {
 	 * @note this method is not part of the public API
 	 * @param scene
 	 */
-	void _setScene(GraphicsScene scene){
-		if ((scene != mScene) && (mScene != null)) onRemovedFromScene(mScene);
+	void _setScene(final GraphicsScene scene){
+		if (scene != mScene && mScene != null) onRemovedFromScene(mScene);
 		mScene = scene;
 		if (mScene != null)
 			onAddedToScene(mScene);
@@ -673,13 +708,13 @@ public class GraphicsItem implements IShapeProvider  {
 	 * Called if the item has been removed from a scene
 	 * @param scene
 	 */
-	protected void onRemovedFromScene(GraphicsScene scene) {}
+	protected void onRemovedFromScene(final GraphicsScene scene) {}
 	/**
 	 * Called if the item has been added to a scene
 	 * @note this method is not called if the item is added to another item as child. In such a case, observe the parent property
 	 * @param scene
 	 */
-	protected void onAddedToScene(GraphicsScene scene) {}
+	protected void onAddedToScene(final GraphicsScene scene) {}
 
 	protected GraphicsScene getScene() {
 		if (getParent() != null)
@@ -691,7 +726,7 @@ public class GraphicsItem implements IShapeProvider  {
 	 * @return
 	 */
 	protected GraphicsView getView() {
-		List<GraphicsView> views = getViews();
+		final List<GraphicsView> views = getViews();
 		if (views != null && !views.isEmpty())
 			return views.get(0);
 		return null;
@@ -701,16 +736,16 @@ public class GraphicsItem implements IShapeProvider  {
 	 * @return
 	 */
 	protected List<GraphicsView> getViews() {
-		GraphicsScene scene = getScene();
+		final GraphicsScene scene = getScene();
 		if (scene != null)
 			return scene.getViews();
 		return null;
 	}
 
-	public void draw(Graphics2D g, IDrawContext ctx) {
-		AffineTransform old = g.getTransform();
+	public void draw(final Graphics2D g, final IDrawContext ctx) {
+		final AffineTransform old = g.getTransform();
 		g.transform(getWorldTransform());
-		IDrawable drawable = getDrawable();
+		final IDrawable drawable = getDrawable();
 		drawable.paintItem(g, getStyle(), ctx);
 
 		//		g.setColor(Color.BLACK);
@@ -720,10 +755,10 @@ public class GraphicsItem implements IShapeProvider  {
 		g.setTransform(old);
 
 		if (hasChildren()) {
-			List<GraphicsItem> children = new ArrayList<>(getChildren());
+			final List<GraphicsItem> children = new ArrayList<>(getChildren());
 			Collections.sort(children, Comparator.comparing(GraphicsItem::getZOrder));
 			synchronized (children) {
-				for (GraphicsItem child : children) {
+				for (final GraphicsItem child : children) {
 					if (child.isVisible())
 						child.draw(g, ctx);
 				}
@@ -743,9 +778,9 @@ public class GraphicsItem implements IShapeProvider  {
 	 * 			markDirtyBounds() method
 	 * @param shape
 	 */
-	public void setShape(Shape shape) {
+	public void setShape(final Shape shape) {
 		if (shape != mShape) {
-			Shape old = mShape;
+			final Shape old = mShape;
 			mShape = shape;
 
 			markDirtyLocalBound();
@@ -762,9 +797,9 @@ public class GraphicsItem implements IShapeProvider  {
 	}
 	public boolean isVisible() { return mVisible;}
 
-	public void setStyle(DrawableStyle style) {
+	public void setStyle(final DrawableStyle style) {
 		if (style != mStyle) {
-			DrawableStyle old = mStyle;
+			final DrawableStyle old = mStyle;
 			mStyle = style;
 			mAllEventDelegate.firePropertyChange(PROP_STYLE, old, mStyle);
 		}
@@ -772,9 +807,9 @@ public class GraphicsItem implements IShapeProvider  {
 	public DrawableStyle getStyle() {
 		return mStyle;
 	}
-	public void setDrawable(IDrawable drawable) {
+	public void setDrawable(final IDrawable drawable) {
 		if (drawable != mDrawable) {
-			IDrawable old = mDrawable;
+			final IDrawable old = mDrawable;
 			mDrawable = drawable;
 			mAllEventDelegate.firePropertyChange(PROP_DRAWABLE, old, mDrawable);
 		}
@@ -788,9 +823,9 @@ public class GraphicsItem implements IShapeProvider  {
 	public GraphicsItem getParent() {
 		return mParent;
 	}
-	protected void setParent(GraphicsItem parent) {
+	protected void setParent(final GraphicsItem parent) {
 		if (parent != mParent) {
-			GraphicsItem old = mParent;
+			final GraphicsItem old = mParent;
 			mParent = parent;
 
 			mInvalidWorldTransform = true;
@@ -800,7 +835,7 @@ public class GraphicsItem implements IShapeProvider  {
 		}
 	}
 
-	public boolean addItem(GraphicsItem child) {
+	public boolean addItem(final GraphicsItem child) {
 		synchronized (mChildren) {
 			if (child == null || mChildren.contains(child))
 				return false;
@@ -814,19 +849,19 @@ public class GraphicsItem implements IShapeProvider  {
 		return true;
 	}
 
-	public boolean removeItem(GraphicsItem child) {
+	public boolean removeItem(final GraphicsItem child) {
 		synchronized (mChildren) {
 			if (child == null || !mChildren.contains(child))
 				return false;
 			child.setParent(null);
 
-			boolean res = mChildren.remove(child);
+			final boolean res = mChildren.remove(child);
 			mAllEventDelegate.firePropertyChange(PROP_CHILD_REMOVED, child, null);
 			return res;
 		}
 	}
 
-	public void setSelected(boolean b) {
+	public void setSelected(final boolean b) {
 		if (b != mSelected) {
 			mSelected = b;
 			mAllEventDelegate.firePropertyChange(PROP_SELECTED, !b, b);
@@ -835,19 +870,19 @@ public class GraphicsItem implements IShapeProvider  {
 
 	public boolean isSelected() { return mSelected;}
 
-	public void setSelectable(boolean selectable) {
+	public void setSelectable(final boolean selectable) {
 		if (mSelectable != selectable) {
 			mSelectable = selectable;
 			mAllEventDelegate.firePropertyChange(PROP_SELECTABLE, !selectable, selectable);
 		}
 	}
-	public void setSelectable(boolean selectable, boolean applyToChildren) {
+	public void setSelectable(final boolean selectable, final boolean applyToChildren) {
 		if (mSelectable != selectable) {
 			mSelectable = selectable;
 			mAllEventDelegate.firePropertyChange(PROP_SELECTABLE, !selectable, selectable);
 		}
-		if (applyToChildren && (mChildren != null && !mChildren.isEmpty())) {
-			for (GraphicsItem c : mChildren)
+		if (applyToChildren && mChildren != null && !mChildren.isEmpty()) {
+			for (final GraphicsItem c : mChildren)
 				c.setSelectable(selectable, applyToChildren);
 		}
 	}
@@ -861,9 +896,9 @@ public class GraphicsItem implements IShapeProvider  {
 	}
 
 	public float getZOrder() { return mZOrder; }
-	public void setZOrder(float z) {
+	public void setZOrder(final float z) {
 		if (z != mZOrder) {
-			float old = mZOrder;
+			final float old = mZOrder;
 			mZOrder = z;
 			mAllEventDelegate.firePropertyChange(PROP_Z_ORDER, old, z);
 		}
@@ -881,9 +916,9 @@ public class GraphicsItem implements IShapeProvider  {
 	public MouseWheelListener getMouseWheelSupport() {
 		return mMouseWheelSupport;
 	}
-	public void setMouseWheelSupport(MouseWheelListener l) {
+	public void setMouseWheelSupport(final MouseWheelListener l) {
 		if (l != mMouseWheelSupport) {
-			MouseWheelListener old = mMouseWheelSupport;
+			final MouseWheelListener old = mMouseWheelSupport;
 			mMouseWheelSupport = l;
 			mAllEventDelegate.firePropertyChange(PROP_MOUSE_WHEEL_SUPPORT, old, mMouseWheelSupport);
 		}
@@ -893,9 +928,9 @@ public class GraphicsItem implements IShapeProvider  {
 	public MouseMotionListener getMouseMotionSupport() {
 		return mMouseMotionSupport;
 	}
-	public void setMouseMotionSupport(MouseMotionListener l) {
+	public void setMouseMotionSupport(final MouseMotionListener l) {
 		if (l != mMouseMotionSupport) {
-			MouseMotionListener old = mMouseMotionSupport;
+			final MouseMotionListener old = mMouseMotionSupport;
 			mMouseMotionSupport = l;
 			mAllEventDelegate.firePropertyChange(PROP_MOUSE_MOTION_SUPPORT, old, mMouseMotionSupport);
 		}
@@ -904,12 +939,11 @@ public class GraphicsItem implements IShapeProvider  {
 	public MouseListener getMouseSupport() {
 		return mMouseSupport;
 	}
-	public void setMouseSupport(MouseListener l) {
+	public void setMouseSupport(final MouseListener l) {
 		if (mMouseSupport != l) {
-			MouseListener old = mMouseSupport;
+			final MouseListener old = mMouseSupport;
 			mMouseSupport = l;
 			mAllEventDelegate.firePropertyChange(PROP_MOUSE_SUPPORT, old, mMouseSupport);
 		}
 	}
-
 }
