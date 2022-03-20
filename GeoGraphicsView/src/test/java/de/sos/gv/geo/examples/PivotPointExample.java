@@ -24,7 +24,6 @@ import de.sos.gvc.handler.MouseDelegateHandler;
 import de.sos.gvc.handler.SelectionHandler;
 import de.sos.gvc.handler.SelectionHandler.IRotateCallback;
 import de.sos.gvc.handler.SelectionHandler.ItemRotateEvent;
-import de.sos.gvc.log.GVLog;
 import de.sos.gvc.param.ParameterContext;
 import de.sos.gvc.storage.QuadTreeStorage;
 import de.sos.gvc.styles.DrawableStyle;
@@ -39,24 +38,22 @@ public class PivotPointExample {
 
 	public static Random			mRandom = new Random(4242);
 
-	public static void main(String[] args) throws IOException {
-		GVLog.getInstance().initialize();
-
+	public static void main(final String[] args) throws IOException {
 		//Create a new Scene and a new View
-		GraphicsScene scene = new GraphicsScene(new QuadTreeStorage());
-		GraphicsView view = new GraphicsView(scene, new ParameterContext());
+		final GraphicsScene scene = new GraphicsScene(new QuadTreeStorage());
+		final GraphicsView view = new GraphicsView(scene, new ParameterContext());
 
 
 		//Standard Handler
 		view.addHandler(new MouseDelegateHandler());
 		view.addHandler(new DefaultViewDragHandler());
 
-		SelectionHandler selectionHandler = new SelectionHandler();
+		final SelectionHandler selectionHandler = new SelectionHandler();
 		view.addHandler(selectionHandler);
 
 		selectionHandler.addRotationCallback(new IRotateCallback() {
 			@Override
-			public void onItemRotated(ItemRotateEvent event) {
+			public void onItemRotated(final ItemRotateEvent event) {
 				for (int i = 0; i < event.items.size(); i++)
 					event.items.get(i).setRotation(event.endAngles.get(i));
 			}
@@ -67,7 +64,7 @@ public class PivotPointExample {
 
 		addItems(scene, view);
 
-		JFrame frame = new JFrame("Pivot Point Example");
+		final JFrame frame = new JFrame("Pivot Point Example");
 		frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
 		frame.setSize(800, 800);
 		frame.setLayout(new BorderLayout());
@@ -83,7 +80,7 @@ public class PivotPointExample {
 		public OffsetItem(final Shape shape) {
 			super(shape);
 		}
-		public void setOffset(final double x, double y) {
+		public void setOffset(final double x, final double y) {
 			mOffset.setLocation(x, y);
 		}
 		public void setOffset(final Point2D.Double p) {
@@ -107,27 +104,27 @@ public class PivotPointExample {
 			}
 		}
 		@Override
-		public void draw(Graphics2D g, IDrawContext ctx) {
+		public void draw(final Graphics2D g, final IDrawContext ctx) {
 			setScale(ctx.getScaleX(), ctx.getScaleY());
 			super.draw(g, ctx);
 		}
 	}
 
-	private static void addItems(GraphicsScene scene, GraphicsView view) throws IOException {
-		Rectangle2D pinRect = new Rectangle2D.Double(-64, -64, 128, 128);
+	private static void addItems(final GraphicsScene scene, final GraphicsView view) throws IOException {
+		final Rectangle2D pinRect = new Rectangle2D.Double(-64, -64, 128, 128);
 
-		GraphicsItem boundaryItem = new GraphicsItem(pinRect);
+		final GraphicsItem boundaryItem = new GraphicsItem(pinRect);
 		boundaryItem.setZOrder(100);
 		boundaryItem.setSelectable(false);
 		boundaryItem.setStyle(new DrawableStyle("Border", Color.RED, null, null));
 		boundaryItem.setCenter(0, 0);
 
-		GraphicsItem needlePoint = new GraphicsItem(new Arc2D.Double(-2, -2, 4, 4, 0, 360, Arc2D.CHORD));
+		final GraphicsItem needlePoint = new GraphicsItem(new Arc2D.Double(-2, -2, 4, 4, 0, 360, Arc2D.CHORD));
 		needlePoint.setStyle(new DrawableStyle("Filled", Color.BLUE, null, Color.RED));
 		needlePoint.setZOrder(101);
 		needlePoint.setCenter(0, 0);
 
-		OffsetItem pinItem = new OffsetItem(pinRect);
+		final OffsetItem pinItem = new OffsetItem(pinRect);
 		pinItem.setDrawable(new ImageDrawable(pinRect, ImageIO.read(PivotPointExample.class.getClassLoader().getResource("example_pin.png"))));
 		pinItem.setZOrder(99);
 		pinItem.setOffset(0, 64);
