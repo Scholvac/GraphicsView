@@ -96,7 +96,7 @@ public class GraphicsItem implements IShapeProvider  {
 		return item;
 	}
 	public static GraphicsItem createFromWKT(final String wkt) {
-		if (wkt == null || wkt.isBlank())
+		if (wkt == null || wkt.isEmpty())
 			return null;
 		final Shape shape = Utils.wkt2Shape(wkt);
 		if (shape == null)
