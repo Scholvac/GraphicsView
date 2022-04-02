@@ -1,5 +1,6 @@
 package de.sos.gvc;
 
+import java.awt.Point;
 import java.awt.Shape;
 import java.awt.geom.AffineTransform;
 import java.awt.geom.GeneralPath;
@@ -7,7 +8,11 @@ import java.awt.geom.NoninvertibleTransformException;
 import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
+
+import de.sos.gvc.GraphicsScene.IItemFilter;
+import de.sos.gvc.GraphicsScene.ShapeSelectionFilter;
 
 /**
  *
@@ -188,6 +193,22 @@ public class Utils {
 		}
 	}
 
+	public static GraphicsItem getBestFit(final GraphicsView view, final Point viewPoint, final double epsilon, final IItemFilter ...filter ) {
+		final Point2D scene = view.getSceneLocation(viewPoint, null);
+		final double eps = epsilon * view.getScaleX();
+		return getBestFit(view.getScene(), scene, eps, filter);
+	}
+	public static GraphicsItem getBestFit(final GraphicsScene scene, final Point2D scenePoint, final double epsilonInMeter, final IItemFilter...filter) {
+		final Rectangle2D r = new Rectangle2D.Double(scenePoint.getX() - epsilonInMeter/2, scenePoint.getY() - epsilonInMeter/2, epsilonInMeter, epsilonInMeter);
+		final ShapeSelectionFilter ssf = new ShapeSelectionFilter(scenePoint, epsilonInMeter, true);
+		final List<GraphicsItem> items = scene.getAllItems(r, IItemFilter.combound(ssf, filter));
+		if (items == null || items.isEmpty())
+			return null;
+
+		//sort by Z-Order
+		items.sort( Comparator.comparing(GraphicsItem::getZOrder).reversed() );
+		return items.get(0);
+	}
 
 	///////////////////////////////////////////////////////////////////////////////////////////
 	//					Vector operations

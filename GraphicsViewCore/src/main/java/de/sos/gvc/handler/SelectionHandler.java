@@ -1,21 +1,15 @@
 package de.sos.gvc.handler;
 
 import java.awt.Point;
-import java.awt.Shape;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
-import java.awt.geom.AffineTransform;
-import java.awt.geom.NoninvertibleTransformException;
 import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Comparator;
 import java.util.List;
-import java.util.Optional;
 
 import de.sos.gvc.GraphicsItem;
-import de.sos.gvc.GraphicsScene.IItemFilter;
 import de.sos.gvc.GraphicsView;
 import de.sos.gvc.IGraphicsViewHandler;
 import de.sos.gvc.Utils;
@@ -129,18 +123,12 @@ public class SelectionHandler implements IGraphicsViewHandler, MouseListener {
 		public void onItemRotated(ItemRotateEvent event);
 	}
 
-	private GraphicsView 				mView;
-	private GraphicsItem 				mLastSelectedItem 		= null;
-	//	private SelectionBorderItem			mSelectionMarker 		= null;
-	private GraphicsItem				mSelectionMarker		= null;
+	private GraphicsView 					mView;
+	private GraphicsItem 					mLastSelectedItem 		= null;
+	private GraphicsItem					mSelectionMarker		= null;
 
-	private IParameter<Double>			mEpsilon 				= new Parameter<>("Epsilon", "Selection Tolerance", true, 5.0);
-	private IItemFilter 				mSelectableFilter 		= new IItemFilter() {
-		@Override
-		public boolean accept(final GraphicsItem item) {
-			return item.isSelectable();
-		}
-	};
+	private IParameter<Double>				mEpsilon 				= new Parameter<>("Epsilon", "Selection Tolerance", true, 5.0);
+
 	private ArrayList<IMoveCallback>		mMoveCallbacks = new ArrayList<>();
 	private ArrayList<IScaleCallback>		mScaleCallbacks = new ArrayList<>();
 	private ArrayList<IRotateCallback>		mRotationCallbacks = new ArrayList<>();
@@ -148,7 +136,6 @@ public class SelectionHandler implements IGraphicsViewHandler, MouseListener {
 
 
 	public SelectionHandler() {
-		//		mSelectionMarker = new SelectionBorderItem(this);
 	}
 
 	/** register a new selection callback. The callback will be notified, if a new item was selected.
@@ -224,8 +211,6 @@ public class SelectionHandler implements IGraphicsViewHandler, MouseListener {
 	}
 
 	protected GraphicsItem getSelectionMarker(final GraphicsItem item) {
-		//return new ShapeSelectionMarker(this, item);
-		//		SelectionBorderItem sbi = new SelectionBorderItem(this);
 		final BoundingBoxSelectionItem sbi = new BoundingBoxSelectionItem(this);
 		sbi.setSelectedItem(item);
 		return sbi;
@@ -240,12 +225,10 @@ public class SelectionHandler implements IGraphicsViewHandler, MouseListener {
 			mView.getScene().addItem(mSelectionMarker);
 		}
 
-		//		mSelectionMarker.setSelectedItem(item);
-		//		mSelectionMarker.setVisible(true);
-		//		mView.getScene().addItem(mSelectionMarker);
 		item.setSelected(true);
 		onItemSelected(item); //notify subclasses
 	}
+
 	/**
 	 * 	This method may be overwritten by subclasses, to get notified if an item has been selected
 	 * @param item
@@ -264,9 +247,6 @@ public class SelectionHandler implements IGraphicsViewHandler, MouseListener {
 
 		}
 		mSelectionMarker = null;
-		//		mSelectionMarker.setSelectedItem(null);
-		//		mSelectionMarker.setVisible(false);
-		//		mView.getScene().removeItem(mSelectionMarker);
 	}
 
 	/**
@@ -277,56 +257,17 @@ public class SelectionHandler implements IGraphicsViewHandler, MouseListener {
 		// This method may be overwritten by subclasses, to get notified if an item has been deselected
 	}
 	private GraphicsItem getBestFit(final Point point) {
-		final Point2D scene = mView.getSceneLocation(point, null);
-		final double eps = mEpsilon.get() * mView.getScaleX();
-
-		final List<GraphicsItem> items = mView.getAllItemsAt(point, eps, eps, null);
-		if (items == null || items.isEmpty())
-			return null;
-
-		final Optional<GraphicsItem> optItem = items.stream().filter(p -> mSelectableFilter.accept(p)).sorted(Comparator.comparing(GraphicsItem::getZOrder).reversed()).filter(predicate -> {
-			final Shape s = predicate.getShape();
-			if (s != null) {
-				final AffineTransform wt = predicate.getWorldTransform();
-				try {
-					final Point2D localScene = wt.inverseTransform(scene, null);
-					final Rectangle2D r = new Rectangle2D.Double(localScene.getX(), localScene.getY(), 3*eps, 3*eps);
-					boolean res = s.contains(r);
-					if (!res)
-						res = s.intersects(r);
-					return res;
-				} catch (final NoninvertibleTransformException e) {
-					e.printStackTrace();
-				}
-			}
-			return false;
-		}).findFirst();
-		if (optItem != null && optItem.isPresent())
-			return optItem.get();
-		return null;
+		return Utils.getBestFit(mView, point, mEpsilon.get(), GraphicsItem::isSelectable);
 	}
 
 	@Override
-	public void mousePressed(final MouseEvent e) {
-		// TODO Auto-generated method stub
-
-	}
-
+	public void mousePressed(final MouseEvent e) { }
 	@Override
-	public void mouseReleased(final MouseEvent e) {
-	}
-
+	public void mouseReleased(final MouseEvent e) { }
 	@Override
-	public void mouseEntered(final MouseEvent e) {
-		// TODO Auto-generated method stub
-
-	}
-
+	public void mouseEntered(final MouseEvent e) { }
 	@Override
-	public void mouseExited(final MouseEvent e) {
-		// TODO Auto-generated method stub
-
-	}
+	public void mouseExited(final MouseEvent e) { }
 
 	public void fireMoveEvent(final ItemMoveEvent evt) {
 		for (final IMoveCallback mc : mMoveCallbacks) {
@@ -342,8 +283,6 @@ public class SelectionHandler implements IGraphicsViewHandler, MouseListener {
 		final ItemMoveEvent evt = new ItemMoveEvent(items, oldLoc, newLoc);
 		return evt;
 	}
-
-
 
 	public void fireSelectionEvent(final GraphicsItem item) {
 		final List<GraphicsItem> listOfItems = Arrays.asList(item);
@@ -375,10 +314,4 @@ public class SelectionHandler implements IGraphicsViewHandler, MouseListener {
 	public void fireRotateEvent(final double startDegrees, final double endDegrees) {
 		fireRotationEvent(new ItemRotateEvent(Arrays.asList(mLastSelectedItem), Arrays.asList(startDegrees), Arrays.asList(endDegrees)));
 	}
-
-
-
-
-
-
 }

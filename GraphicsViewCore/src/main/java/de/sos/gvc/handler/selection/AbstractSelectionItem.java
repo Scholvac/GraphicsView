@@ -40,7 +40,7 @@ public abstract class AbstractSelectionItem extends GraphicsItem {
 	public static final int SP_LR = 2;
 	public static final int SP_LL = 3;
 
-	public final static int[] SCALE_POINT_CURSOR_TYPES = new int[] {
+	public final static int[] SCALE_POINT_CURSOR_TYPES = {
 			Cursor.NW_RESIZE_CURSOR, //UL
 			Cursor.SW_RESIZE_CURSOR,
 			Cursor.NW_RESIZE_CURSOR,
@@ -61,7 +61,7 @@ public abstract class AbstractSelectionItem extends GraphicsItem {
 		private Cursor 						mOldCursor; //remmeber previous cursor to resotore ist
 		private MouseMode 					mOldMouseMode;
 
-		public AbstractSelectionWorkerItem(boolean fixSize, CallbackMode cm, MouseMode mm, Cursor cursor, boolean useMotionListener) {
+		public AbstractSelectionWorkerItem(final boolean fixSize, final CallbackMode cm, final MouseMode mm, final Cursor cursor, final boolean useMotionListener) {
 			mActiveCursor = cursor;
 			mCallbackMode = cm;
 			mTargetMode = mm;
@@ -75,14 +75,14 @@ public abstract class AbstractSelectionItem extends GraphicsItem {
 		}
 
 		@Override
-		public void draw(Graphics2D g, IDrawContext ctx) {
+		public void draw(final Graphics2D g, final IDrawContext ctx) {
 			if (mFixSize)
 				setSceneScale(ctx.getScale());
 			super.draw(g, ctx);
 		}
 
 		@Override
-		public void mouseEntered(MouseEvent e) {
+		public void mouseEntered(final MouseEvent e) {
 			if (hasCallback(mCallbackMode)) {
 				if (mActiveCursor != null) {
 					mOldCursor = e.getComponent().getCursor();
@@ -92,7 +92,7 @@ public abstract class AbstractSelectionItem extends GraphicsItem {
 			}
 		}
 		@Override
-		public void mouseExited(MouseEvent e) {
+		public void mouseExited(final MouseEvent e) {
 			if (e.getComponent().getCursor() == mActiveCursor) {
 				if (mActiveCursor != null) {
 					e.getComponent().setCursor(mOldCursor);
@@ -102,7 +102,7 @@ public abstract class AbstractSelectionItem extends GraphicsItem {
 		}
 
 		@Override
-		public void mousePressed(MouseEvent e) {
+		public void mousePressed(final MouseEvent e) {
 			if (hasCallback(mCallbackMode) && mMouseMode == MouseMode.NONE) {
 				mInitialPosition = e.getLocationOnScreen();
 				if (mUsePermanentMotionListener && e instanceof DelegateMouseEvent) {
@@ -117,7 +117,7 @@ public abstract class AbstractSelectionItem extends GraphicsItem {
 		}
 
 		@Override
-		public void mouseReleased(MouseEvent e) {
+		public void mouseReleased(final MouseEvent e) {
 			if (hasCallback(mCallbackMode) && mMouseMode == mTargetMode) {
 				if (mUsePermanentMotionListener && e instanceof DelegateMouseEvent) {
 					((DelegateMouseEvent)e).removePermanentMouseMotionListener(this);
@@ -134,11 +134,11 @@ public abstract class AbstractSelectionItem extends GraphicsItem {
 		}
 
 		@Override
-		public void mouseClicked(MouseEvent e) {}
+		public void mouseClicked(final MouseEvent e) {}
 
 
 		@Override
-		public void mouseMoved(MouseEvent e) {}
+		public void mouseMoved(final MouseEvent e) {}
 
 		abstract protected void fireEvent();
 	}
@@ -152,8 +152,7 @@ public abstract class AbstractSelectionItem extends GraphicsItem {
 	private MouseMode						mMouseMode = MouseMode.NONE;
 
 
-	public AbstractSelectionItem(SelectionHandler callbackManager) {
-		super();
+	public AbstractSelectionItem(final SelectionHandler callbackManager) {
 		mCallbackManager = callbackManager;
 		setSelectable(false);
 	}
@@ -162,7 +161,7 @@ public abstract class AbstractSelectionItem extends GraphicsItem {
 	public abstract void setSelectedItem(GraphicsItem item);
 
 
-	protected boolean hasCallback(CallbackMode cm) {
+	protected boolean hasCallback(final CallbackMode cm) {
 		switch(cm) {
 		case MOVE : return mCallbackManager.hasMoveCallbacks();
 		case ROTATE: return mCallbackManager.hasRotationCallbacks();
@@ -171,35 +170,34 @@ public abstract class AbstractSelectionItem extends GraphicsItem {
 		return false;
 	}
 
-	protected void fireMoveEvent(ItemMoveEvent event) {
+	protected void fireMoveEvent(final ItemMoveEvent event) {
 		mCallbackManager.fireMoveEvent(event);
 	}
-	protected void fireMoveEvent(GraphicsItem item, Point2D startLoc, Point2D endLoc) {
-		ItemMoveEvent ime = new ItemMoveEvent(Arrays.asList(item), Arrays.asList(startLoc), Arrays.asList(endLoc));
+	protected void fireMoveEvent(final GraphicsItem item, final Point2D startLoc, final Point2D endLoc) {
+		final ItemMoveEvent ime = new ItemMoveEvent(Arrays.asList(item), Arrays.asList(startLoc), Arrays.asList(endLoc));
 		fireMoveEvent(ime);
 	}
 
-	protected void fireRotateEvent(GraphicsItem item, double startRotation, double endRotation) {
-		ItemRotateEvent ire = new ItemRotateEvent(Arrays.asList(item), Arrays.asList(startRotation), Arrays.asList(endRotation));
+	protected void fireRotateEvent(final GraphicsItem item, final double startRotation, final double endRotation) {
+		final ItemRotateEvent ire = new ItemRotateEvent(Arrays.asList(item), Arrays.asList(startRotation), Arrays.asList(endRotation));
 		fireRotateEvent(ire);
 	}
-	protected void fireRotateEvent(ItemRotateEvent event) {
+	protected void fireRotateEvent(final ItemRotateEvent event) {
 		mCallbackManager.fireRotationEvent(event);
 	}
 
 
-	protected void fireScaleEvent(GraphicsItem item, Point2D[] oldVertices, Point2D[] newVertices) {
-		ArrayList<Point2D[]> ov = new ArrayList<>();
+	protected void fireScaleEvent(final GraphicsItem item, final Point2D[] oldVertices, final Point2D[] newVertices) {
+		final ArrayList<Point2D[]> ov = new ArrayList<>();
 		ov.add(oldVertices);
-		ArrayList<Point2D[]> nv = new ArrayList<>();
+		final ArrayList<Point2D[]> nv = new ArrayList<>();
 		nv.add(newVertices);
-		ItemScaleEvent ise = new ItemScaleEvent(Arrays.asList(item), ov, nv);
+		final ItemScaleEvent ise = new ItemScaleEvent(Arrays.asList(item), ov, nv);
 		fireScaleEvent(ise);
 	}
-	protected void fireScaleEvent(ItemScaleEvent event) {
+	protected void fireScaleEvent(final ItemScaleEvent event) {
 		mCallbackManager.fireScaleEvent(event);
 	}
-
 
 
 }

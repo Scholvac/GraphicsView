@@ -1,10 +1,14 @@
 package de.sos.gv.ge.items;
 
-import java.awt.Color;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.util.ArrayList;
 import java.util.List;
+
+import javax.swing.JPopupMenu;
+import javax.swing.SwingUtilities;
 
 import de.sos.gv.ge.menu.MenuManager;
 import de.sos.gv.ge.model.geom.GeometryUtils;
@@ -13,97 +17,93 @@ import de.sos.gv.ge.model.geom.IGeometry.GeometryType;
 import de.sos.gvc.GraphicsItem;
 import de.sos.gvc.param.ParameterContext;
 import de.sos.gvc.styles.DrawableStyle;
-import de.sos.gvc.styles.ScaledStroke;
 
 public class GeometryItem extends GraphicsItem implements PropertyChangeListener {
 
-	private static final DrawableStyle 					sFilledStyle = new DrawableStyle("DefaultStyle", Color.BLUE, new ScaledStroke(2), new Color(0, 148, 255));
-	private static final DrawableStyle 					sLineStyle = new DrawableStyle("DefaultStyle", Color.BLUE, new ScaledStroke(2), null);
-	
-	
+	public static enum GeometryItemMode {
+		NORMAL, EDIT, CREATE
+	}
+
+
 	private IGeometry 									mGeometry;
 	private MenuManager 								mMenuManager;
-	
-	
+	private	GeometryItemMode							mMode = GeometryItemMode.NORMAL;
+
+
 	private List<ContourPointItem>						mContourPoints = new ArrayList<>();
 	private List<IntermediatePointItem>					mIntermediatePoints = new ArrayList<>();
 
 
-	
-	
-	public GeometryItem(MenuManager mm, IGeometry geom) {
+
+
+	public GeometryItem(final MenuManager mm, final IGeometry geom) {
 		this(mm, geom, null);
 	}
-	public GeometryItem(MenuManager mm, IGeometry geom, ParameterContext context) {
+	public GeometryItem(final MenuManager mm, final IGeometry geom, final ParameterContext context) {
 		super(GeometryUtils.createShape(geom), context);
 		mGeometry = geom;
 		mMenuManager = mm;
-		if (geom.getType() == GeometryType.LineString)
-			setStyle(sLineStyle);
-		else
-			setStyle(sFilledStyle);
-		
+		setStyles(mMode);
+
 		enableEditPoints(true);
-//		addPropertyChangeListener(PROP_CENTER_X, this);
-//		addPropertyChangeListener(PROP_CENTER_Y, this);
-//		addPropertyChangeListener(PROP_ROTATION, this);
-//		addPropertyChangeListener(PROP_SCALE_X, this);
-//		addPropertyChangeListener(PROP_SCALE_Y, this);
+
+		setMouseSupport(new MouseAdapter() {
+			@Override
+			public void mouseClicked(final MouseEvent e) {
+				onMouseClicked(e);
+			}
+
+
+		});
 	}
 
-	public void enableEditPoints(boolean b) {
+	public void enableEditPoints(final boolean b) {
 		if (b) {
 			for (int i = 0; i < mGeometry.numPoints(); i++) {
-				ContourPointItem cp = new ContourPointItem(mMenuManager, mGeometry, i);
+				final ContourPointItem cp = new ContourPointItem(mMenuManager, this, i);
 				addItem(cp); mContourPoints.add(cp);
 				cp.setLocalLocation(mGeometry.getPoint(i));
 			}
 			for (int i = 0; i < mGeometry.numPoints(); i++) {
-				int idx0 = i, idx1 = mGeometry.getNextIndex(i);
+				final int idx0 = i, idx1 = mGeometry.getNextIndex(i);
 				if (idx1 < 0)
 					continue; //can happen on point and linestring
-				IntermediatePointItem ipi = new IntermediatePointItem(mGeometry, idx0, idx1);
+				final IntermediatePointItem ipi = new IntermediatePointItem(this, idx0, idx1);
 				addItem(ipi); mIntermediatePoints.add(ipi);
 				ipi.update();
 			}
 			mGeometry.addListener(this);
 		}else {
 			mGeometry.removeListener(this);
-			for (ContourPointItem cp : mContourPoints) removeItem(cp);
-			for (IntermediatePointItem ipi : mIntermediatePoints) removeItem(ipi);
-				
+			for (final ContourPointItem cp : mContourPoints) removeItem(cp);
+			for (final IntermediatePointItem ipi : mIntermediatePoints) removeItem(ipi);
+
 			mContourPoints.clear();
 			mIntermediatePoints.clear();
 		}
 	}
-	
-	
-	public void updateIntermediatePoints(int idx) {
+
+
+	public void updateIntermediatePoints(final int idx) {
 		if (mIntermediatePoints.isEmpty()) return ;
-		int lower = mGeometry.getPreviousIndex(idx);
-		IntermediatePointItem ipi_lower = mIntermediatePoints.get(lower);
-		assert(ipi_lower.getIndex0() == lower);
+		final int lower = mGeometry.getPreviousIndex(idx);
+		final IntermediatePointItem ipi_lower = mIntermediatePoints.get(lower);
+		assert ipi_lower.getIndex0() == lower;
 		ipi_lower.update();
-		IntermediatePointItem ipi_idx = mIntermediatePoints.get(idx);
-		assert(ipi_idx.getIndex0() == idx);
+		final IntermediatePointItem ipi_idx = mIntermediatePoints.get(idx);
+		assert ipi_idx.getIndex0() == idx;
 		ipi_idx.update();
 	}
-	
-	
-	private boolean needRepaintOnPropertyChange(PropertyChangeEvent pce) {
-		String pn = pce.getPropertyName();
-		if (pn.equals("Points")) 
+
+
+	private boolean needRepaintOnPropertyChange(final PropertyChangeEvent pce) {
+		final String pn = pce.getPropertyName();
+		if ("Points".equals(pn))
 			return true;
-//		if (pn.equals(GraphicsItem.PROP_CENTER_X) || pn.equals(GraphicsItem.PROP_CENTER_Y)) 
-//			return true;
-//		if (pn.equals(GraphicsItem.PROP_ROTATION)) 
-//			return true;
-//		if (pn.equals(GraphicsItem.PROP_SCALE_X) || pn.equals(GraphicsItem.PROP_SCALE_Y)) 
-//			return true;
 		return false;
 	}
 	@Override
-	public void propertyChange(PropertyChangeEvent evt) {
+	public void propertyChange(final PropertyChangeEvent evt) {
 		if (needRepaintOnPropertyChange(evt)) {
 			setShape(GeometryUtils.createShape(mGeometry));
 			if (mContourPoints.isEmpty() == false) {
@@ -117,23 +117,51 @@ public class GeometryItem extends GraphicsItem implements PropertyChangeListener
 	public IGeometry getGeometry() { return mGeometry; }
 
 	/**
-	 * Transform's the Geometry in a way that the new Geometry's center is at the center of the 
-	 * current position. 
+	 * Transform's the Geometry in a way that the new Geometry's center is at the center of the
+	 * current position.
 	 */
 	public void applyTransform() {
 		System.out.println();
 	}
-	
-	
-	
-//	@Override
-//	protected void onAddedToScene(GraphicsScene scene) {
-//		super.onAddedToScene(scene);
-//		mGeometry.addListener(this);
-//	}
-//	@Override
-//	protected void onRemovedFromScene(GraphicsScene scene) {
-//		super.onRemovedFromScene(scene);
-//		mGeometry.removeListener(this);
-//	}
+
+	public GeometryItemMode getGeometryItemMode() { return mMode; }
+	public void setGeometryItemMode(final GeometryItemMode mode) {
+		if (mMode != mode) {
+			mMode = mode;
+			setStyles(mode);
+		}
+	}
+	private void setStyles(final GeometryItemMode mode) {
+		DrawableStyle geomStyle = null;
+		DrawableStyle pointStyle = null;
+		final GeometryType type = getGeometry().getType();
+		switch(mode) {
+		case NORMAL:
+			geomStyle = type == GeometryType.Polygon ? Styles.GeometryNormalFilled : Styles.GeometryNormalLine;
+			pointStyle = Styles.NormalStyle;
+			break;
+		case EDIT:
+			geomStyle = type == GeometryType.Polygon ? Styles.GeometryEditFilled : Styles.GeometryEditLine;
+			pointStyle = Styles.ActiveStyle;
+			break;
+		case CREATE:
+			geomStyle = type == GeometryType.Polygon ? Styles.GeometryCreateFilled : Styles.GeometryCreateLine;
+			pointStyle = Styles.ActiveStyle;
+			break;
+		}
+		setStyle(geomStyle);
+	}
+	public boolean allowsManipulation() {
+		return getGeometryItemMode() == GeometryItemMode.EDIT;
+	}
+
+	private void onMouseClicked(final MouseEvent e) {
+		if (allowsManipulation() && SwingUtilities.isRightMouseButton(e)) {
+			final JPopupMenu pm = new JPopupMenu();
+			mMenuManager.fillGeometryItemMenu(this, getScene(), pm);
+			pm.show(getView(), e.getX(), e.getY());
+			e.consume();
+		}
+	}
+
 }
