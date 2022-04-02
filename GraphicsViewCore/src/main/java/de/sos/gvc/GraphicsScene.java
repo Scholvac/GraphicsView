@@ -7,8 +7,10 @@ import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeSupport;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.LinkedList;
 import java.util.List;
 
 import de.sos.gvc.storage.ListStorage;
@@ -30,12 +32,33 @@ public class GraphicsScene {
 
 	public interface IItemFilter {
 		public boolean accept(GraphicsItem item);
+
+		public static IItemFilter combound(final IItemFilter first, final IItemFilter[] filter) {
+			return combound(first, Arrays.asList(filter));
+		}
+
+		public static IItemFilter combound(final IItemFilter first, final Collection<IItemFilter> additional) {
+			if (additional == null || additional.isEmpty())
+				return first;
+			final LinkedList<IItemFilter> filter = new LinkedList<>();
+			if (first != null)
+				filter.add(first);
+			for (final IItemFilter add : additional)
+				if (add != null)
+					filter.add(add);
+			if(filter.size() == 1)
+				return filter.get(0);
+			return new ComboundItemFilter(filter);
+		}
 	}
 
 
 	public static class ComboundItemFilter implements IItemFilter {
-		private IItemFilter[] mFilter;
+		private final Collection<IItemFilter> 	mFilter;
 		public ComboundItemFilter(final IItemFilter ...filters) {
+			this(Arrays.asList(filters));
+		}
+		public ComboundItemFilter(final Collection<IItemFilter> filters) {
 			mFilter = filters;
 		}
 		@Override
