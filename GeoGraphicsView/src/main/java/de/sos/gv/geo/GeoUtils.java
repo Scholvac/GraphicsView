@@ -23,17 +23,17 @@ public class GeoUtils {
 
 
 
-	static LatLonPoint GoogleBingtoWGS84Mercator (double x, double y, LatLonPoint store) {
-		double lon = x / 20037508.34 * 180;
+	static LatLonPoint GoogleBingtoWGS84Mercator (final double x, final double y, final LatLonPoint store) {
+		final double lon = x / 20037508.34 * 180;
 		double lat = y / 20037508.34 * 180;
 
-		lat = 180/Math.PI * (2 * Math.atan(Math.exp(lat * Math.PI / 180)) - Math.PI / 2);
+		lat = 180/FastMath.PI * (2 * FastMath.atan(FastMath.exp(lat * FastMath.PI / 180)) - FastMath.PI / 2);
 		return store.set(lat, lon);
 	}
-	static Point2D.Double WGS84toGoogleBing(double lat, double lon, Point2D.Double store) {
+	static Point2D.Double WGS84toGoogleBing(final double lat, final double lon, final Point2D.Double store) {
 		// https://alastaira.wordpress.com/2011/01/23/the-google-maps-bing-maps-spherical-mercator-projection/
 		store.x = lon * 20037508.34 / 180;
-		store.y = Math.log(Math.tan((90 + lat) * Math.PI / 360)) / (Math.PI / 180);
+		store.y = FastMath.log(FastMath.tan((90 + lat) * FastMath.PI / 360)) / (Math.PI / 180);
 		store.y = store.y * 20037508.34 / 180;
 		return store;
 	}
@@ -42,11 +42,11 @@ public class GeoUtils {
 		return getLatLon(mercatorX, mercatorY, null);
 	}
 
-	public static LatLonPoint getLatLon(double mercatorX, double mercatorY, LatLonPoint store) {
+	public static LatLonPoint getLatLon(final double mercatorX, final double mercatorY, LatLonPoint store) {
 		if (store == null) store = new LatLonPoint();
 		return GoogleBingtoWGS84Mercator(mercatorX, mercatorY, store);
 	}
-	public static LatLonPoint getLatLon(Point2D xy) {
+	public static LatLonPoint getLatLon(final Point2D xy) {
 		return getLatLon(xy.getX(), xy.getY());
 	}
 
@@ -78,40 +78,40 @@ public class GeoUtils {
 		return sCorrectionFactors[idx];
 	}
 
-	public static double distance(Point2D.Double p1, Point2D.Double p2) {
+	public static double distance(final Point2D.Double p1, final Point2D.Double p2) {
 		final double x = p2.x - p1.x;
 		final double y = p2.y - p1.y;
 		final double cy = p1.y + y*0.5;
-		double cf = getScaleCorrectionFromY(cy);
+		final double cf = getScaleCorrectionFromY(cy);
 		return FastMath.sqrt(x*x + y*y) / cf;
 	}
 
-	public static Point2D.Double getXY(LatLonPoint llp) {
+	public static Point2D.Double getXY(final LatLonPoint llp) {
 		return WGS84toGoogleBing(llp.getLatitude(), llp.getLongitude(), new Point2D.Double());
 	}
-	public static Point2D.Double getXY(double lat, double lon) {
+	public static Point2D.Double getXY(final double lat, final double lon) {
 		return WGS84toGoogleBing(lat, lon, new Point2D.Double());
 	}
-	public static Point2D.Double getXY(LatLonPoint llp, Point2D.Double store) {
+	public static Point2D.Double getXY(final LatLonPoint llp, final Point2D.Double store) {
 		return WGS84toGoogleBing(llp.getLatitude(), llp.getLongitude(), store != null ? store : new Point2D.Double());
 	}
-	public static Point2D.Double getXY(double lat, double lon, Point2D.Double store) {
+	public static Point2D.Double getXY(final double lat, final double lon, final Point2D.Double store) {
 		return WGS84toGoogleBing(lat, lon, store != null ? store : new Point2D.Double());
 	}
 
 
 
-	public static void setViewCenter(GraphicsView view, LatLonPoint llp) {
-		Point2D.Double m = getXY(llp);
+	public static void setViewCenter(final GraphicsView view, final LatLonPoint llp) {
+		final Point2D.Double m = getXY(llp);
 		view.setCenter(m.x, -m.y);
 	}
 
-	public static void setGeoPosition(GraphicsItem item, LatLonPoint llp) {
-		Point2D.Double m = getXY(llp);
+	public static void setGeoPosition(final GraphicsItem item, final LatLonPoint llp) {
+		final Point2D.Double m = getXY(llp);
 		item.setCenter(m);
 	}
 
-	public static double squareDistance(final Point2D.Double p1, Point2D.Double p2) {
+	public static double squareDistance(final Point2D.Double p1, final Point2D.Double p2) {
 		final double x = p2.x - p1.x;
 		final double y = p2.y - p1.y;
 		return x*x + y*y;
