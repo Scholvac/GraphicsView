@@ -129,6 +129,10 @@ public class GeometryItem extends GraphicsItem implements PropertyChangeListener
 		if (mMode != mode) {
 			mMode = mode;
 			setStyles(mode);
+			if (mMode == GeometryItemMode.NORMAL)
+				enableEditPoints(false);
+			else
+				enableEditPoints(true);
 		}
 	}
 	private void setStyles(final GeometryItemMode mode) {
