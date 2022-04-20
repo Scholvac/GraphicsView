@@ -2,117 +2,114 @@ package de.sos.gv.geo.tiles;
 
 import java.awt.Rectangle;
 import java.awt.image.BufferedImage;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.PriorityBlockingQueue;
-
-import javax.imageio.ImageIO;
+import java.util.concurrent.CompletableFuture;
+import java.util.function.Supplier;
 
 import org.slf4j.Logger;
 
 import de.sos.gv.geo.LatLonBox;
-import de.sos.gv.geo.tiles.cache.ITileCache;
-import de.sos.gv.geo.tiles.impl.OSMTileCalculator;
-import de.sos.gv.geo.tiles.impl.TileWorker;
-import de.sos.gv.geo.tiles.impl.TileWorker.TileWorkerItem;
+import de.sos.gv.geo.tiles.TileItem.TileStatus;
+import de.sos.gv.geo.tiles.cache.PriorityJobScheduler;
+import de.sos.gv.geo.tiles.cache.PriorityJobScheduler.IJob;
+import de.sos.gv.geo.tiles.impl.Utils;
 import de.sos.gvc.log.GVLog;
 
-public class TileFactory {
+public class TileFactory implements ITileFactory {
 
 	private static final Logger					LOG = GVLog.getLogger(TileInfo.class);
 
+
 	private ITileCalculator						mCalculator = new OSMTileCalculator();
 
-	private final BlockingQueue<TileWorkerItem>	mTileQueue = new PriorityBlockingQueue<>(1000, (a, b) -> -Long.compare(a.time, b.time));
-	private final List<TileWorker>				mWorkerThreads = new ArrayList<>();
+	private final Supplier<BufferedImage>		mLoadingImageSupplier;
+	private final Supplier<BufferedImage>		mErrorImageSupplier;
+	private final PriorityJobScheduler			mScheduler;
 
-	private BufferedImage 						mLoadingImage;
-	private BufferedImage 						mErrorImage;
+	private ITileImageProvider					mImageProvider;
 
-	private ITileCache							mTileCache;
-	private String								mThreadName;
-	private int									mThreadCount;
-	private int									mNameCounter = 0;
-
-	private int 								mMaxTries = 5;
-
-
-
-	public TileFactory(ITileCache cache) {
-		this(cache, 4);
+	public TileFactory(final ITileImageProvider imgProvider) {
+		this(imgProvider, Runtime.getRuntime().availableProcessors());
 	}
-	public TileFactory(ITileCache cache, final int threadCount) {
-		this(cache, "TileFactoryWorker", threadCount);
+	public TileFactory(final ITileImageProvider imgProvider, final int threadCount) {
+		this(imgProvider, "TileFactory", threadCount);
 	}
-	public TileFactory(ITileCache cache, final String threadName, final int threadCount) {
-		try {
-			mLoadingImage = ImageIO.read(getClass().getClassLoader().getResource("timer.png"));
-			mErrorImage = ImageIO.read(getClass().getClassLoader().getResource("error404.png"));
-		} catch (IOException e) {
-			e.printStackTrace();
-			mLoadingImage = new BufferedImage(256, 256, BufferedImage.TYPE_3BYTE_BGR);
-		}
-		setTileCache(cache);
-		createExecutor(threadName, threadCount);
+	public TileFactory(final ITileImageProvider imgProvider, final String threadName, final int threadCount) {
+		this(imgProvider, threadName, threadCount, 100);
+	}
+	public TileFactory(final ITileImageProvider imgProvider, final String threadName, final int threadCount, final int queueSize) {
+		final BufferedImage loadingImage = Utils.loadImageOrEmpty("timer.png");
+		final BufferedImage errorImage = Utils.loadImageOrEmpty("error404.png");
+		mLoadingImageSupplier = () -> loadingImage;
+		mErrorImageSupplier = () -> errorImage;
+		mImageProvider = imgProvider;
+		mScheduler = new PriorityJobScheduler(threadName, threadCount, queueSize);
 	}
 
-
-	public void setTileCache(ITileCache cache) { mTileCache = cache;}
-	public void setNumberOfThreads(final int count) { createExecutor(mThreadName, count);}
-	public void setThreadName(final String name) { createExecutor(name, mThreadCount);}
-
-	private void createExecutor(final String name, final int count) {
-		LOG.info("Update Tileworker");
-		mWorkerThreads.forEach(it -> it.setAlive(false));
-		mWorkerThreads.clear(); //may not yet finished, but that does not matter...
-
-		for (int i = 0; i < count; i++) {
-			TileWorker tw = new TileWorker(mTileCache, mTileQueue, mErrorImage);
-			Thread t = new Thread(tw, "TileWorker_" + mNameCounter++);
-			t.setDaemon(true);
-			t.setPriority(Thread.MIN_PRIORITY);
-			t.start();
-			LOG.info("Create TileWorker: " + t.getName());
-			mWorkerThreads.add(tw);
-		}
-	}
-
-
-
+	@Override
 	public int[][] getRequiredTileInfos(final LatLonBox area, final Rectangle viewBounds) {
 		return mCalculator.calculateTileCoordinates(area, viewBounds);
 	}
 
-
-	public TileItem load(int[] tileInfo) {
-		TileInfo ti = new TileInfo(tileInfo);
-		TileItem tile = new TileItem(ti, mLoadingImage);
-		TileWorkerItem twi = new TileWorkerItem(tile, mMaxTries);
-		mTileQueue.add(twi);
-
-		return tile;
+	public void setProvider(final ITileImageProvider provider) {
+		mScheduler.clear();
+		mImageProvider = provider;
 	}
 
-	public void release(TileItem item) {
-		mTileCache.release(item.getInfo(), item.getImage());
+	@Override
+	public TileItem load(final int[] tileInfo) {
+		final TileJob job = createTileJob(tileInfo);
+		mScheduler.scheduleJob(job);
+		return job.getTile();
 	}
-	public void check(Collection<TileItem> values) {
-		//		for (TileItem item : values) {
-		//			if (item.getStatus() == TileStatus.FINISHED) {
-		//				if (item.getImage() == mLoadingImage) {
-		//					System.out.println("Error: " + item);
-		//				}
-		//			}else {
-		//				System.out.println(item);
-		//				if (item.getStatus() == TileStatus.ERROR) {
-		//					if (item.getImage() != mErrorImage) {
-		//						System.out.println("UPS");
-		//					}
-		//				}
-		//			}
-		//		}
+
+	protected TileJob createTileJob(final int[] tileInfo) {
+		final TileItem tile = createTile(tileInfo);
+		return new TileJob(tile);
+	}
+
+	protected TileItem createTile(final int[] tileInfo) {
+		return new TileItem(new TileInfo(tileInfo), mErrorImageSupplier.get());
+	}
+	@Override
+	public void release(final TileItem item) {
+		mScheduler.remove(item.getInfo().getHash());
+	}
+
+
+
+	///////////////////////////////////////////////
+	class TileJob implements IJob {
+
+		private final TileItem 	mItem;
+		private final long		mCreationTime;
+
+		public TileJob(final TileItem item) {
+			mItem = item;
+			mCreationTime = System.currentTimeMillis(); //used for priority
+		}
+
+		@Override
+		public void run() {
+			mItem.setImage(TileStatus.LOADING, mLoadingImageSupplier.get());
+
+			final CompletableFuture<BufferedImage> imgFuture = mImageProvider.load(mItem.getInfo());
+
+			imgFuture.whenComplete((img, ex) -> {
+				if (img != null)
+					mItem.setImage(TileStatus.FINISHED, img);
+				else {
+					mItem.setImage(TileStatus.ERROR, mErrorImageSupplier.get());
+					ex.printStackTrace();
+				}
+			});
+
+
+		}
+		@Override
+		public long getCreationTime() { return mCreationTime; }
+		public TileItem getTile() { return mItem; }
+		@Override
+		public String getHash() { return getTile().getHash(); }
+
 	}
 }

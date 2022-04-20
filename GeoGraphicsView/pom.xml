@@ -9,7 +9,9 @@
 	</parent>
 	<artifactId>GeoGraphicsView</artifactId>
 
-
+	<properties>
+		<caffeine.version>2.9.3</caffeine.version> <!-- @note: use version 2.X for java 8 -->
+	</properties>
 
 	<dependencies>
 		<dependency>
@@ -22,6 +24,13 @@
 			<artifactId>GraphicsViewCore</artifactId>
 			<version>1.6.0-SNAPSHOT</version>
 		</dependency>
+		<!-- https://mvnrepository.com/artifact/com.github.ben-manes.caffeine/caffeine -->
+		<dependency>
+			<groupId>com.github.ben-manes.caffeine</groupId>
+			<artifactId>caffeine</artifactId>
+			<version>${caffeine.version}</version>
+		</dependency>
+
 
 
 		<!-- https://mvnrepository.com/artifact/org.apache.logging.log4j/log4j-slf4j18-impl -->

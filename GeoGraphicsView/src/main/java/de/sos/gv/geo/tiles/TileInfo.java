@@ -8,9 +8,18 @@ import java.awt.geom.Rectangle2D;
 import de.sos.gv.geo.GeoUtils;
 import de.sos.gv.geo.LatLonBox;
 import de.sos.gv.geo.LatLonPoint;
-import de.sos.gv.geo.tiles.impl.OSMTileCalculator;
 
 public class TileInfo implements Comparable<TileInfo> {
+
+	static final long[] hashOffset;
+
+	static {
+		hashOffset = new long[21];
+		for (int i = 0; i <= 20; i++) {
+			hashOffset[i] = (long) Math.pow(2, i);
+		}
+	}
+
 
 	private final int							mTileX;
 	private final int							mTileY;
@@ -23,7 +32,7 @@ public class TileInfo implements Comparable<TileInfo> {
 	private String 								mHash;
 
 	public TileInfo(final int[] arr) {
-		assert(arr != null && arr.length == 3);
+		assert arr != null && arr.length == 3;
 		mTileX = arr[0];
 		mTileY = arr[1];
 		mTileZ = arr[2];
@@ -34,7 +43,7 @@ public class TileInfo implements Comparable<TileInfo> {
 	public final int tileZ() { return mTileZ;}
 
 	@Override
-	public int compareTo(TileInfo o) {
+	public int compareTo(final TileInfo o) {
 		int res = Integer.compare(mTileZ, o.mTileZ);
 		if (res == 0)
 			res = Integer.compare(mTileY, o.mTileY);
@@ -44,13 +53,26 @@ public class TileInfo implements Comparable<TileInfo> {
 	}
 
 	@Override
-	public boolean equals(Object obj) {
+	public int hashCode() {
+		return (int)getHashCode();
+	}
+	public long getHashCode() {
+		final long oz = hashOffset[mTileZ < 20 ? mTileZ : 20];
+		final long ox = oz * mTileX + mTileY;
+		final long h = oz * oz + ox;
+		return h;
+
+	}
+	@Override
+	public boolean equals(final Object obj) {
 		if (obj == null || obj instanceof TileInfo == false)
 			return false;
-		TileInfo o = (TileInfo)obj;
-		return 	mTileX == o.mTileX &&
+		final TileInfo o = (TileInfo)obj;
+		if ( 	mTileX == o.mTileX &&
 				mTileY == o.mTileY &&
-				mTileZ == o.mTileX;
+				mTileZ == o.mTileZ)
+			return true;
+		return false;
 	}
 
 	public LatLonBox getLatLonBounds() {
@@ -74,15 +96,15 @@ public class TileInfo implements Comparable<TileInfo> {
 		if (mShape == null) {
 			final LatLonBox bb = getLatLonBounds();
 			bb.correct();
-			Point2D.Double ll = GeoUtils.getXY(bb.getLowerLeft());
-			Point2D.Double ur = GeoUtils.getXY(bb.getUpperRight());
-			double w = ur.getX() - ll.getX(), h = ur.getY() - ll.getY();
+			final Point2D.Double ll = GeoUtils.getXY(bb.getLowerLeft());
+			final Point2D.Double ur = GeoUtils.getXY(bb.getUpperRight());
+			final double w = ur.getX() - ll.getX(), h = ur.getY() - ll.getY();
 			mShape = new Rectangle2D.Double(-w*0.5, h*0.5, w, -h);
 		}
 		return mShape;
 	}
 
-	public static String getUniqueIdentifier(int[] tileArray) {
+	public static String getUniqueIdentifier(final int[] tileArray) {
 		return new StringBuffer().append(tileArray[0]).append("_").append(tileArray[1]).append("_").append(tileArray[2]).toString();
 	}
 
@@ -104,9 +126,14 @@ public class TileInfo implements Comparable<TileInfo> {
 					Integer.parseInt(split[1].trim()),
 					Integer.parseInt(split[2].trim())
 			});
-		}catch(Exception e) {
+		}catch(final Exception e) {
 			return null;
 		}
+	}
+
+	@Override
+	public String toString() {
+		return getHash();
 	}
 
 }

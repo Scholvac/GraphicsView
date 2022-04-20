@@ -1,4 +1,4 @@
-package de.sos.gv.geo.tiles.impl;
+package de.sos.gv.geo.tiles.downloader;
 
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -9,7 +9,7 @@ import de.sos.gv.geo.LatLonBox;
 import de.sos.gv.geo.tiles.TileInfo;
 import de.sos.gvc.log.GVLog;
 
-public class WMSImageProvider extends TileImageProvider {
+public class WMSImageProvider extends AbstractTileDownloader {
 
 	public enum WMSVersion {
 		VERSION_1_1_1,
@@ -18,6 +18,7 @@ public class WMSImageProvider extends TileImageProvider {
 
 	private static final Logger	logger = GVLog.getLogger(WMSImageProvider.class);
 
+	private String 			mBaseURL;
 	private String 			mFormat = "image/png";
 	private int				mTileSize = 512;
 	private String 			mStyles = "";
@@ -25,11 +26,13 @@ public class WMSImageProvider extends TileImageProvider {
 	private String			mLayer = "ENC";
 	private WMSVersion		mVersion;
 
-	public WMSImageProvider(final String url, WMSVersion vers) {
+
+
+	public WMSImageProvider(final String url, final WMSVersion vers) {
 		this(url, vers, "ENC");
 	}
-	public WMSImageProvider(final String url, WMSVersion vers, final String layer) {
-		super(url);
+	public WMSImageProvider(final String url, final WMSVersion vers, final String layer) {
+		mBaseURL = url;
 		mLayer = layer;
 		mVersion = vers;
 		logger.debug("New WMSImageProvider");
@@ -38,16 +41,16 @@ public class WMSImageProvider extends TileImageProvider {
 
 
 	@Override
-	protected URL createURL(TileInfo info) {
+	protected URL getURL(final TileInfo info) {
 		try {
-			String format = "image/png";
-			String styles = "";
-			int ts = mTileSize;
-			LatLonBox bb = info.getLatLonBounds();
-			double ulx = bb.getWest();
-			double uly = bb.getSouth();
-			double lrx = bb.getEast();
-			double lry = bb.getNorth();
+			final String format = "image/png";
+			final String styles = "";
+			final int ts = mTileSize;
+			final LatLonBox bb = info.getLatLonBounds();
+			final double ulx = bb.getWest();
+			final double uly = bb.getSouth();
+			final double lrx = bb.getEast();
+			final double lry = bb.getNorth();
 			//			ulx = 53.85; uly=8.45;lrx=54.05;lry=9.0;
 			String bbox = ulx + "," + uly + "," + lrx + "," + lry;
 
@@ -58,7 +61,7 @@ public class WMSImageProvider extends TileImageProvider {
 				version = "1.3.0";
 				srs = "&CRS="+srs;
 			}
-			String baseURL = mURL;
+			String baseURL = mBaseURL;
 			if (baseURL == null) {
 				baseURL = "";
 			}
@@ -69,17 +72,15 @@ public class WMSImageProvider extends TileImageProvider {
 
 			if (baseURL.contains("?") == false) {
 				baseURL += "?";
-			} else {
-				if (baseURL.endsWith("?") == false && baseURL.endsWith("&") == false) {
-					baseURL += "&";
-				}
+			} else if (baseURL.endsWith("?") == false && baseURL.endsWith("&") == false) {
+				baseURL += "&";
 			}
 			String layers = "";
 			if (mLayer != null && mLayer.isEmpty()==false)
 				layers = "&LAYERS=" + mLayer;
-			String url = baseURL + "VERSION="+version+"&REQUEST=" + "GetMap" + layers + srs + "&BBOX="+bbox + "&WIDTH=" + ts + "&HEIGHT=" + ts + "&FORMAT="+format;
+			final String url = baseURL + "VERSION="+version+"&REQUEST=" + "GetMap" + layers + srs + "&BBOX="+bbox + "&WIDTH=" + ts + "&HEIGHT=" + ts + "&FORMAT="+format;
 			return new URL(url);
-		} catch (MalformedURLException e) {
+		} catch (final MalformedURLException e) {
 			e.printStackTrace();
 		}
 		return null;

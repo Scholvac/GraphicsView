@@ -1,11 +1,10 @@
-package de.sos.gv.geo.tiles.impl;
+package de.sos.gv.geo.tiles;
 
 import java.awt.Rectangle;
 
 import de.sos.gv.geo.GeoUtils;
 import de.sos.gv.geo.LatLonBox;
 import de.sos.gv.geo.LatLonPoint;
-import de.sos.gv.geo.tiles.ITileCalculator;
 import net.jafama.FastMath;
 
 public class OSMTileCalculator implements ITileCalculator {

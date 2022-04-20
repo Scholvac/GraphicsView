@@ -10,15 +10,15 @@ import java.io.IOException;
 import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
+import javax.swing.WindowConstants;
 
 import de.sos.gv.geo.GeoUtils;
 import de.sos.gv.geo.LatLonPoint;
+import de.sos.gv.geo.tiles.ITileFactory;
+import de.sos.gv.geo.tiles.ITileImageProvider;
+import de.sos.gv.geo.tiles.SizeUnit;
 import de.sos.gv.geo.tiles.TileFactory;
 import de.sos.gv.geo.tiles.TileHandler;
-import de.sos.gv.geo.tiles.cache.FileCache;
-import de.sos.gv.geo.tiles.cache.ITileCache;
-import de.sos.gv.geo.tiles.cache.ImageCache;
-import de.sos.gv.geo.tiles.impl.TileImageProvider;
 import de.sos.gvc.GraphicsItem;
 import de.sos.gvc.GraphicsScene;
 import de.sos.gvc.GraphicsView;
@@ -32,11 +32,11 @@ public class ManualGeoGraphicsTest {
 
 	static LatLonPoint llp_brhv = new LatLonPoint(53.523495, 8.641542);
 
-	public static void main(String[] args) throws IOException {
+	public static void main(final String[] args) throws IOException {
 
 		// Create a new Scene and a new View
-		GraphicsScene scene = new GraphicsScene();
-		GraphicsView view = new GraphicsView(scene, new ParameterContext());
+		final GraphicsScene scene = new GraphicsScene();
+		final GraphicsView view = new GraphicsView(scene, new ParameterContext());
 
 		// Standard Handler
 		view.addHandler(new MouseDelegateHandler());
@@ -49,25 +49,25 @@ public class ManualGeoGraphicsTest {
 		buildAndShowFrame(view);
 	}
 
-	private static void addTiles(GraphicsScene scene, GraphicsView view) {
-		ITileCache cache = ITileCache.build(TileImageProvider.OSM, new ImageCache(10*1024*1024), new FileCache(new File("./.cache"), 100*1024*1024));
+	private static void addTiles(final GraphicsScene scene, final GraphicsView view) {
+		final ITileImageProvider cache = ITileFactory.buildCache(ITileImageProvider.OSM, 10, SizeUnit.MegaByte, new File("./.cache"), 100, SizeUnit.MegaByte);
 		view.addHandler(new TileHandler(new TileFactory(cache)));
 
 		GeoUtils.setViewCenter(view, llp_brhv);
 		view.setScale(3);
 	}
 
-	private static void buildAndShowFrame(GraphicsView view) {
-		JFrame frame = new JFrame("TilesDevMain");
-		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+	private static void buildAndShowFrame(final GraphicsView view) {
+		final JFrame frame = new JFrame("TilesDevMain");
+		frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
 		frame.setSize(800, 800);
 		frame.setLayout(new BorderLayout());
 		frame.add(view, BorderLayout.CENTER);
 
-		JPanel rotPanel = new JPanel();
+		final JPanel rotPanel = new JPanel();
 		rotPanel.setLayout(new BorderLayout());
-		JButton rLeft = new JButton("<<");
-		JButton rRight = new JButton(">>");
+		final JButton rLeft = new JButton("<<");
+		final JButton rRight = new JButton(">>");
 		rotPanel.add(rLeft, BorderLayout.WEST);
 		rotPanel.add(rRight, BorderLayout.EAST);
 		frame.add(rotPanel, BorderLayout.SOUTH);
@@ -93,7 +93,7 @@ public class ManualGeoGraphicsTest {
 	private static final Point2D ppCenter = new Point2D.Double(962189.31192, 7080209.04912);
 
 
-	private static void addItems(GraphicsScene scene) {
+	private static void addItems(final GraphicsScene scene) {
 
 		addItem(scene, p1, pp1);
 		addItem(scene, p2, pp2);
@@ -103,20 +103,20 @@ public class ManualGeoGraphicsTest {
 		addItem(scene, star, GeoUtils.getXY(llp_brhv));
 	}
 
-	private static void addItem(GraphicsScene scene, String wkt, Point2D pos) {
+	private static void addItem(final GraphicsScene scene, final String wkt, final Point2D pos) {
 		//create a number of items and simulations that shall be drawn to the view
-		DrawableStyle style = new DrawableStyle();
+		final DrawableStyle style = new DrawableStyle();
 		style.setName("default");
-		Point2D start = new Point2D.Float(-100, -100);
-		Point2D end = new Point2D.Float(100, 100);
-		float[] dist = {0.0f, 0.5f, 1.0f};
-		Color[] colors = {Color.RED, Color.WHITE, Color.BLUE};
-		LinearGradientPaint p = new LinearGradientPaint(start, end, dist, colors);
+		final Point2D start = new Point2D.Float(-100, -100);
+		final Point2D end = new Point2D.Float(100, 100);
+		final float[] dist = {0.0f, 0.5f, 1.0f};
+		final Color[] colors = {Color.RED, Color.WHITE, Color.BLUE};
+		final LinearGradientPaint p = new LinearGradientPaint(start, end, dist, colors);
 		style.setFillPaint(p);
 		style.setLinePaint(Color.BLACK);
 
 		//build also a mixed item to show how it works on item hierarchies
-		GraphicsItem mixedItem = new GraphicsItem(ExampleUtils.wkt2Shape(wkt));
+		final GraphicsItem mixedItem = new GraphicsItem(ExampleUtils.wkt2Shape(wkt));
 		mixedItem.setScale(1, 1);
 		mixedItem.setStyle(style);
 		mixedItem.setCenter(pos);
@@ -124,8 +124,8 @@ public class ManualGeoGraphicsTest {
 		scene.addItem(mixedItem);
 	}
 
-	private static void rotate(GraphicsView view, double delta) {
-		double newRot = view.getRotationDegrees() + delta;
+	private static void rotate(final GraphicsView view, final double delta) {
+		final double newRot = view.getRotationDegrees() + delta;
 		view.setRotation(newRot);
 	}
 
