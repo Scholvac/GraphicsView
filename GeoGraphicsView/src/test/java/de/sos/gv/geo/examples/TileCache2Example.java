@@ -3,6 +3,7 @@ package de.sos.gv.geo.examples;
 import java.awt.BorderLayout;
 import java.awt.EventQueue;
 import java.io.File;
+import java.util.function.Supplier;
 
 import javax.swing.JFrame;
 import javax.swing.JPanel;
@@ -16,12 +17,17 @@ import de.sos.gv.geo.tiles.ITileImageProvider;
 import de.sos.gv.geo.tiles.SizeUnit;
 import de.sos.gv.geo.tiles.TileFactory;
 import de.sos.gv.geo.tiles.TileHandler;
+import de.sos.gv.geo.tiles.cache.FileCache;
+import de.sos.gv.geo.tiles.cache.MemoryCache;
+import de.sos.gv.geo.tiles.cache.ThreadedTileProvider;
+import de.sos.gv.geo.tiles.downloader.DefaultTileDownloader;
 import de.sos.gvc.GraphicsScene;
 import de.sos.gvc.GraphicsView;
 import de.sos.gvc.handler.DefaultViewDragHandler;
 import de.sos.gvc.handler.MouseDelegateHandler;
+import de.sos.gvc.storage.ListStorage;
 
-public class ExampleTemplate extends JFrame {
+public class TileCache2Example extends JFrame {
 
 	/**
 	 * Launch the application.
@@ -31,7 +37,7 @@ public class ExampleTemplate extends JFrame {
 			@Override
 			public void run() {
 				try {
-					final ExampleTemplate frame = new ExampleTemplate("Example Template");
+					final TileCache2Example frame = new TileCache2Example("Tile Cache");
 					frame.setVisible(true);
 				} catch (final Exception e) {
 					e.printStackTrace();
@@ -40,14 +46,13 @@ public class ExampleTemplate extends JFrame {
 		});
 	}
 
-	private GraphicsScene 		mScene;
-	private GraphicsView		mView;
-
+	private GraphicsScene mScene;
+	private GraphicsView mView;
 
 	/**
 	 * Create the frame.
 	 */
-	public ExampleTemplate(final String title) {
+	public TileCache2Example(final String title) {
 		super(title);
 		setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
 		setBounds(100, 100, 800, 800);
@@ -68,28 +73,54 @@ public class ExampleTemplate extends JFrame {
 		final LatLonPoint llp_brhv = new LatLonPoint(53.523495, 8.641542);
 		GeoUtils.setViewCenter(mView, llp_brhv);
 		mView.setScale(20);
+		mView.getProperty(GraphicsView.PROP_VIEW_SCALE_X).addPropertyChangeListener(pcl -> System.out.println(mView.getScaleX()));
+
+		new Thread() {
+			@Override
+			public void run() {
+				double s = 0.1;
+				while(s < 41400) {
+					s *= 1.1;
+					mView.setScale(s);
+					try {Thread.sleep(250);}catch(final Exception e) {}
+				}
+				while(s > 0.1) {
+					s *= 0.9;
+					mView.setScale(s);
+					try {Thread.sleep(250);}catch(final Exception e) {}
+				}
+			}
+		}.start();
 	}
 
-
-
 	private void createScene() {
-		mScene = new GraphicsScene();
+		mScene = new GraphicsScene(new ListStorage(false));
 		mView = new GraphicsView(mScene);
 
-		//Standard Handler
+		// Standard Handler
 		mView.addHandler(new MouseDelegateHandler());
 		mView.addHandler(new DefaultViewDragHandler());
 
 		setupMap();
 	}
+
+
 	private void setupMap() {
-		/**
-		 * Create a cache cascade: RAM (10 MB) -> HDD (100MB) -> WEB and initializes a
-		 * standard TileFactory with 4 threads. For more informations on how to
-		 * initialize the Tile Background, see OSMExample
-		 */
-		final ITileImageProvider cache = ITileFactory.buildCache(ITileImageProvider.OSM, 10, SizeUnit.MegaByte, new File("./.cache"), 100, SizeUnit.MegaByte);
-		mView.addHandler(new TileHandler(new TileFactory(cache)));
+		final Supplier<ITileImageProvider> webCache = () -> new DefaultTileDownloader("https://tile.openstreetmap.org/{z}/{x}/{y}.png");
+		final ITileImageProvider cached = buildCache(webCache);
+
+		final ITileFactory factory = new TileFactory(cached, "TileFactoryWorker", 8);
+		mView.addHandler(new TileHandler(factory));
+
 	}
+
+	private ITileImageProvider buildCache(final Supplier<ITileImageProvider> webCache) {
+		final ThreadedTileProvider osm = new ThreadedTileProvider(webCache);
+		final FileCache fc = new FileCache(osm, new File("cache/"), 8, SizeUnit.MegaByte);
+		final MemoryCache mc = new MemoryCache(fc, 1, SizeUnit.MegaByte);
+		return mc;
+	}
+
+
 
 }

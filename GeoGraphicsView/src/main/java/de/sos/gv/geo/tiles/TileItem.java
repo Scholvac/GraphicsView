@@ -3,6 +3,10 @@ package de.sos.gv.geo.tiles;
 import java.awt.Graphics2D;
 import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.IOException;
+
+import javax.imageio.ImageIO;
 
 import org.slf4j.Logger;
 
@@ -27,17 +31,17 @@ public class TileItem extends GraphicsItem {
 		BufferedImage 			mImage;
 		private Rectangle2D 	mBoundingBox;
 
-		public ImageDrawable(Rectangle2D bb, BufferedImage image) {
+		public ImageDrawable(final Rectangle2D bb, final BufferedImage image) {
 			mImage = image;
 			mBoundingBox = bb;
 		}
 
 		@Override
-		public void paintItem(Graphics2D g, DrawableStyle style, IDrawContext ctx) {
-			int x = (int)mBoundingBox.getX();
-			int y = (int)mBoundingBox.getY();
-			int w = (int)mBoundingBox.getWidth();
-			int h = (int)mBoundingBox.getHeight();
+		public void paintItem(final Graphics2D g, final DrawableStyle style, final IDrawContext ctx) {
+			final int x = (int)mBoundingBox.getX();
+			final int y = (int)mBoundingBox.getY();
+			final int w = (int)mBoundingBox.getWidth();
+			final int h = (int)mBoundingBox.getHeight();
 			g.drawImage(mImage, x-1, y+1, w+1, h-1, null);
 		}
 
@@ -56,13 +60,22 @@ public class TileItem extends GraphicsItem {
 		setDrawable(mImage = new ImageDrawable((Rectangle2D) getShape(), img));
 		setCenter(info.getXYCenter());
 	}
-	public synchronized void setImage(final TileStatus status, BufferedImage img) {
+	static int c;
+	public synchronized void setImage(final TileStatus status, final BufferedImage img) {
 		LOG.trace("Set status of tile {} to {} ", mInfo.getHash(), status);
 		if (img != mImage.mImage) {
 			mImage.mImage = img;
 			mStatus = status;
-		}else
+		}else {
+			try {
+				c++;
+				ImageIO.write(img, "PNG", new File("error_"+c+".png"));
+			} catch (final IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 			mStatus = TileStatus.ERROR;
+		}
 
 		markDirty();
 	}

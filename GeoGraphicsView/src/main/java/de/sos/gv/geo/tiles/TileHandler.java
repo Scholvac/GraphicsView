@@ -26,20 +26,20 @@ public class TileHandler implements IGraphicsViewHandler, IPaintListener {
 	private boolean							mTileUpdateRequired = true;
 	private PropertyChangeListener			mTileUpdateListener = new PropertyChangeListener() {
 		@Override
-		public void propertyChange(PropertyChangeEvent evt) {
+		public void propertyChange(final PropertyChangeEvent evt) {
 			mTileUpdateRequired = true;
 		}
 	};
-	private final TileFactory				mFactory;
+	private final ITileFactory				mFactory;
 	private final Map<String, TileItem> 	mActiveTiles = new HashMap<>();
 
-	public TileHandler(TileFactory factory) {
+	public TileHandler(final ITileFactory factory) {
 		mFactory = factory;
-		assert(factory != null);
+		assert factory != null;
 	}
 
 	@Override
-	public void install(GraphicsView view) {
+	public void install(final GraphicsView view) {
 		view.addPaintListener(this);
 		view.getProperty(GraphicsView.PROP_VIEW_CENTER_X).addPropertyChangeListener(mTileUpdateListener);
 		view.getProperty(GraphicsView.PROP_VIEW_CENTER_Y).addPropertyChangeListener(mTileUpdateListener);
@@ -49,7 +49,7 @@ public class TileHandler implements IGraphicsViewHandler, IPaintListener {
 	}
 
 	@Override
-	public void uninstall(GraphicsView view) {
+	public void uninstall(final GraphicsView view) {
 		view.getProperty(GraphicsView.PROP_VIEW_CENTER_X).removePropertyChangeListener(mTileUpdateListener);
 		view.getProperty(GraphicsView.PROP_VIEW_CENTER_Y).removePropertyChangeListener(mTileUpdateListener);
 		view.getProperty(GraphicsView.PROP_VIEW_SCALE_X).removePropertyChangeListener(mTileUpdateListener);
@@ -64,7 +64,7 @@ public class TileHandler implements IGraphicsViewHandler, IPaintListener {
 	private final LinkedList<int[]>		_tilesToAdd = new LinkedList<>();
 	private final HashSet<String>		_tilesToRemove = new HashSet<>();
 	@Override
-	public void prePaint(Graphics2D graphics, IDrawContext context) {
+	public void prePaint(final Graphics2D graphics, final IDrawContext context) {
 		if (mTileUpdateRequired) {
 			final GraphicsView view = context.getView();
 			final GraphicsScene	scene = view.getScene();
@@ -79,7 +79,7 @@ public class TileHandler implements IGraphicsViewHandler, IPaintListener {
 			_viewBB.setAndCorrect(_ll, _ur);
 			view.getBounds(_viewBounds);
 
-			int[][] requiredTiles = mFactory.getRequiredTileInfos(_viewBB, _viewBounds);
+			final int[][] requiredTiles = mFactory.getRequiredTileInfos(_viewBB, _viewBounds);
 			_tilesToRemove.addAll(mActiveTiles.keySet());
 			if (requiredTiles != null) {
 				for (int i = 0; i < requiredTiles.length; i++) {
@@ -89,7 +89,7 @@ public class TileHandler implements IGraphicsViewHandler, IPaintListener {
 						_tilesToAdd.add(tileArray);
 				}
 				if (_tilesToRemove.isEmpty() == false) {
-					for (String id : _tilesToRemove)
+					for (final String id : _tilesToRemove)
 						removeTile(scene, id);
 					_tilesToRemove.clear();
 				}
@@ -97,18 +97,17 @@ public class TileHandler implements IGraphicsViewHandler, IPaintListener {
 					addTile(scene, _tilesToAdd.removeFirst());
 				}
 			}
-			mFactory.check(mActiveTiles.values());
 			mTileUpdateRequired = false;
 		}
 	}
 
-	private void addTile(GraphicsScene scene, int[] tileInfo) {
-		TileItem item = mFactory.load(tileInfo);
+	private void addTile(final GraphicsScene scene, final int[] tileInfo) {
+		final TileItem item = mFactory.load(tileInfo);
 		mActiveTiles.put(item.getHash(), item);
 		scene.addItem(item);
 	}
 
-	private void removeTile(GraphicsScene scene, String itemHash) {
+	private void removeTile(final GraphicsScene scene, final String itemHash) {
 		final TileItem item = mActiveTiles.remove(itemHash);
 		if (item != null) {
 			scene.removeItem(item);
@@ -117,7 +116,7 @@ public class TileHandler implements IGraphicsViewHandler, IPaintListener {
 	}
 
 	@Override
-	public void postPaint(Graphics2D graphics, IDrawContext context) {} //not used
+	public void postPaint(final Graphics2D graphics, final IDrawContext context) {} //not used
 
 	@Override
 	public void notifySceneCleared() {

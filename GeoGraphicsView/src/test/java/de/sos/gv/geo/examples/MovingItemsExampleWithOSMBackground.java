@@ -12,12 +12,11 @@ import javax.swing.WindowConstants;
 
 import de.sos.gv.geo.GeoUtils;
 import de.sos.gv.geo.LatLonPoint;
+import de.sos.gv.geo.tiles.ITileFactory;
 import de.sos.gv.geo.tiles.ITileImageProvider;
+import de.sos.gv.geo.tiles.SizeUnit;
 import de.sos.gv.geo.tiles.TileFactory;
 import de.sos.gv.geo.tiles.TileHandler;
-import de.sos.gv.geo.tiles.cache.FileCache;
-import de.sos.gv.geo.tiles.cache.ITileCache;
-import de.sos.gv.geo.tiles.cache.ImageCache;
 import de.sos.gvc.GraphicsItem;
 import de.sos.gvc.GraphicsScene;
 import de.sos.gvc.GraphicsView;
@@ -126,8 +125,7 @@ public class MovingItemsExampleWithOSMBackground {
 		 * standard TileFactory with 4 threads. For more informations on how to
 		 * initialize the Tile Background, see OSMExample
 		 */
-		final ITileCache cache = ITileCache.build(ITileImageProvider.OSM, new ImageCache(10 * 1024 * 1024),
-				new FileCache(new File("./.cache"), 100 * 1024 * 1024));
+		final ITileImageProvider cache = ITileFactory.buildCache(ITileImageProvider.OSM, 10, SizeUnit.MegaByte, new File("./.cache"), 100, SizeUnit.MegaByte);
 		view.addHandler(new TileHandler(new TileFactory(cache)));
 
 		view.setScale(20);
