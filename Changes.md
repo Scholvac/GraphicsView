@@ -15,3 +15,4 @@ Version 1.1.0
 
 ### Unfinished ###
 * added geometry editor project (not yet part of the main pom tree)
+
