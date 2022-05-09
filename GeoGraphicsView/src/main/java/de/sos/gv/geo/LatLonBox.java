@@ -14,33 +14,57 @@ public class LatLonBox {
 		this(new LatLonPoint(north, east), new LatLonPoint(south, west), true);
 	}
 
-	public LatLonBox(LatLonPoint ll, LatLonPoint ur) {
+	public LatLonBox(final LatLonPoint ll, final LatLonPoint ur) {
 		this(ll, ur, false);
 	}
-	public LatLonBox(LatLonPoint ll, LatLonPoint ur, boolean use) {
+	public LatLonBox(final LatLonPoint ll, final LatLonPoint ur, final boolean use) {
 		mLowerLeft = use ? ll : new LatLonPoint(ll);
 		mUpperRight = use ? ur : new LatLonPoint(ur);
 	}
 
+	public LatLonBox add(final LatLonPoint ll) {
+		return add(ll.getLatitude(), ll.getLongitude());
+	}
 
+	public LatLonBox setAndCorrect(final double lat1, final double lon1, final double lat2, final double lon2) {
+		set(lat1, lon1, lat2, lon2);
+		return correct();
+	}
+	private LatLonBox add(final double latitude, final double longitude) {
+		final double n = getNorth();
+		final double s = getSouth();
+		if (latitude > n) mUpperRight.setLatitude(latitude);
+		if (latitude < s) mLowerLeft.setLatitude(latitude);
 
-	public void set(LatLonPoint _ll, LatLonPoint _ur) {
+		final double e = getEast();
+		final double w = getWest();
+		if (longitude < w) mLowerLeft.setLongitude(longitude);
+		if (longitude > e) mUpperRight.setLongitude(longitude);
+		return this;
+	}
+	public LatLonBox set(final double lat1, final double lon1, final double lat2, final double lon2) {
+		mLowerLeft.set(lat1, lon1);
+		mUpperRight.set(lat2, lon2);
+		return this;
+	}
+	public void set(final LatLonPoint _ll, final LatLonPoint _ur) {
 		mLowerLeft.set(_ll);
 		mUpperRight.set(_ur);
 	}
-	public void correct() {
-		double n = getNorth();
-		double s = getSouth();
+	public LatLonBox correct() {
+		final double n = getNorth();
+		final double s = getSouth();
 		if (s > n) {
 			mUpperRight.setLatitude(s);
 			mLowerLeft.setLatitude(n);
 		}
-		double e = getEast();
-		double w = getWest();
+		final double e = getEast();
+		final double w = getWest();
 		if (e < w) {
 			mUpperRight.setLongitude(w);
 			mLowerLeft.setLongitude(e);
 		}
+		return this;
 	}
 
 	public double getNorth() {	return mUpperRight.getLatitude(); }
@@ -61,10 +85,10 @@ public class LatLonBox {
 
 
 
-	public LatLonPoint getUpperLeft(LatLonPoint store) { return store == null ? new LatLonPoint(getNorth(), getWest()) : store.set(getNorth(), getWest());}
-	public LatLonPoint getLowerLeft(LatLonPoint store) { return store == null ? new LatLonPoint(mLowerLeft) : store.set(mLowerLeft);}
-	public LatLonPoint getUpperRight(LatLonPoint store){ return store == null ? new LatLonPoint(mUpperRight) : store.set(mUpperRight);}
-	public LatLonPoint getLowerRight(LatLonPoint store){ return store == null ? new LatLonPoint(getSouth(), getEast()) : store.set(getSouth(), getEast());}
+	public LatLonPoint getUpperLeft(final LatLonPoint store) { return store == null ? new LatLonPoint(getNorth(), getWest()) : store.set(getNorth(), getWest());}
+	public LatLonPoint getLowerLeft(final LatLonPoint store) { return store == null ? new LatLonPoint(mLowerLeft) : store.set(mLowerLeft);}
+	public LatLonPoint getUpperRight(final LatLonPoint store){ return store == null ? new LatLonPoint(mUpperRight) : store.set(mUpperRight);}
+	public LatLonPoint getLowerRight(final LatLonPoint store){ return store == null ? new LatLonPoint(getSouth(), getEast()) : store.set(getSouth(), getEast());}
 
 
 	public LatLonPoint getUpperLeft() { return new LatLonPoint(getNorth(), getWest());}
@@ -73,7 +97,7 @@ public class LatLonBox {
 	public LatLonPoint getLowerRight(){ return new LatLonPoint(getSouth(), getEast());}
 
 
-	public LatLonPoint getCenter(LatLonPoint store) {
+	public LatLonPoint getCenter(final LatLonPoint store) {
 		final double n = getNorth();
 		final double s = getSouth();
 		final double e = getEast();
@@ -86,8 +110,8 @@ public class LatLonBox {
 
 		final double width = maxX - minX;
 		final double height = maxY - minY;
-		final double x = minX + (width * 0.5);
-		final double y = minY + (height * 0.5);
+		final double x = minX + width * 0.5;
+		final double y = minY + height * 0.5;
 		if (store == null)
 			return new LatLonPoint(y, x);
 		store.set(y, x);
@@ -97,9 +121,9 @@ public class LatLonBox {
 		return getCenter(null);
 	}
 
-	public void setAndCorrect(LatLonPoint _ll, LatLonPoint _ur) {
+	public LatLonBox setAndCorrect(final LatLonPoint _ll, final LatLonPoint _ur) {
 		set(_ll, _ur);
-		correct();
+		return correct();
 	}
 
 	@Override
@@ -107,14 +131,17 @@ public class LatLonBox {
 		return String.format(Locale.US, "LL = [%1.5f, %1.5f]; UR = [%1.5f, %1.5f]", mLowerLeft.getLatitude(), mLowerLeft.getLongitude(), mUpperRight.getLatitude(), mUpperRight.getLongitude());
 	}
 	public String getVerticesString() {
-		LatLonPoint[] v = getVertices();
-		StringBuilder out = new StringBuilder("[");
-		for (LatLonPoint p : v) {
+		final LatLonPoint[] v = getVertices();
+		final StringBuilder out = new StringBuilder("[");
+		for (final LatLonPoint p : v) {
 			out.append(String.format(Locale.US, "[%1.5f, %1.5f],", p.getLongitude(), p.getLatitude()));
 		}
-		LatLonPoint p = v[0];
+		final LatLonPoint p = v[0];
 		out.append(String.format(Locale.US, "[%1.5f, %1.5f]]", p.getLongitude(), p.getLatitude()));
 		return out.toString();
 	}
+
+
+
 
 }
