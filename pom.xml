@@ -170,5 +170,6 @@
 		<module>GraphicsViewCore</module>
 		<module>GeoGraphicsView</module>
 		<module>GeometryEditor</module>
+		<module>GeotoolsAdapter</module>
 	</modules>
 </project>
