@@ -14,14 +14,13 @@ public class SimpleVectorFeatureItem extends GraphicsItem
 	private List<Parameter<?>>			mParameters;
 
 	public SimpleVectorFeatureItem() {
+		this(null);
 	}
-
+	public SimpleVectorFeatureItem(final Shape shape) {
+		this(shape, null);
+	}
 	public SimpleVectorFeatureItem(final Shape shape, final ParameterContext propertyContext) {
 		super(shape, propertyContext);
-	}
-
-	public SimpleVectorFeatureItem(final Shape shape) {
-		super(shape);
 	}
 
 	/** forward styles to children */
@@ -32,9 +31,7 @@ public class SimpleVectorFeatureItem extends GraphicsItem
 	}
 
 	public boolean addParameter(final Parameter<?> param) {
-		if (param == null)
-			return false;
-		if (getParameter(param.getName()) != null)
+		if ((param == null) || (getParameter(param.getName()) != null))
 			return false; //do not add twice
 		if (mParameters == null)
 			mParameters = new ArrayList<>();
@@ -42,9 +39,7 @@ public class SimpleVectorFeatureItem extends GraphicsItem
 	}
 
 	public boolean removeParameter(final Parameter<?> param) {
-		if (param == null)
-			return false;
-		if (mParameters == null)
+		if ((param == null) || (mParameters == null))
 			return false;
 		if (mParameters.remove(param)) {
 			if (mParameters.isEmpty())

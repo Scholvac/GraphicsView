@@ -132,12 +132,14 @@ public class Utils {
 	 *
 	 * \source this concept has been inspired / copied from jMonkeyEngine - TempVars.class
 	 */
-	public static class TmpVars {
+	public static class TmpVars implements AutoCloseable {
 
 		private boolean 						isUsed = false;
 
 		public final GraphicsItem[]				itemStack = new GraphicsItem[32]; //assume that we have no more than 32 hierarchie levels in the scenegraph
-
+		public final double[]					doubles = new double[64];
+		public final int[]						ints = new int[64];
+		public final boolean[]					booleans = new boolean[64];
 
 		private static final int STACK_SIZE = 5;
 
@@ -190,6 +192,11 @@ public class Utils {
 			if (stack.tempVars[stack.index] != this) {
 				throw new IllegalStateException("An instance of TempVars has not been released in a called method!");
 			}
+		}
+
+		@Override
+		public void close() throws Exception {
+			release();
 		}
 	}
 
