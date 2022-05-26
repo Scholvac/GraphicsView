@@ -45,7 +45,7 @@ public class GeometryItem extends GraphicsItem implements PropertyChangeListener
 		mMenuManager = mm;
 		setStyles(mMode);
 
-		enableEditPoints(true);
+		enableEditPoints(mMode != GeometryItemMode.NORMAL);
 
 		setMouseSupport(new MouseAdapter() {
 			@Override
@@ -98,7 +98,7 @@ public class GeometryItem extends GraphicsItem implements PropertyChangeListener
 
 	private boolean needRepaintOnPropertyChange(final PropertyChangeEvent pce) {
 		final String pn = pce.getPropertyName();
-		if ("Points".equals(pn))
+		if (IGeometry.POINT_CHANGE_EVENT.equals(pn) || IGeometry.POINTS_CHANGE_EVENT.equals(pn))
 			return true;
 		return false;
 	}
@@ -140,18 +140,18 @@ public class GeometryItem extends GraphicsItem implements PropertyChangeListener
 		DrawableStyle pointStyle = null;
 		final GeometryType type = getGeometry().getType();
 		switch(mode) {
-		case NORMAL:
-			geomStyle = type == GeometryType.Polygon ? Styles.GeometryNormalFilled : Styles.GeometryNormalLine;
-			pointStyle = Styles.NormalStyle;
-			break;
-		case EDIT:
-			geomStyle = type == GeometryType.Polygon ? Styles.GeometryEditFilled : Styles.GeometryEditLine;
-			pointStyle = Styles.ActiveStyle;
-			break;
-		case CREATE:
-			geomStyle = type == GeometryType.Polygon ? Styles.GeometryCreateFilled : Styles.GeometryCreateLine;
-			pointStyle = Styles.ActiveStyle;
-			break;
+			case NORMAL:
+				geomStyle = type == GeometryType.Polygon ? Styles.GeometryNormalFilled : Styles.GeometryNormalLine;
+				pointStyle = Styles.NormalStyle;
+				break;
+			case EDIT:
+				geomStyle = type == GeometryType.Polygon ? Styles.GeometryEditFilled : Styles.GeometryEditLine;
+				pointStyle = Styles.ActiveStyle;
+				break;
+			case CREATE:
+				geomStyle = type == GeometryType.Polygon ? Styles.GeometryCreateFilled : Styles.GeometryCreateLine;
+				pointStyle = Styles.ActiveStyle;
+				break;
 		}
 		setStyle(geomStyle);
 	}

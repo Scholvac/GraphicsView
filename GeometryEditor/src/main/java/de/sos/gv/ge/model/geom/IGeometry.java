@@ -8,6 +8,9 @@ import java.util.List;
 
 public interface IGeometry {
 
+	public static final String	POINT_CHANGE_EVENT 		= "Point";
+	public static final String 	POINTS_CHANGE_EVENT		= "Points";
+
 	public enum GeometryType {
 		Point,
 		LineString,
@@ -16,10 +19,10 @@ public interface IGeometry {
 
 		public String toWKTString() {
 			switch(this) {
-			case Point: return "POINT";
-			case LinearRing: return "LINEARRING";
-			case LineString: return "LINESTRING";
-			case Polygon: return "POLYGON";
+				case Point: return "POINT";
+				case LinearRing: return "LINEARRING";
+				case LineString: return "LINESTRING";
+				case Polygon: return "POLYGON";
 			}
 			return null;
 		}
