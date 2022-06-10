@@ -10,18 +10,18 @@ import de.sos.gv.ge.model.geom.IGeometry;
 
 public class RemovePointAction extends AbstractAction {
 
-	
+
 	private IGeometry mGeometry;
 	private ContourPointItem mItem;
 
-	public RemovePointAction(IGeometry geometry, ContourPointItem item) {
-		super("Remove", new ImageIcon(RemovePointAction.class.getClassLoader().getResource("icons/Delete.png")));
+	public RemovePointAction(final IGeometry geometry, final ContourPointItem item) {
+		super("Remove Point", new ImageIcon(RemovePointAction.class.getClassLoader().getResource("icons/Delete.png")));
 		mItem = item;
 		mGeometry = geometry;
 	}
 
 	@Override
-	public void actionPerformed(ActionEvent e) {
+	public void actionPerformed(final ActionEvent e) {
 		mGeometry.removePoint(mItem.getIndex());
 	}
 

@@ -15,7 +15,7 @@ public class RemoveGeometryAction extends AbstractAction {
 	private GraphicsScene mScene;
 
 	public RemoveGeometryAction(final GeometryItem geometry, final GraphicsScene scene) {
-		super("Remove", new ImageIcon(RemoveGeometryAction.class.getClassLoader().getResource("icons/Delete.png")));
+		super("Remove Geometry", new ImageIcon(RemoveGeometryAction.class.getClassLoader().getResource("icons/Delete.png")));
 		mScene = scene;
 		mGeometry = geometry;
 	}
