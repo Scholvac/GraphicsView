@@ -15,7 +15,6 @@ public class EditTool extends AbstractTool {
 
 	@Override
 	protected void activate() {
-		mSelectedItem = null;
 	}
 	@Override
 	protected void deactivate() {
@@ -25,10 +24,7 @@ public class EditTool extends AbstractTool {
 		mSelectedItem = null;
 	}
 
-
-	@Override
-	public void mouseClicked(final MouseEvent e) {
-		final GraphicsItem selectedItem = de.sos.gvc.Utils.getBestFit(getView(), e.getPoint(), 5, GraphicsItem::isSelectable, item -> item instanceof GeometryItem);
+	public void setSelectedItem(final GraphicsItem selectedItem) {
 		if (selectedItem == null) {
 			if (mSelectedItem != null) {
 				mSelectedItem.setGeometryItemMode(GeometryItemMode.NORMAL);
@@ -38,5 +34,12 @@ public class EditTool extends AbstractTool {
 			mSelectedItem = (GeometryItem) selectedItem;
 			mSelectedItem.setGeometryItemMode(GeometryItemMode.EDIT);
 		}
+	}
+
+
+	@Override
+	public void mouseClicked(final MouseEvent e) {
+		final GraphicsItem selectedItem = de.sos.gvc.Utils.getBestFit(getView(), e.getPoint(), 5, GraphicsItem::isSelectable, item -> item instanceof GeometryItem);
+		setSelectedItem(selectedItem);
 	}
 }
