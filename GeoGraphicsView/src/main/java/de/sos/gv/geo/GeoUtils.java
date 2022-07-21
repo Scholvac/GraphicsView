@@ -116,6 +116,13 @@ public class GeoUtils {
 		final double y = p2.y - p1.y;
 		return x*x + y*y;
 	}
+	public static Point2D.Double[] getXY(final LatLonPoint[] vertices) {
+		final Point2D.Double[] out = new Point2D.Double[vertices.length];
+		for (int i = 0; i < out.length; i++) {
+			out[i] = getXY(vertices[i], null);
+		}
+		return out;
+	}
 
 
 }
