@@ -222,11 +222,11 @@ public class GraphicsScene {
 
 	/**
 	 * Adds a list of items
-	 * @deprecated use addItems instead.
 	 * @param items
 	 * @return true if all items has been added, false otherwise.
+	 * @deprecated(since = 1.6) use addItems instead.
 	 */
-	@Deprecated (since = "1.6")
+	@Deprecated
 	public boolean addItem(final GraphicsItem... items) {
 		return addItems(items);
 	}
@@ -291,9 +291,9 @@ public class GraphicsScene {
 	 * removes a list of items
 	 * @param items
 	 * @return true if all items has been removed, false otherwise.
-	 * @deprecated use removeItems instead
+	 * @deprecated(since = 1.6) use removeItems instead
 	 */
-	@Deprecated (since = "1.6")
+	@Deprecated
 	public boolean removeItem(final GraphicsItem ...items) {
 		return removeItems(Arrays.asList(items));
 	}
