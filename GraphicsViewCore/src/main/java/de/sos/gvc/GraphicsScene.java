@@ -220,7 +220,32 @@ public class GraphicsScene {
 		mViews.remove(view);
 	}
 
+	/**
+	 * Adds a list of items
+	 * @deprecated use addItems instead.
+	 * @param items
+	 * @return true if all items has been added, false otherwise.
+	 */
+	@Deprecated (since = "1.6")
 	public boolean addItem(final GraphicsItem... items) {
+		return addItems(items);
+	}
+
+	/**
+	 * Adds a list of items
+	 * @param items
+	 * @return true if all items has been added, false otherwise.
+	 */
+	public boolean addItems(final GraphicsItem... items) {
+		return addItems(Arrays.asList(items));
+	}
+
+	/**
+	 * Adds a list of items
+	 * @param items
+	 * @return true if all items has been added, false otherwise.
+	 */
+	public boolean addItems(final Collection<GraphicsItem> items) {
 		boolean result = true;
 		for (final GraphicsItem item : items)
 			result = result & addItem(item);
@@ -262,7 +287,31 @@ public class GraphicsScene {
 		}
 	}
 
+	/**
+	 * removes a list of items
+	 * @param items
+	 * @return true if all items has been removed, false otherwise.
+	 * @deprecated use removeItems instead
+	 */
+	@Deprecated (since = "1.6")
 	public boolean removeItem(final GraphicsItem ...items) {
+		return removeItems(Arrays.asList(items));
+	}
+
+	/**
+	 * removes a list of items
+	 * @param items
+	 * @return true if all items has been removed, false otherwise.
+	 */
+	public boolean removeItems(final GraphicsItem ...items) {
+		return removeItems(Arrays.asList(items));
+	}
+	/**
+	 * removes a list of items
+	 * @param items
+	 * @return true if all items has been removed, false otherwise.
+	 */
+	public boolean removeItems(final Collection<GraphicsItem> items) {
 		if (items == null) return false;
 		boolean res = true;
 		for (final GraphicsItem item : items)
@@ -394,5 +443,6 @@ public class GraphicsScene {
 			view.notifySceneCleared(); //some view's may cache items (e.g. tiles) and become notified to update caches...
 		markDirty();
 	}
+
 
 }
