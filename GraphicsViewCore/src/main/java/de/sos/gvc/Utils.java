@@ -3,6 +3,7 @@ package de.sos.gvc;
 import java.awt.Point;
 import java.awt.Shape;
 import java.awt.geom.AffineTransform;
+import java.awt.geom.Arc2D;
 import java.awt.geom.GeneralPath;
 import java.awt.geom.NoninvertibleTransformException;
 import java.awt.geom.Point2D;
@@ -289,6 +290,10 @@ public class Utils {
 		if (coordArr[0].trim().equals(coordArr[coordArr.length-1].trim()))
 			path.closePath();
 		return path;
+	}
+
+	public static Arc2D.Double createArc2D(final double radius){
+		return new Arc2D.Double(-radius, -radius, 2*radius, 2*radius, 0, 360, Arc2D.CHORD);
 	}
 
 
