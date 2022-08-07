@@ -42,6 +42,7 @@ public abstract class AbstractGeometryTool extends AbstractTool {
 		if (SwingUtilities.isRightMouseButton(e)){
 			if (mItem != null) {
 				mItem.setGeometryItemMode(GeometryItemMode.NORMAL);
+				finishItem(mItem);
 				mItem = null;
 			}
 			deactivate();
@@ -69,6 +70,11 @@ public abstract class AbstractGeometryTool extends AbstractTool {
 			}
 		}
 	}
+
+	protected void finishItem(final GeometryItem item) {
+		// TODO: to be implemented by sub tools
+	}
+
 
 	protected abstract GeometryItem createNewItem(Point2D loc);
 

@@ -107,7 +107,6 @@ public class FileCache implements ITileImageProvider {
 			if (file.getParentFile().exists() == false)
 				file.getParentFile().mkdirs();
 			ImageIO.write(bufferedImage, "PNG", file);
-			//			System.out.println("Wrote: " + file);
 		} catch (final IOException e) {
 			e.printStackTrace();
 		}
@@ -118,7 +117,6 @@ public class FileCache implements ITileImageProvider {
 	}
 	protected void remove(@Nullable final TileInfo key, final @Nullable File value, final RemovalCause cause) {
 		if (value != null && value.exists()) {
-			System.out.println("Delete: " + value);
 			value.delete();
 		}
 	}

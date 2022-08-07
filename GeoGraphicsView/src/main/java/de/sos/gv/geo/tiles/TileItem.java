@@ -62,6 +62,9 @@ public class TileItem extends GraphicsItem {
 	}
 	static int c;
 	public synchronized void setImage(final TileStatus status, final BufferedImage img) {
+		if (mStatus == TileStatus.FINISHED) {
+			System.out.println("Shall not happen");
+		}
 		LOG.trace("Set status of tile {} to {} ", mInfo.getHash(), status);
 		if (img != mImage.mImage) {
 			mImage.mImage = img;
