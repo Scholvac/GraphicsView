@@ -110,6 +110,10 @@ public class GeoUtils {
 		final Point2D.Double m = getXY(llp);
 		item.setCenter(m);
 	}
+	public static void setGeoPosition(final GraphicsItem item, final double lat, final double lon) {
+		final Point2D.Double m = getXY(lat, lon);
+		item.setCenter(m);
+	}
 
 	public static double squareDistance(final Point2D.Double p1, final Point2D.Double p2) {
 		final double x = p2.x - p1.x;

@@ -1,5 +1,6 @@
 package de.sos.gvc;
 
+
 import java.awt.Graphics2D;
 import java.awt.Shape;
 import java.awt.event.MouseListener;
@@ -31,50 +32,55 @@ import de.sos.gvc.styles.DrawableStyle;
  * Handles the visual state of an item within the scene.
  * Each GraphicsItem can contain child items, to build up some kind of SceneGraph.
  * Each GraphicsItem is represented through its center location and shape, that is handled like in a SceneGraph, e.g. relative to its parent object.
+ * <p>
  *
- *
- * \section State State
+ * <h2> State State</h2>
  * the state of the item is represented through its mPropertyContext variable, which is a store for a number of properties.
  * Some of the properties are also available as member variables (for faster / easier access).
  * Each of this properties may be observed with an PropertyChangeListener.
- * \subsection ChildStates Child States
+ * <h3> ChildStates Child States</h3>
  * to observe states of children, there is an delegate listener, that registers itself for all events of the own PropertyContext and also for
  * all events of all children. See addPropertyChangeListener(...)
  *
- * \section Shape Shape
+ * <h2>Shape Shape</h2>
  * Each Item contains at least one shape. This shape is used for collision checks (for example if it is inside a view).
  * If no special Drawable has been registered, this shape will also be used for rendering
  *
- * \section Properties Properties
+ * <h2>Properties Properties</h2>
  * As pointed out, each GraphicsItem is represented through at least the following Properties
- * - PROP_VISIBLE ("VISIBLE") : shall the Item be rendered
- * - PROP_SELECTED ("SELECTED") : if the item is currently selected
- * - PROP_SELECTABLE ("SELECTABLE") : if the item can be selected
- * - PROP_HOVERED ("HOVERED") : if the mouse is over this item and remains for a certain time there
- * - PROP_SHAPE ("SHAPE"): The shape of the item, see \ref Shape
- * - PROP_CENTER_X ("CENTER_X") : X - Center of the shape in local coordinates (either the scene or its parent)
- * - PROP_CENTER_Y ("CENTER_Y") : Y - Center of the shape in local coordinates (either the scene or its parent)
- * - PROP_ROTATION ("ROTATION") : Rotation of the shape (Radians) in local coordinates (either the scene or its parent)
- * - PROP_STYLE ("STYLE") : Drawing style for this item (e.g. filled, or border or both, colors)
- * - PROP_DRAWABLE ("DRAWABLE") : Drawable that does the actual painting (see IDrawable)
- * - PROP_PARENT ("PARENT") : Pointer to the parent item, if this item is a sub item
- * - PROP_Z_ORDER ("Z_ORDER"): defines the order in which the items shall be painted by a view (the lower the z-value, the earlier the item is painted)
- *
- *  The following properties are used to handle the mouse input for this item and are used in combination with \ref MouseInput
- *
- *  - PROP_MOUSE_WEEL_SUPPORT ("MOUSE_WHEEL_SUPPORT"): Pointer to the MouseWheelListener that shall be notified if the mouse wheel is used while the mouse is in the boundary of this item
- * 	- PROP_MOUSE_MOTION_SUPPORT ("MOUSE_MOTION_SUPPORT"): Pointer to the MouseMotionListener that shall be notified if the mouse wheel is used while the mouse is in the boundary of this item
- * 	- PROP_MOUSE_SUPPORT ("MOUSE_SUPPORT"): Pointer to the MouseListener that shall be notified if the mouse wheel is used while the mouse is in the boundary of this item
+ * <ul>
+ * <li> <b>PROP_VISIBLE ("VISIBLE") :</b> shall the Item be rendered
+ * <li> <b>PROP_SELECTED ("SELECTED") :</b> if the item is currently selected
+ * <li> <b>PROP_SELECTABLE ("SELECTABLE") :</b> if the item can be selected
+ * <li> <b>PROP_HOVERED ("HOVERED") :</b> if the mouse is over this item and remains for a certain time there
+ * <li> <b>PROP_SHAPE ("SHAPE") :</b> The shape of the item, see \ref Shape
+ * <li> <b>PROP_CENTER_X ("CENTER_X") :</b> X - Center of the shape in local coordinates (either the scene or its parent)
+ * <li> <b>PROP_CENTER_Y ("CENTER_Y") :</b> Y - Center of the shape in local coordinates (either the scene or its parent)
+ * <li> <b>PROP_ROTATION ("ROTATION") :</b> Rotation of the shape (Radians) in local coordinates (either the scene or its parent)
+ * <li> <b>PROP_STYLE ("STYLE") :</b> Drawing style for this item (e.g. filled, or border or both, colors)
+ * <li> <b>PROP_DRAWABLE ("DRAWABLE") :</b> Drawable that does the actual painting (see IDrawable)
+ * <li> <b>PROP_PARENT ("PARENT") :</b> Pointer to the parent item, if this item is a sub item
+ * <li> <b>PROP_Z_ORDER ("Z_ORDER") :</b> defines the order in which the items shall be painted by a view (the lower the z-value, the earlier the item is painted)
+ *</ul>
+ * The following properties are used to handle the mouse input for this item and are used in combination with \ref MouseInput
+ *<ul>
+ *  <li> <b>PROP_MOUSE_WEEL_SUPPORT ("MOUSE_WHEEL_SUPPORT") :</b> Pointer to the MouseWheelListener that shall be notified if the mouse wheel is used while the mouse is in the boundary of this item
+ * 	<li> <b>PROP_MOUSE_MOTION_SUPPORT ("MOUSE_MOTION_SUPPORT") :</b> Pointer to the MouseMotionListener that shall be notified if the mouse wheel is used while the mouse is in the boundary of this item
+ * 	<li> <b>PROP_MOUSE_SUPPORT ("MOUSE_SUPPORT") :</b> Pointer to the MouseListener that shall be notified if the mouse wheel is used while the mouse is in the boundary of this item
+ *</ul>
  *
  * The following properties are mainly used to cache some often used values.
- * 	- PROP_LOCAL_BOUNDS ("LOCAL_BOUNDS"):
- *	- PROP_SCENE_BOUNDS ("SCENE_BOUNDS")
+ * <ul>
+ * 	<li> <b>PROP_LOCAL_BOUNDS</b> ("LOCAL_BOUNDS"):
+ *	<li> <b>PROP_SCENE_BOUNDS</b> ("SCENE_BOUNDS")
+ * </ul>
  *
- *
- * \section MouseInput Mouse Input
+ * <h2>MouseInput Mouse Input</h2>
  * Each GraphicsItem can have its own Mouse listener (MouseListener, MouseMotionListener and MouseWheelListener) which are available through
  * the relevant properties.
- * @note this feature is only available if the MouseDelegateHandler has been installed within the displaying GraphicsView.
+ * <b>note: </b> this feature is only available if the MouseDelegateHandler has been installed within the displaying GraphicsView.
+ *
+ * <p>
  *
  * @author scholvac
  *
