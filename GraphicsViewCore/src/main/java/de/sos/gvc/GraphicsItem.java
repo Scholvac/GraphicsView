@@ -15,9 +15,12 @@ import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeSupport;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import de.sos.gvc.Utils.TmpVars;
 import de.sos.gvc.drawables.ImageDrawable;
@@ -234,9 +237,8 @@ public class GraphicsItem implements IShapeProvider  {
 	protected final AffineTransform						mWorldTransform = new AffineTransform();
 	protected boolean									mInvalidWorldTransform = true;
 
-	//	private IParameter<GraphicsItem>					mParent;
 	private GraphicsItem								mParent;
-	private ArrayList<GraphicsItem>						mChildren = new ArrayList<>();
+	private List<GraphicsItem>							mChildren = new ArrayList<>();
 
 	private PropertyChangeListener						mChildListener = new PropertyChangeListener() { //listen to events of child items and delegates them
 		@Override
@@ -866,6 +868,12 @@ public class GraphicsItem implements IShapeProvider  {
 			return res;
 		}
 	}
+	public Collection<GraphicsItem> clearChildren() {
+		final Set<GraphicsItem> c = new HashSet<>(getChildren());
+		while(getChildren().isEmpty() == false)
+			removeItem(getChildren().get(0));
+		return c;
+	}
 
 	public void setSelected(final boolean b) {
 		if (b != mSelected) {
@@ -952,4 +960,5 @@ public class GraphicsItem implements IShapeProvider  {
 			mAllEventDelegate.firePropertyChange(PROP_MOUSE_SUPPORT, old, mMouseSupport);
 		}
 	}
+
 }

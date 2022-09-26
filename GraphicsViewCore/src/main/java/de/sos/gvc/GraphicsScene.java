@@ -6,6 +6,7 @@ import java.awt.geom.Rectangle2D;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeSupport;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -355,19 +356,22 @@ public class GraphicsScene {
 	public List<GraphicsItem> getAllItems(final Rectangle2D rect, final List<GraphicsItem> items, final IItemFilter filter) {
 		final ArrayList<GraphicsItem> out = new ArrayList<>();
 		//first find all top level features and iterate only their children. all other would not meet the 2) condition
-		final List<GraphicsItem> openList = getItems(rect, items, null); //@note do not use the filter here, to not exclude childen whose parent does not fit the fiilter but the child itself would pass the filter
-		while(!openList.isEmpty()) {
-			final GraphicsItem first = openList.remove(0);
+		final List<GraphicsItem> itemList = getItems(rect, items, null); //@note do not use the filter here, to not exclude childen whose parent does not fit the fiilter but the child itself would pass the filter
+		final ArrayDeque<GraphicsItem> openDeque = new ArrayDeque<>(itemList);
+		while(!openDeque.isEmpty()) {
+			final GraphicsItem first = openDeque.pop();
 			if (filter == null || filter.accept(first))
 				out.add(first);
-			if (first.hasChildren()) {
-				for (final GraphicsItem child : first.getChildren()) {
-					//we do not now if the child is part of the box, may it another child that let the parent be inside the box
+			final List<GraphicsItem> childrenList = first.getChildren();
+			if (childrenList.isEmpty() == false) {
+				for (int i = 0; i < childrenList.size(); i++) {
+					final GraphicsItem child = childrenList.get(i);
+					//we do not now if the child is part of the box, may another child that let the parent be inside the box
 					if (!child.isVisible())
 						continue;
 					final Rectangle2D wb = child.getSceneBounds();
 					if (rect.contains(wb) || rect.intersects(wb)) {
-						openList.add(child);
+						openDeque.push(child);
 					}
 				}
 			}
@@ -394,9 +398,6 @@ public class GraphicsScene {
 			if (intersect(wb, rect)) {
 				if (filter == null || filter.accept(item))
 					out.add(item);
-			}else {
-				//				System.out.println("Skip: " + rect + " AND: " + wb);
-				//				System.out.println("Compare: \n\t" + rect2WKT(rect) + "\n\t" + rect2WKT(wb) + "\n");
 			}
 		}
 		return out;
@@ -443,6 +444,4 @@ public class GraphicsScene {
 			view.notifySceneCleared(); //some view's may cache items (e.g. tiles) and become notified to update caches...
 		markDirty();
 	}
-
-
 }
