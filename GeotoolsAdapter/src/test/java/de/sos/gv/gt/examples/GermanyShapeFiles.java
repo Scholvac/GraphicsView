@@ -33,7 +33,7 @@ import de.sos.gv.geo.tiles.TileHandler;
 import de.sos.gv.gta.FeatureReader;
 import de.sos.gvc.GraphicsItem;
 import de.sos.gvc.GraphicsScene;
-import de.sos.gvc.GraphicsView;
+import de.sos.gvc.GraphicsViewComponent;
 import de.sos.gvc.handler.DefaultViewDragHandler;
 import de.sos.gvc.handler.MouseDelegateHandler;
 import de.sos.gvc.styles.DrawableStyle;
@@ -58,7 +58,7 @@ public class GermanyShapeFiles extends JFrame {
 	}
 
 	private GraphicsScene 		mScene;
-	private GraphicsView		mView;
+	private GraphicsViewComponent		mView;
 
 
 	/**
@@ -114,7 +114,7 @@ public class GermanyShapeFiles extends JFrame {
 
 	private void createScene() {
 		mScene = new GraphicsScene();
-		mView = new GraphicsView(mScene);
+		mView = new GraphicsViewComponent(mScene);
 
 		//Standard Handler
 		mView.addHandler(new MouseDelegateHandler());

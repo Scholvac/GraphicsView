@@ -23,7 +23,7 @@ import de.sos.gv.geo.tiles.TileFactory;
 import de.sos.gv.geo.tiles.TileHandler;
 import de.sos.gvc.GraphicsItem;
 import de.sos.gvc.GraphicsScene;
-import de.sos.gvc.GraphicsView;
+import de.sos.gvc.GraphicsViewComponent;
 import de.sos.gvc.handler.DefaultViewDragHandler;
 import de.sos.gvc.handler.MouseDelegateHandler;
 import de.sos.gvc.styles.DrawableStyle;
@@ -47,17 +47,15 @@ public class MultiThreadUpdates extends JFrame {
 		});
 	}
 
-	private GraphicsScene 		mScene;
-	private GraphicsView		mView;
+	private GraphicsScene			mScene;
+	private GraphicsViewComponent	mView;
 
-
-
-	public static final int sBound_TTS = 25;
-	public static final double sItemWidth = 10;
-	public static final double sItemHeight = 15;
-	public static final int sMaxItemCount = 500;
-	public static final int sMaxSubItemCount = 1000;
-	private static int sCounter = 1;
+	public static final int			sBound_TTS			= 25;
+	public static final double		sItemWidth			= 10;
+	public static final double		sItemHeight			= 15;
+	public static final int			sMaxItemCount		= 500;
+	public static final int			sMaxSubItemCount	= 1000;
+	private static int				sCounter			= 1;
 
 	/**
 	 * Create the frame.
@@ -80,37 +78,31 @@ public class MultiThreadUpdates extends JFrame {
 
 	private static ExecutorService es = Executors.newFixedThreadPool(30);
 
-
 	// TODO: do the example specific part
 	public void configure() {
-		final LatLonPoint llp_brhv = new LatLonPoint(0,0);
+		final LatLonPoint llp_brhv = new LatLonPoint(0, 0);
 		GeoUtils.setViewCenter(mView, llp_brhv);
 		mView.setScale(20);
-
 
 		for (int i = 0; i < sMaxItemCount; i++) {
 			es.execute(new ItemThread());
 		}
 	}
 
-
-
 	public class ItemThread implements Runnable {
 
-
-		final int 			id = sCounter++;
-		final Random 		rng = new Random(id);
-		GraphicsItem		item;
-		private double dx, dy, v, x, y;
-
+		final int		id	= sCounter++;
+		final Random	rng	= new Random(id);
+		GraphicsItem	item;
+		private double	dx, dy, v, x, y;
 
 		@Override
 		public void run() {
 			if (item == null) {
 				item = createItem();
 				mScene.addItem(item);
-				dx = 20.*rng.nextDouble()-10;
-				dy = 20.*rng.nextDouble()-10;
+				dx = 20. * rng.nextDouble() - 10;
+				dy = 20. * rng.nextDouble() - 10;
 				v = rng.nextDouble() * 0.15;
 
 				x = rng.nextDouble();
@@ -118,10 +110,11 @@ public class MultiThreadUpdates extends JFrame {
 				item.setCenter(x, y);
 			}
 
-
-
 			final int tts = rng.nextInt(sBound_TTS);
-			try{Thread.sleep(tts);}catch(final Exception e) {}
+			try {
+				Thread.sleep(tts);
+			} catch (final Exception e) {
+			}
 
 			x += dx * tts * v;
 			y += dy * tts * v;
@@ -133,9 +126,9 @@ public class MultiThreadUpdates extends JFrame {
 		}
 
 		private GraphicsItem createItem() {
-			final GraphicsItem item = new GraphicsItem();
-			final double w2 = sItemWidth / 2, h2 = sItemHeight / 2;
-			final Path2D p = new Path2D.Double();
+			final GraphicsItem	item	= new GraphicsItem();
+			final double		w2		= sItemWidth / 2, h2 = sItemHeight / 2;
+			final Path2D		p		= new Path2D.Double();
 			p.moveTo(-w2, -h2);
 			p.lineTo(0, h2);
 			p.lineTo(w2, -h2);
@@ -152,14 +145,11 @@ public class MultiThreadUpdates extends JFrame {
 		}
 	}
 
-
-
-
 	private void createScene() {
 		mScene = new GraphicsScene();
-		mView = new GraphicsView(mScene);
+		mView = new GraphicsViewComponent(mScene);
 
-		//Standard Handler
+		// Standard Handler
 		mView.addHandler(new MouseDelegateHandler());
 		mView.addHandler(new DefaultViewDragHandler());
 
@@ -167,9 +157,9 @@ public class MultiThreadUpdates extends JFrame {
 	}
 	private void setupMap() {
 		/**
-		 * Create a cache cascade: RAM (10 MB) -> HDD (100MB) -> WEB and initializes a
-		 * standard TileFactory with 4 threads. For more informations on how to
-		 * initialize the Tile Background, see OSMExample
+		 * Create a cache cascade: RAM (10 MB) -> HDD (100MB) -> WEB and
+		 * initializes a standard TileFactory with 4 threads. For more
+		 * informations on how to initialize the Tile Background, see OSMExample
 		 */
 		final ITileImageProvider cache = ITileFactory.buildCache(ITileImageProvider.OSM, 10, SizeUnit.MegaByte, new File("./.cache"), 100, SizeUnit.MegaByte);
 		mView.addHandler(new TileHandler(new TileFactory(cache)));

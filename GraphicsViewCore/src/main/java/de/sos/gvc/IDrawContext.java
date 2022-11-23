@@ -12,7 +12,7 @@ public interface IDrawContext {
 	 * this may be used to react on specific view properties such as scale or center of the view
 	 * @return
 	 */
-	GraphicsView 		getView();
+	IGraphicsView 		getView();
 
 	AffineTransform	getViewTransform();
 

@@ -746,8 +746,8 @@ public class GraphicsItem implements IShapeProvider  {
 	 * returns the first view that is associated with the given scene
 	 * @return
 	 */
-	protected GraphicsView getView() {
-		final List<GraphicsView> views = getViews();
+	protected IGraphicsView getView() {
+		final List<IGraphicsView> views = getViews();
 		if (views != null && !views.isEmpty())
 			return views.get(0);
 		return null;
@@ -756,7 +756,7 @@ public class GraphicsItem implements IShapeProvider  {
 	 * returns all views associated with the scene, this item belongs to
 	 * @return
 	 */
-	protected List<GraphicsView> getViews() {
+	protected List<IGraphicsView> getViews() {
 		final GraphicsScene scene = getScene();
 		if (scene != null)
 			return scene.getViews();

@@ -21,7 +21,8 @@ import de.sos.gv.geo.tiles.TileFactory;
 import de.sos.gv.geo.tiles.TileHandler;
 import de.sos.gvc.GraphicsItem;
 import de.sos.gvc.GraphicsScene;
-import de.sos.gvc.GraphicsView;
+import de.sos.gvc.GraphicsViewComponent;
+import de.sos.gvc.IGraphicsView;
 import de.sos.gvc.handler.DefaultViewDragHandler;
 import de.sos.gvc.handler.MouseDelegateHandler;
 import de.sos.gvc.param.ParameterContext;
@@ -33,7 +34,7 @@ public class RotateViewExample {
 
 		// Create a new Scene and a new View
 		final GraphicsScene scene = new GraphicsScene();
-		final GraphicsView view = new GraphicsView(scene, new ParameterContext());
+		final GraphicsViewComponent view = new GraphicsViewComponent(scene, new ParameterContext());
 
 		// Standard Handler
 		view.addHandler(new MouseDelegateHandler());
@@ -99,7 +100,7 @@ public class RotateViewExample {
 		frame.setVisible(true);
 	}
 
-	private static void rotate(final GraphicsView view, final double delta) {
+	private static void rotate(final IGraphicsView view, final double delta) {
 		final double newRot = view.getRotationDegrees() + delta;
 		view.setRotation(newRot);
 	}

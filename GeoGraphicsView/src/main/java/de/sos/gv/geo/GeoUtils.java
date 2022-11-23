@@ -3,7 +3,7 @@ package de.sos.gv.geo;
 import java.awt.geom.Point2D;
 
 import de.sos.gvc.GraphicsItem;
-import de.sos.gvc.GraphicsView;
+import de.sos.gvc.IGraphicsView;
 import net.jafama.FastMath;
 
 public class GeoUtils {
@@ -101,7 +101,7 @@ public class GeoUtils {
 
 
 
-	public static void setViewCenter(final GraphicsView view, final LatLonPoint llp) {
+	public static void setViewCenter(final IGraphicsView view, final LatLonPoint llp) {
 		final Point2D.Double m = getXY(llp);
 		view.setCenter(m.x, -m.y);
 	}

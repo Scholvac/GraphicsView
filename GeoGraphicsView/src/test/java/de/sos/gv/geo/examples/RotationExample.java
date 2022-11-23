@@ -16,7 +16,7 @@ import javax.swing.WindowConstants;
 
 import de.sos.gvc.GraphicsItem;
 import de.sos.gvc.GraphicsScene;
-import de.sos.gvc.GraphicsView;
+import de.sos.gvc.GraphicsViewComponent;
 import de.sos.gvc.IDrawContext;
 import de.sos.gvc.handler.DefaultViewDragHandler;
 import de.sos.gvc.handler.MouseDelegateHandler;
@@ -40,7 +40,7 @@ public class RotationExample {
 	public static void main(final String[] args) {
 
 		final GraphicsScene scene = new GraphicsScene();
-		final GraphicsView view = new GraphicsView(scene);
+		final GraphicsViewComponent view = new GraphicsViewComponent(scene);
 
 		final GraphicsItem item = new GraphicsItem(createShape()) {
 			@Override

@@ -24,7 +24,7 @@ import de.sos.gv.geo.tiles.TileFactory;
 import de.sos.gv.geo.tiles.TileHandler;
 import de.sos.gv.gta.GridCoverage2DItem;
 import de.sos.gvc.GraphicsScene;
-import de.sos.gvc.GraphicsView;
+import de.sos.gvc.GraphicsViewComponent;
 import de.sos.gvc.handler.DefaultViewDragHandler;
 import de.sos.gvc.handler.MouseDelegateHandler;
 
@@ -47,9 +47,9 @@ public class GeoTiffExample extends JFrame {
 		});
 	}
 
-	private GraphicsScene mScene;
-	private GraphicsView mView;
-	private ColorModel 		mReplacementColorModel;
+	private GraphicsScene			mScene;
+	private GraphicsViewComponent	mView;
+	private ColorModel				mReplacementColorModel;
 
 	/**
 	 * Create the frame.
@@ -75,15 +75,17 @@ public class GeoTiffExample extends JFrame {
 		tglbtnNewToggleButton.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(final ActionEvent e) {
-				mReplacementColorModel = item.setColorTable(mReplacementColorModel);//grayColorModel(255, 23, 255));
+				mReplacementColorModel = item.setColorTable(mReplacementColorModel);// grayColorModel(255,
+				// 23,
+				// 255));
 			}
 		});
 		contentPane.add(tglbtnNewToggleButton, BorderLayout.SOUTH);
 	}
 
 	protected ColorModel createCustomColorTable() {
-		final Color backgroundColor = Color.green;
-		final Color[] cols = new Color[104];
+		final Color		backgroundColor	= Color.green;
+		final Color[]	cols			= new Color[104];
 		cols[0] = new Color(255, 255, 255);
 		cols[1] = new Color(100, 100, 100);
 		cols[2] = new Color(255, 0, 0);
@@ -105,18 +107,18 @@ public class GeoTiffExample extends JFrame {
 		cols[101] = new Color(102, 51, 153);
 		cols[102] = new Color(153, 102, 204);
 		cols[103] = new Color(255, 248, 220);
-		final byte[] reds = new byte[256];
-		final byte[] greens = new byte[256];
-		final byte[] blues = new byte[256];
-		final byte[] alphas = new byte[256];
-		int numColors = 0;
+		final byte[]	reds		= new byte[256];
+		final byte[]	greens		= new byte[256];
+		final byte[]	blues		= new byte[256];
+		final byte[]	alphas		= new byte[256];
+		int				numColors	= 0;
 		for (final Color col : cols)
 			if (col != null)
 				numColors++;
 		int i;
 		/*
-		 * Note: we're assuming in both cases that an opaque black is already available
-		 * from the cols array.
+		 * Note: we're assuming in both cases that an opaque black is already
+		 * available from the cols array.
 		 */
 		if (backgroundColor == null) {
 			for (i = 0; i < 256 - numColors; i++) {
@@ -125,9 +127,9 @@ public class GeoTiffExample extends JFrame {
 			}
 		} else {
 			reds[0] = greens[0] = blues[0] = alphas[0] = 0;
-			final int red = backgroundColor.getRed();
-			final int green = backgroundColor.getGreen();
-			final int blue = backgroundColor.getBlue();
+			final int	red		= backgroundColor.getRed();
+			final int	green	= backgroundColor.getGreen();
+			final int	blue	= backgroundColor.getBlue();
 			for (i = 1; i < 256 - numColors; i++) {
 				final float ratio = (float) i / (255 - numColors);
 				reds[i] = (byte) (red * ratio);
@@ -154,9 +156,9 @@ public class GeoTiffExample extends JFrame {
 			length = maxval;
 		}
 
-		final byte[] r = new byte[length];
-		final byte[] g = new byte[length];
-		final byte[] b = new byte[length];
+		final byte[]	r	= new byte[length];
+		final byte[]	g	= new byte[length];
+		final byte[]	b	= new byte[length];
 
 		for (int i = 0; i < length; i++) {
 			int val = Math.round(255 / (float) window * (i - level + window * 0.5f));
@@ -166,9 +168,9 @@ public class GeoTiffExample extends JFrame {
 			if (val < 0) {
 				val = 0;
 			}
-			r[ i] = (byte) 0;
-			g[ i] = (byte) val;
-			b[ i] = (byte) val;
+			r[i] = (byte) 0;
+			g[i] = (byte) val;
+			b[i] = (byte) val;
 		}
 		return new IndexColorModel(8, length, r, g, b);
 	}
@@ -180,9 +182,9 @@ public class GeoTiffExample extends JFrame {
 		mView.setScale(200);
 
 		try {
-			//	Image source: http://leoworks.terrasigna.com/sample-data
-			final File tiffFile = new File("src/test/resources/Envisat_ASAR_2003-08-04.tif");
-			final GridCoverage2DItem item = GridCoverage2DItem.createGeoTiffItem(tiffFile);
+			// Image source: http://leoworks.terrasigna.com/sample-data
+			final File					tiffFile	= new File("src/test/resources/Envisat_ASAR_2003-08-04.tif");
+			final GridCoverage2DItem	item		= GridCoverage2DItem.createGeoTiffItem(tiffFile);
 			mScene.addItem(item);
 			return item;
 		} catch (final Exception e) {
@@ -193,7 +195,7 @@ public class GeoTiffExample extends JFrame {
 
 	private void createScene() {
 		mScene = new GraphicsScene();
-		mView = new GraphicsView(mScene);
+		mView = new GraphicsViewComponent(mScene);
 
 		// Standard Handler
 		mView.addHandler(new MouseDelegateHandler());
@@ -204,9 +206,9 @@ public class GeoTiffExample extends JFrame {
 
 	private void setupMap() {
 		/**
-		 * Create a cache cascade: RAM (10 MB) -> HDD (100MB) -> WEB and initializes a
-		 * standard TileFactory with 4 threads. For more informations on how to
-		 * initialize the Tile Background, see OSMExample
+		 * Create a cache cascade: RAM (10 MB) -> HDD (100MB) -> WEB and
+		 * initializes a standard TileFactory with 4 threads. For more
+		 * informations on how to initialize the Tile Background, see OSMExample
 		 */
 		final ITileImageProvider cache = ITileFactory.buildCache(ITileImageProvider.OSM, 10, SizeUnit.MegaByte, new File("./.cache"), 100, SizeUnit.MegaByte);
 		mView.addHandler(new TileHandler(new TileFactory(cache)));

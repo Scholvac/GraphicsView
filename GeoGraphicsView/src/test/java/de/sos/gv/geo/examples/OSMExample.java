@@ -15,7 +15,7 @@ import de.sos.gv.geo.tiles.TileHandler;
 import de.sos.gv.geo.tiles.cache.FileCache;
 import de.sos.gv.geo.tiles.cache.MemoryCache;
 import de.sos.gvc.GraphicsScene;
-import de.sos.gvc.GraphicsView;
+import de.sos.gvc.GraphicsViewComponent;
 import de.sos.gvc.handler.DefaultViewDragHandler;
 import de.sos.gvc.handler.MouseDelegateHandler;
 import de.sos.gvc.param.ParameterContext;
@@ -32,7 +32,7 @@ public class OSMExample {
 
 		//Create a new Scene and a new View
 		final GraphicsScene scene = new GraphicsScene();
-		final GraphicsView view = new GraphicsView(scene, new ParameterContext());
+		final GraphicsViewComponent view = new GraphicsViewComponent(scene, new ParameterContext());
 
 
 		//Standard Handler

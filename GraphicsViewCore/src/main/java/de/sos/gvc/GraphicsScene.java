@@ -164,7 +164,7 @@ public class GraphicsScene {
 	private IItemStorage							mItemStore = new QuadTreeStorage();
 	private ItemListener							mItemListener;
 
-	private List<GraphicsView> 						mViews = new ArrayList<>();
+	private List<IGraphicsView> 					mViews = new ArrayList<>();
 
 	private boolean									mDirty = true;
 	private ArrayList<DirtyListener>				mDirtyListener = new ArrayList<>();
@@ -214,10 +214,10 @@ public class GraphicsScene {
 	 * Adds a view that displays the scene to its internal list
 	 * @param view
 	 */
-	void _addView(final GraphicsView view) {
+	void _addView(final IGraphicsView view) {
 		mViews.add(view);
 	}
-	void _removeView(final GraphicsView view) {
+	void _removeView(final IGraphicsView view) {
 		mViews.remove(view);
 	}
 
@@ -432,7 +432,7 @@ public class GraphicsScene {
 		return mItemStore.getAllItems();
 	}
 
-	public List<GraphicsView> getViews() {
+	public List<IGraphicsView> getViews() {
 		return mViews;
 	}
 
@@ -440,7 +440,7 @@ public class GraphicsScene {
 		final List<GraphicsItem> itemsToRemove = mItemStore.getAllItems();
 		for (final GraphicsItem item : itemsToRemove)
 			removeItem(item);
-		for (final GraphicsView view : mViews)
+		for (final IGraphicsView view : mViews)
 			view.notifySceneCleared(); //some view's may cache items (e.g. tiles) and become notified to update caches...
 		markDirty();
 	}

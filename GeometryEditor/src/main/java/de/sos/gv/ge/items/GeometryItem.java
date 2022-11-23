@@ -1,5 +1,6 @@
 package de.sos.gv.ge.items;
 
+import java.awt.Component;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.beans.PropertyChangeEvent;
@@ -163,7 +164,7 @@ public class GeometryItem extends GraphicsItem implements PropertyChangeListener
 		if (allowsManipulation() && SwingUtilities.isRightMouseButton(e)) {
 			final JPopupMenu pm = new JPopupMenu();
 			mMenuManager.fillGeometryItemMenu(this, getScene(), pm);
-			pm.show(getView(), e.getX(), e.getY());
+			pm.show((Component)getView(), e.getX(), e.getY());
 			e.consume();
 		}
 	}

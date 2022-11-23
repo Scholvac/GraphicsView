@@ -7,8 +7,8 @@ package de.sos.gvc;
  */
 public interface IGraphicsViewHandler {
 
-	public void install(GraphicsView view);
-	public void uninstall(GraphicsView view);
+	public void install(IGraphicsView view);
+	public void uninstall(IGraphicsView view);
 
 	/** Notification from scene that the content has been cleaned.
 	 * @note this notification is redundant: The scene removes each

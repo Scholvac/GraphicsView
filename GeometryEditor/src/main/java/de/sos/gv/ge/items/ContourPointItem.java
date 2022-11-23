@@ -1,5 +1,6 @@
 package de.sos.gv.ge.items;
 
+import java.awt.Component;
 import java.awt.Cursor;
 import java.awt.Graphics2D;
 import java.awt.event.MouseEvent;
@@ -111,7 +112,7 @@ public class ContourPointItem extends GraphicsItem implements MouseMotionListene
 		if (allowsManipulation() && SwingUtilities.isRightMouseButton(e)) {
 			final JPopupMenu pm = new JPopupMenu();
 			mMenuManager.fillContourItemMenu(this, mGeometry, pm);
-			pm.show(getView(), e.getX(), e.getY());
+			pm.show((Component)getView(), e.getX(), e.getY());
 			e.consume();
 		}
 	}

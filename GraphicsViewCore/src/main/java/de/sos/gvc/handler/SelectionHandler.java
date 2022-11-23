@@ -10,7 +10,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import de.sos.gvc.GraphicsItem;
-import de.sos.gvc.GraphicsView;
+import de.sos.gvc.IGraphicsView;
 import de.sos.gvc.IGraphicsViewHandler;
 import de.sos.gvc.Utils;
 import de.sos.gvc.handler.selection.BoundingBoxSelectionItem;
@@ -123,7 +123,7 @@ public class SelectionHandler implements IGraphicsViewHandler, MouseListener {
 		public void onItemRotated(ItemRotateEvent event);
 	}
 
-	private GraphicsView 					mView;
+	private IGraphicsView 					mView;
 	private GraphicsItem 					mLastSelectedItem 		= null;
 	private GraphicsItem					mSelectionMarker		= null;
 
@@ -178,13 +178,13 @@ public class SelectionHandler implements IGraphicsViewHandler, MouseListener {
 	public boolean hasRotationCallbacks() { return mRotationCallbacks != null && !mRotationCallbacks.isEmpty(); }
 
 	@Override
-	public void install(final GraphicsView view) {
+	public void install(final IGraphicsView view) {
 		mView = view;
 		mView.addMouseListener(this);
 	}
 
 	@Override
-	public void uninstall(final GraphicsView view) {
+	public void uninstall(final IGraphicsView view) {
 		mView.removeMouseListener(this);
 		mView = null;
 	}

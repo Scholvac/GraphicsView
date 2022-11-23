@@ -29,7 +29,7 @@ import de.sos.gv.ge.tools.PointTool;
 import de.sos.gv.ge.tools.PolygonTool;
 import de.sos.gv.ge.tools.SelectionTool;
 import de.sos.gvc.GraphicsScene;
-import de.sos.gvc.GraphicsView;
+import de.sos.gvc.GraphicsViewComponent;
 import de.sos.gvc.handler.DefaultViewDragHandler;
 import de.sos.gvc.handler.MouseDelegateHandler;
 
@@ -56,13 +56,13 @@ public class GeometryEditorMainWindow {
 		});
 	}
 
-	private GraphicsView			mView;
+	private GraphicsViewComponent	mView;
 	private GraphicsScene			mScene;
 
-
-	private GridItem 				mGridItem; //can be activated or deactivated
+	private GridItem				mGridItem;		// can be activated or
+	// deactivated
 	private MenuManager				mMenuManager;
-	private AxisItem 				mAxisItem;
+	private AxisItem				mAxisItem;
 
 	/**
 	 * Create the application.
@@ -81,8 +81,8 @@ public class GeometryEditorMainWindow {
 		frame.setBounds(100, 100, 869, 629);
 		frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
 
-		final JToolBar toolBar = new JToolBar();
-		final ButtonGroup bg = new ButtonGroup();
+		final JToolBar		toolBar	= new JToolBar();
+		final ButtonGroup	bg		= new ButtonGroup();
 
 		frame.getContentPane().add(toolBar, BorderLayout.NORTH);
 
@@ -97,14 +97,13 @@ public class GeometryEditorMainWindow {
 		final JMenuBar menuBar = new JMenuBar();
 		frame.setJMenuBar(menuBar);
 
-		addToogleButton("Select", 		toolBar, bg, new SelectionTool()).setSelected(true);
-		addToogleButton("Edit", 		toolBar, bg, new EditTool());
+		addToogleButton("Select", toolBar, bg, new SelectionTool()).setSelected(true);
+		addToogleButton("Edit", toolBar, bg, new EditTool());
 		toolBar.add(new JSeparator(SwingConstants.HORIZONTAL));
-		addToogleButton("Point", 		toolBar, bg, new PointTool(mMenuManager));
-		addToogleButton("LineString", 	toolBar, bg, new LineStringTool(mMenuManager));
-		addToogleButton("LinearRing", 	toolBar, bg, new LinearRingTool(mMenuManager));
-		addToogleButton("Polygon", 		toolBar, bg, new PolygonTool(mMenuManager));
-
+		addToogleButton("Point", toolBar, bg, new PointTool(mMenuManager));
+		addToogleButton("LineString", toolBar, bg, new LineStringTool(mMenuManager));
+		addToogleButton("LinearRing", toolBar, bg, new LinearRingTool(mMenuManager));
+		addToogleButton("Polygon", toolBar, bg, new PolygonTool(mMenuManager));
 
 	}
 
@@ -125,9 +124,9 @@ public class GeometryEditorMainWindow {
 
 	private Component createSceneAndView() {
 		mScene = new GraphicsScene();
-		mView = new GraphicsView(mScene);
+		mView = new GraphicsViewComponent(mScene);
 
-		//Standard Handler
+		// Standard Handler
 		mView.addHandler(new MouseDelegateHandler());
 		mView.addHandler(new DefaultViewDragHandler());
 

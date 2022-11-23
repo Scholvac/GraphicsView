@@ -201,7 +201,7 @@ public class Utils {
 		}
 	}
 
-	public static GraphicsItem getBestFit(final GraphicsView view, final Point viewPoint, final double epsilon, final IItemFilter ...filter ) {
+	public static GraphicsItem getBestFit(final IGraphicsView view, final Point viewPoint, final double epsilon, final IItemFilter ...filter ) {
 		final Point2D scene = view.getSceneLocation(viewPoint, null);
 		final double eps = epsilon * view.getScaleX();
 		return getBestFit(view.getScene(), scene, eps, filter);

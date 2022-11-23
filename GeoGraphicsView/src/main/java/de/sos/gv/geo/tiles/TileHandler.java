@@ -14,24 +14,26 @@ import de.sos.gv.geo.GeoUtils;
 import de.sos.gv.geo.LatLonBox;
 import de.sos.gv.geo.LatLonPoint;
 import de.sos.gvc.GraphicsScene;
-import de.sos.gvc.GraphicsView;
 import de.sos.gvc.IDrawContext;
+import de.sos.gvc.IGraphicsView;
 import de.sos.gvc.IGraphicsViewHandler;
 import de.sos.gvc.IPaintListener;
 
 public class TileHandler implements IGraphicsViewHandler, IPaintListener {
 
-
-	/** if set to true, we do update the tiles within the scene before we repaint the window*/
-	private boolean							mTileUpdateRequired = true;
-	private PropertyChangeListener			mTileUpdateListener = new PropertyChangeListener() {
+	/**
+	 * if set to true, we do update the tiles within the scene before we repaint
+	 * the window
+	 */
+	private boolean						mTileUpdateRequired	= true;
+	private PropertyChangeListener		mTileUpdateListener	= new PropertyChangeListener() {
 		@Override
 		public void propertyChange(final PropertyChangeEvent evt) {
 			mTileUpdateRequired = true;
 		}
 	};
-	private final ITileFactory				mFactory;
-	private final Map<String, TileItem> 	mActiveTiles = new HashMap<>();
+	private final ITileFactory			mFactory;
+	private final Map<String, TileItem>	mActiveTiles		= new HashMap<>();
 
 	public TileHandler(final ITileFactory factory) {
 		mFactory = factory;
@@ -39,37 +41,37 @@ public class TileHandler implements IGraphicsViewHandler, IPaintListener {
 	}
 
 	@Override
-	public void install(final GraphicsView view) {
+	public void install(final IGraphicsView view) {
 		view.addPaintListener(this);
-		view.getProperty(GraphicsView.PROP_VIEW_CENTER_X).addPropertyChangeListener(mTileUpdateListener);
-		view.getProperty(GraphicsView.PROP_VIEW_CENTER_Y).addPropertyChangeListener(mTileUpdateListener);
-		view.getProperty(GraphicsView.PROP_VIEW_SCALE_X).addPropertyChangeListener(mTileUpdateListener);
-		view.getProperty(GraphicsView.PROP_VIEW_SCALE_Y).addPropertyChangeListener(mTileUpdateListener);
+		view.getProperty(IGraphicsView.PROP_VIEW_CENTER_X).addPropertyChangeListener(mTileUpdateListener);
+		view.getProperty(IGraphicsView.PROP_VIEW_CENTER_Y).addPropertyChangeListener(mTileUpdateListener);
+		view.getProperty(IGraphicsView.PROP_VIEW_SCALE_X).addPropertyChangeListener(mTileUpdateListener);
+		view.getProperty(IGraphicsView.PROP_VIEW_SCALE_Y).addPropertyChangeListener(mTileUpdateListener);
 
 	}
 
 	@Override
-	public void uninstall(final GraphicsView view) {
-		view.getProperty(GraphicsView.PROP_VIEW_CENTER_X).removePropertyChangeListener(mTileUpdateListener);
-		view.getProperty(GraphicsView.PROP_VIEW_CENTER_Y).removePropertyChangeListener(mTileUpdateListener);
-		view.getProperty(GraphicsView.PROP_VIEW_SCALE_X).removePropertyChangeListener(mTileUpdateListener);
-		view.getProperty(GraphicsView.PROP_VIEW_SCALE_Y).removePropertyChangeListener(mTileUpdateListener);
+	public void uninstall(final IGraphicsView view) {
+		view.getProperty(IGraphicsView.PROP_VIEW_CENTER_X).removePropertyChangeListener(mTileUpdateListener);
+		view.getProperty(IGraphicsView.PROP_VIEW_CENTER_Y).removePropertyChangeListener(mTileUpdateListener);
+		view.getProperty(IGraphicsView.PROP_VIEW_SCALE_X).removePropertyChangeListener(mTileUpdateListener);
+		view.getProperty(IGraphicsView.PROP_VIEW_SCALE_Y).removePropertyChangeListener(mTileUpdateListener);
 		view.removePaintListener(this);
 	}
 
-	private final LatLonPoint			_ll = new LatLonPoint();
-	private final LatLonPoint			_ur = new LatLonPoint();
-	private final LatLonBox				_viewBB = new LatLonBox();
-	private final Rectangle				_viewBounds = new Rectangle();
-	private final LinkedList<int[]>		_tilesToAdd = new LinkedList<>();
-	private final HashSet<String>		_tilesToRemove = new HashSet<>();
+	private final LatLonPoint		_ll				= new LatLonPoint();
+	private final LatLonPoint		_ur				= new LatLonPoint();
+	private final LatLonBox			_viewBB			= new LatLonBox();
+	private final Rectangle			_viewBounds		= new Rectangle();
+	private final LinkedList<int[]>	_tilesToAdd		= new LinkedList<>();
+	private final HashSet<String>	_tilesToRemove	= new HashSet<>();
 	@Override
 	public void prePaint(final Graphics2D graphics, final IDrawContext context) {
 		if (mTileUpdateRequired) {
-			final GraphicsView view = context.getView();
-			final GraphicsScene	scene = view.getScene();
+			final IGraphicsView	view		= context.getView();
+			final GraphicsScene	scene		= view.getScene();
 
-			final Rectangle2D sceneRect = view.getVisibleSceneRect();
+			final Rectangle2D	sceneRect	= view.getVisibleSceneRect();
 			GeoUtils.getLatLon(sceneRect.getMinX(), sceneRect.getMinY(), _ll);
 			GeoUtils.getLatLon(sceneRect.getMaxX(), sceneRect.getMaxY(), _ur);
 			if (sceneRect.getWidth() > GeoUtils.EARTH_CIRCUMFERENCE) {
@@ -83,8 +85,8 @@ public class TileHandler implements IGraphicsViewHandler, IPaintListener {
 			_tilesToRemove.addAll(mActiveTiles.keySet());
 			if (requiredTiles != null) {
 				for (int i = 0; i < requiredTiles.length; i++) {
-					final int[] tileArray = requiredTiles[i];
-					final String tileId = TileInfo.getUniqueIdentifier(tileArray);
+					final int[]		tileArray	= requiredTiles[i];
+					final String	tileId		= TileInfo.getUniqueIdentifier(tileArray);
 					if (_tilesToRemove.remove(tileId) == false)
 						_tilesToAdd.add(tileArray);
 				}
@@ -93,7 +95,7 @@ public class TileHandler implements IGraphicsViewHandler, IPaintListener {
 						removeTile(scene, id);
 					_tilesToRemove.clear();
 				}
-				while(_tilesToAdd.isEmpty() == false) {
+				while (_tilesToAdd.isEmpty() == false) {
 					addTile(scene, _tilesToAdd.removeFirst());
 				}
 			}
@@ -116,7 +118,8 @@ public class TileHandler implements IGraphicsViewHandler, IPaintListener {
 	}
 
 	@Override
-	public void postPaint(final Graphics2D graphics, final IDrawContext context) {} //not used
+	public void postPaint(final Graphics2D graphics, final IDrawContext context) {
+	} // not used
 
 	@Override
 	public void notifySceneCleared() {

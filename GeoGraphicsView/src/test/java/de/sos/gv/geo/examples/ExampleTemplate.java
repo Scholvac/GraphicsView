@@ -17,7 +17,7 @@ import de.sos.gv.geo.tiles.SizeUnit;
 import de.sos.gv.geo.tiles.TileFactory;
 import de.sos.gv.geo.tiles.TileHandler;
 import de.sos.gvc.GraphicsScene;
-import de.sos.gvc.GraphicsView;
+import de.sos.gvc.GraphicsViewComponent;
 import de.sos.gvc.handler.DefaultViewDragHandler;
 import de.sos.gvc.handler.MouseDelegateHandler;
 
@@ -40,9 +40,8 @@ public class ExampleTemplate extends JFrame {
 		});
 	}
 
-	private GraphicsScene 		mScene;
-	private GraphicsView		mView;
-
+	private GraphicsScene			mScene;
+	private GraphicsViewComponent	mView;
 
 	/**
 	 * Create the frame.
@@ -70,13 +69,11 @@ public class ExampleTemplate extends JFrame {
 		mView.setScale(20);
 	}
 
-
-
 	private void createScene() {
 		mScene = new GraphicsScene();
-		mView = new GraphicsView(mScene);
+		mView = new GraphicsViewComponent(mScene);
 
-		//Standard Handler
+		// Standard Handler
 		mView.addHandler(new MouseDelegateHandler());
 		mView.addHandler(new DefaultViewDragHandler());
 
@@ -84,9 +81,9 @@ public class ExampleTemplate extends JFrame {
 	}
 	private void setupMap() {
 		/**
-		 * Create a cache cascade: RAM (10 MB) -> HDD (100MB) -> WEB and initializes a
-		 * standard TileFactory with 4 threads. For more informations on how to
-		 * initialize the Tile Background, see OSMExample
+		 * Create a cache cascade: RAM (10 MB) -> HDD (100MB) -> WEB and
+		 * initializes a standard TileFactory with 4 threads. For more
+		 * informations on how to initialize the Tile Background, see OSMExample
 		 */
 		final ITileImageProvider cache = ITileFactory.buildCache(ITileImageProvider.OSM, 10, SizeUnit.MegaByte, new File("./.cache"), 100, SizeUnit.MegaByte);
 		mView.addHandler(new TileHandler(new TileFactory(cache)));

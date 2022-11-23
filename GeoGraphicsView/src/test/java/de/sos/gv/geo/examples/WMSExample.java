@@ -16,7 +16,7 @@ import de.sos.gv.geo.tiles.cache.ThreadedTileProvider;
 import de.sos.gv.geo.tiles.downloader.WMSImageProvider;
 import de.sos.gv.geo.tiles.downloader.WMSImageProvider.WMSVersion;
 import de.sos.gvc.GraphicsScene;
-import de.sos.gvc.GraphicsView;
+import de.sos.gvc.GraphicsViewComponent;
 import de.sos.gvc.handler.DefaultViewDragHandler;
 import de.sos.gvc.handler.MouseDelegateHandler;
 import de.sos.gvc.param.ParameterContext;
@@ -33,7 +33,7 @@ public class WMSExample {
 
 		//Create a new Scene and a new View
 		final GraphicsScene scene = new GraphicsScene();
-		final GraphicsView view = new GraphicsView(scene, new ParameterContext());
+		final GraphicsViewComponent view = new GraphicsViewComponent(scene, new ParameterContext());
 
 
 		//Standard Handler

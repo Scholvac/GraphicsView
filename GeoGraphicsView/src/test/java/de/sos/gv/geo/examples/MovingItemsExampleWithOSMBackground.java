@@ -19,7 +19,7 @@ import de.sos.gv.geo.tiles.TileFactory;
 import de.sos.gv.geo.tiles.TileHandler;
 import de.sos.gvc.GraphicsItem;
 import de.sos.gvc.GraphicsScene;
-import de.sos.gvc.GraphicsView;
+import de.sos.gvc.GraphicsViewComponent;
 import de.sos.gvc.handler.DefaultViewDragHandler;
 import de.sos.gvc.handler.MouseDelegateHandler;
 import de.sos.gvc.param.ParameterContext;
@@ -114,7 +114,7 @@ public class MovingItemsExampleWithOSMBackground {
 		// Advanced: Try out different Storage strategies (QuadTree or List Storage)
 		// GraphicsScene scene = new GraphicsScene(new QuadTreeStorage());
 		final GraphicsScene scene = new GraphicsScene(new ListStorage());
-		final GraphicsView view = new GraphicsView(scene, new ParameterContext());
+		final GraphicsViewComponent view = new GraphicsViewComponent(scene, new ParameterContext());
 
 		// Standard Handler
 		view.addHandler(new MouseDelegateHandler());

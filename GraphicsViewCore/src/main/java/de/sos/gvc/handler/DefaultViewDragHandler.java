@@ -7,7 +7,7 @@ import java.awt.event.MouseMotionListener;
 import java.awt.event.MouseWheelEvent;
 import java.awt.event.MouseWheelListener;
 
-import de.sos.gvc.GraphicsView;
+import de.sos.gvc.IGraphicsView;
 import de.sos.gvc.IGraphicsViewHandler;
 
 /**
@@ -19,12 +19,12 @@ import de.sos.gvc.IGraphicsViewHandler;
  */
 public class DefaultViewDragHandler implements IGraphicsViewHandler, MouseListener, MouseMotionListener, MouseWheelListener {
 
-	private GraphicsView mView;
+	private IGraphicsView mView;
 
 	protected Point mLastScreenPosition; //used to remember the last position, for dx / dy calculation during drag
 
 	@Override
-	public void install(GraphicsView view) {
+	public void install(final IGraphicsView view) {
 		mView = view;
 		mView.addMouseListener(this);
 		mView.addMouseMotionListener(this);
@@ -32,7 +32,7 @@ public class DefaultViewDragHandler implements IGraphicsViewHandler, MouseListen
 	}
 
 	@Override
-	public void uninstall(GraphicsView view) {
+	public void uninstall(final IGraphicsView view) {
 		if (mView == view)
 			mView = null;
 		mView.removeMouseListener(this);
@@ -43,45 +43,45 @@ public class DefaultViewDragHandler implements IGraphicsViewHandler, MouseListen
 
 
 	@Override
-	public void mouseClicked(MouseEvent e) { }
+	public void mouseClicked(final MouseEvent e) { }
 
 	@Override
-	public void mousePressed(MouseEvent e) {
+	public void mousePressed(final MouseEvent e) {
 		if (!e.isConsumed()) {
 			mLastScreenPosition = e.getPoint();
 		}
 	}
 
 	@Override
-	public void mouseReleased(MouseEvent e) {
+	public void mouseReleased(final MouseEvent e) {
 		mLastScreenPosition = null;
 	}
 
 	@Override
-	public void mouseEntered(MouseEvent e) { }
+	public void mouseEntered(final MouseEvent e) { }
 	@Override
-	public void mouseExited(MouseEvent e) {}
+	public void mouseExited(final MouseEvent e) {}
 
 	@Override
-	public void mouseDragged(MouseEvent e) {
+	public void mouseDragged(final MouseEvent e) {
 		if (!e.isConsumed() && mLastScreenPosition != null) {
-			double dx = e.getPoint().getX() - mLastScreenPosition.getX();
-			double dy = e.getPoint().getY() - mLastScreenPosition.getY();
-			double angle_radian = Math.toRadians(-mView.getRotationDegrees());
+			final double dx = e.getPoint().getX() - mLastScreenPosition.getX();
+			final double dy = e.getPoint().getY() - mLastScreenPosition.getY();
+			final double angle_radian = Math.toRadians(-mView.getRotationDegrees());
 			//rotation matrix
-			double cos = Math.cos(angle_radian);
-			double sin = Math.sin(angle_radian);
-			double dxx = dx * cos + dy * -sin;
-			double dyy = dx * sin + dy * cos;
+			final double cos = Math.cos(angle_radian);
+			final double sin = Math.sin(angle_radian);
+			final double dxx = dx * cos + dy * -sin;
+			final double dyy = dx * sin + dy * cos;
 
 
 			mLastScreenPosition.setLocation(e.getPoint());
-			double scaleX = mView.getScaleX();
-			double scaleY = mView.getScaleY();
-			double x = mView.getCenterX();
-			double y = mView.getCenterY();
-			double xx = x - dxx * scaleX;
-			double yy = y - dyy * scaleY;
+			final double scaleX = mView.getScaleX();
+			final double scaleY = mView.getScaleY();
+			final double x = mView.getCenterX();
+			final double y = mView.getCenterY();
+			final double xx = x - dxx * scaleX;
+			final double yy = y - dyy * scaleY;
 			mView.setCenter(xx, yy);
 		}else {
 			mLastScreenPosition = null;
@@ -89,10 +89,10 @@ public class DefaultViewDragHandler implements IGraphicsViewHandler, MouseListen
 	}
 
 	@Override
-	public void mouseMoved(MouseEvent e) {}
+	public void mouseMoved(final MouseEvent e) {}
 
 	@Override
-	public void mouseWheelMoved(MouseWheelEvent e) {
+	public void mouseWheelMoved(final MouseWheelEvent e) {
 		if (e.isConsumed())
 			return ;
 		final int dir = e.getWheelRotation();
@@ -104,8 +104,8 @@ public class DefaultViewDragHandler implements IGraphicsViewHandler, MouseListen
 		final double scaleY = mView.getScaleY() * factor;
 		mView.setScale(scaleX, scaleY);
 	}
-	
-	protected GraphicsView getView() {
+
+	protected IGraphicsView getView() {
 		return mView;
 	}
 }

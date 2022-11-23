@@ -34,16 +34,9 @@ import de.sos.gvc.param.ParameterContext;
  * @author scholvac
  *
  */
-public class GraphicsView extends JPanel {
+public class GraphicsViewComponent extends JPanel implements IGraphicsView {
 
-	public static final String PROP_VIEW_CENTER_X = "VIEW_CENTER_X";
-	public static final String PROP_VIEW_CENTER_Y = "VIEW_CENTER_Y";
-	public static final String PROP_VIEW_SCALE_X = "VIEW_SCALE_X";
-	public static final String PROP_VIEW_SCALE_Y = "VIEW_SCALE_Y";
-	public static final String PROP_VIEW_ROTATE = "VIEW_ROTATE";
-
-
-	private static Logger LOG = GVLog.getLogger(GraphicsView.class);
+	private static Logger LOG = GVLog.getLogger(GraphicsViewComponent.class);
 
 
 	private GraphicsScene 					mScene;
@@ -57,9 +50,9 @@ public class GraphicsView extends JPanel {
 	private AffineTransform					mViewTransform = null;
 
 	/** maximum repaints (triggered by dirty scene) per second */
-	private int							mRepaintDelay = 1000/30; //default: maximum of 30 repaints per second, triggered by dirty scene
-	private Timer						mRepaintTimer;
-	private TimerTask					mRepaintTimerTask = null;
+	private int								mRepaintDelay = 1000/30; //default: maximum of 30 repaints per second, triggered by dirty scene
+	private Timer							mRepaintTimer;
+	private TimerTask						mRepaintTimerTask = null;
 
 	/**
 	 * List of listener that will be notified before and after the painting has been done, for example to prepare a paint or clean up after painting
@@ -70,7 +63,7 @@ public class GraphicsView extends JPanel {
 	 */
 	private PropertyChangeListener			mTransformListener = new PropertyChangeListener() {
 		@Override
-		public void propertyChange(PropertyChangeEvent evt) {
+		public void propertyChange(final PropertyChangeEvent evt) {
 			mViewTransform = null;
 		}
 	};
@@ -80,7 +73,7 @@ public class GraphicsView extends JPanel {
 	 */
 	private PropertyChangeListener			mRepaintListener = new PropertyChangeListener() {
 		@Override
-		public void propertyChange(PropertyChangeEvent evt) {
+		public void propertyChange(final PropertyChangeEvent evt) {
 			repaint();
 		}
 	};
@@ -106,22 +99,22 @@ public class GraphicsView extends JPanel {
 
 	IDrawContext							mDrawContext = new IDrawContext() {
 		@Override
-		public GraphicsView getView() {
-			return GraphicsView.this;
+		public IGraphicsView getView() {
+			return GraphicsViewComponent.this;
 		}
 		@Override
 		public AffineTransform getViewTransform() {
-			return GraphicsView.this.getViewTransform();
+			return GraphicsViewComponent.this.getViewTransform();
 		}
 	};
 
 
-	public GraphicsView(GraphicsScene scene) {
+	public GraphicsViewComponent(final GraphicsScene scene) {
 		this(scene, new ParameterContext());
 	}
 
 
-	public GraphicsView(GraphicsScene scene, ParameterContext propertyContext) {
+	public GraphicsViewComponent(final GraphicsScene scene, final ParameterContext propertyContext) {
 		mScene = scene;
 		mScene._addView(this);
 
@@ -140,7 +133,7 @@ public class GraphicsView extends JPanel {
 
 		addComponentListener(new ComponentAdapter() {
 			@Override
-			public void componentResized(ComponentEvent e) {
+			public void componentResized(final ComponentEvent e) {
 				mViewTransform = null; //new offset to center 0.0, 0.0
 			}
 		});
@@ -152,58 +145,65 @@ public class GraphicsView extends JPanel {
 	}
 
 
-	public void setMaximumFPS(int fps) {
+	@Override
+	public void setMaximumFPS(final int fps) {
 		mRepaintDelay = 1000 / fps;
 	}
 
-	public void addPaintListener(IPaintListener listener) {
+	@Override
+	public void addPaintListener(final IPaintListener listener) {
 		if (listener != null && !mPaintListener.contains(listener)) {
 			if (LOG.isTraceEnabled()) LOG.trace("Register Paint Listener");
 			mPaintListener.add(listener);
 		}
 	}
-	public boolean removePaintListener(IPaintListener listener) {
+	@Override
+	public boolean removePaintListener(final IPaintListener listener) {
 		if (listener != null) {
-			boolean res = mPaintListener.remove(listener);
+			final boolean res = mPaintListener.remove(listener);
 			if (LOG.isTraceEnabled()) LOG.trace("Remove PaintListener " + (res?"successfull":"failed"));
 			return res;
 		}
 		return false;
 	}
 
-	public void addHandler(IGraphicsViewHandler handler) {
+	@Override
+	public void addHandler(final IGraphicsViewHandler handler) {
 		if (handler != null && !mHandler.contains(handler)) {
 			mHandler.add(handler);
 			handler.install(this);
 		}
 	}
-	public void removeHandler(IGraphicsViewHandler handler) {
+	@Override
+	public void removeHandler(final IGraphicsViewHandler handler) {
 		if (handler != null && mHandler.contains(handler)) {
 			mHandler.remove(handler);
 			handler.uninstall(this);
 		}
 	}
 
-	public void setScale(double scaleXY) {
+	@Override
+	public void setScale(final double scaleXY) {
 		setScale(scaleXY, scaleXY);
 	}
-	public void setScale(double scaleX, double scaleY) {
+	@Override
+	public void setScale(final double scaleX, final double scaleY) {
 		mScaleX.set(scaleX);
 		mScaleY.set(scaleY);
 	}
 
 	int pcounter = 0;
 	@Override
-	protected void paintComponent(Graphics g) {
+	protected void paintComponent(final Graphics g) {
 		//		System.out.println("Paint " + pcounter++ + " Scale: " + getScaleX());
 		super.paintComponent(g);
-		Graphics2D g2d = (Graphics2D)g;
+		final Graphics2D g2d = (Graphics2D)g;
 
 		g2d.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR); //TODO: as property
 		g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
 		synchronized (mPaintListener) {
-			for (IPaintListener pl : mPaintListener)
+			for (final IPaintListener pl : mPaintListener)
 				try {
 					pl.prePaint(g2d, mDrawContext);
 				}catch(Exception | Error e) {
@@ -213,23 +213,18 @@ public class GraphicsView extends JPanel {
 		}
 
 		//transform the view but remember the old transform
-		AffineTransform oldTransform = g2d.getTransform();
+		final AffineTransform oldTransform = g2d.getTransform();
 		g2d.transform(getViewTransform());
 
 		//get all visible items, depending on the visible rect
-		Rectangle2D rect = getVisibleSceneRect();
+		final Rectangle2D rect = getVisibleSceneRect();
 
-		List<GraphicsItem> itemList = mScene.getItems(rect);
+		final List<GraphicsItem> itemList = mScene.getItems(rect);
 
 		//sort to overdraw the correct items, for example background items
-		Collections.sort(itemList, new Comparator<GraphicsItem>() {
-			@Override
-			public int compare(GraphicsItem o1, GraphicsItem o2) {
-				return Float.compare(o1.getZOrder(), o2.getZOrder());
-			}
-		});
+		Collections.sort(itemList, Comparator.comparing(GraphicsItem::getZOrder));
 
-		for (GraphicsItem item : itemList) {
+		for (final GraphicsItem item : itemList) {
 			try {
 				item.draw(g2d, mDrawContext);
 			}catch(Exception | Error e) {
@@ -247,7 +242,7 @@ public class GraphicsView extends JPanel {
 		mScene.markClean(); //remember that the scene is no longer dirty, at least not in terms of visualisation
 
 		synchronized (mPaintListener) {
-			for (IPaintListener pl : mPaintListener)
+			for (final IPaintListener pl : mPaintListener)
 				try {
 					pl.postPaint(g2d, mDrawContext);
 				}catch(Exception | Error e) {
@@ -259,12 +254,12 @@ public class GraphicsView extends JPanel {
 
 	protected AffineTransform getViewTransform() {
 		if (mViewTransform == null) {
-			AffineTransform t = new AffineTransform();
+			final AffineTransform t = new AffineTransform();
 			//add offset so 0.0, 0.0 would be in the center of the sceen
-			double w2 = getWidth() / 2.0;
-			double h2 = getHeight() / 2.0;
-			double rdeg = mRotation.get();
-			double r = Math.toRadians(-rdeg);
+			final double w2 = getWidth() / 2.0;
+			final double h2 = getHeight() / 2.0;
+			final double rdeg = mRotation.get();
+			final double r = Math.toRadians(-rdeg);
 
 			t.translate(-w2 * mScaleX.get(), h2 * mScaleY.get());
 			//now the view transform relative to the scene
@@ -275,31 +270,36 @@ public class GraphicsView extends JPanel {
 			t.translate(-w2, -h2);
 			try {
 				mViewTransform = t.createInverse();
-			} catch (Exception e) {
+			} catch (final Exception e) {
 				e.printStackTrace();
 			}
 		}
 		return mViewTransform;
 	}
 
-	public void setCenter(double x, double y) {
+	@Override
+	public void setCenter(final double x, final double y) {
 		mCenterX.set(x);
 		mCenterY.set(y);
 	}
+	@Override
 	public double getCenterX() { return mCenterX.get(); }
+	@Override
 	public double getCenterY() { return mCenterY.get(); }
 
-	public Point2D getPositionInComponent(Point2D sceneLocation) {
+	@Override
+	public Point2D getPositionInComponent(final Point2D sceneLocation) {
 		try {
-			Point2D tmp = getViewTransform().transform(sceneLocation, null);
+			final Point2D tmp = getViewTransform().transform(sceneLocation, null);
 			return new Point2D.Double(tmp.getX(), tmp.getY());
-		} catch (Exception e) {
+		} catch (final Exception e) {
 			e.printStackTrace();
 		}
 		return null;
 	}
-	public Point2D getPositionOnScreen(Point2D sceneLocation) {
-		Point2D inComp = getPositionInComponent(sceneLocation);
+	@Override
+	public Point2D getPositionOnScreen(final Point2D sceneLocation) {
+		final Point2D inComp = getPositionInComponent(sceneLocation);
 		inComp.setLocation(inComp.getX() + getLocationOnScreen().x, inComp.getY() + getLocationOnScreen().y);
 		return inComp;
 	}
@@ -308,9 +308,10 @@ public class GraphicsView extends JPanel {
 	 * Returns the currently visible area as rectangle in scene coordinates.
 	 * @return
 	 */
+	@Override
 	public Rectangle2D getVisibleSceneRect() {
-		Rectangle vr = getVisibleRect();
-		Rectangle2D rect = Utils.inverseTransform(vr, getViewTransform());
+		final Rectangle vr = getVisibleRect();
+		final Rectangle2D rect = Utils.inverseTransform(vr, getViewTransform());
 		return rect;
 	}
 
@@ -324,9 +325,10 @@ public class GraphicsView extends JPanel {
 	 * @param epsilonY
 	 * @return
 	 */
-	public List<GraphicsItem> getItemsAt(Point point, double epsilonX, double epsilonY) {
-		Point2D scene = getSceneLocation(point, null);
-		Rectangle2D r = new Rectangle2D.Double(scene.getX() - epsilonX/2, scene.getY() - epsilonY/2, epsilonX, epsilonY);
+	@Override
+	public List<GraphicsItem> getItemsAt(final Point point, final double epsilonX, final double epsilonY) {
+		final Point2D scene = getSceneLocation(point, null);
+		final Rectangle2D r = new Rectangle2D.Double(scene.getX() - epsilonX/2, scene.getY() - epsilonY/2, epsilonX, epsilonY);
 		return mScene.getItems(r);
 	}
 
@@ -339,9 +341,10 @@ public class GraphicsView extends JPanel {
 	 * @param filter (may null)
 	 * @return
 	 */
-	public List<GraphicsItem> getAllItemsAt(Point point, double epsilonX, double epsilonY, IItemFilter filter) {
-		Point2D scene = getSceneLocation(point, null);
-		Rectangle2D r = new Rectangle2D.Double(scene.getX() - epsilonX/2, scene.getY() - epsilonY/2, epsilonX, epsilonY);
+	@Override
+	public List<GraphicsItem> getAllItemsAt(final Point point, final double epsilonX, final double epsilonY, final IItemFilter filter) {
+		final Point2D scene = getSceneLocation(point, null);
+		final Rectangle2D r = new Rectangle2D.Double(scene.getX() - epsilonX/2, scene.getY() - epsilonY/2, epsilonX, epsilonY);
 		return mScene.getAllItems(r, filter);
 	}
 
@@ -351,12 +354,13 @@ public class GraphicsView extends JPanel {
 	 * @param scene (may null)
 	 * @return scene point or new point if scene is null
 	 */
-	public Point2D getSceneLocation(Point2D screen, Point2D scene) {
+	@Override
+	public Point2D getSceneLocation(final Point2D screen, Point2D scene) {
 		if (scene == null)
 			scene = new Point2D.Double();
 		try {
 			return getViewTransform().inverseTransform(new Point2D.Double(screen.getX(), /* getHeight() -*/ screen.getY()), scene);
-		} catch (Exception e) {
+		} catch (final Exception e) {
 			e.printStackTrace();
 			return null;
 		}
@@ -366,43 +370,54 @@ public class GraphicsView extends JPanel {
 	 * @param point
 	 * @return
 	 */
-	public Point2D getSceneLocation(Point point) {
+	@Override
+	public Point2D getSceneLocation(final Point point) {
 		return getSceneLocation(point, new Point2D.Double());
 	}
+	@Override
 	public double getScaleX() { return mScaleX.get(); }
+	@Override
 	public double getScaleY() { return mScaleY.get(); }
 
+	@Override
 	public GraphicsScene getScene() { return mScene; }
+	@Override
 	public ParameterContext getPropertyContext() { return mPropertyContext; }
 
-	public <T> IParameter<T> getProperty(String string) {
+	@Override
+	public <T> IParameter<T> getProperty(final String string) {
 		return mPropertyContext.getProperty(string);
 	}
 
-	public void setRotation(double degrees) {
+	@Override
+	public void setRotation(final double degrees) {
 		mRotation.set(degrees);
 	}
+	@Override
 	public double getRotationDegrees() { return mRotation.get(); }
 
 
-	public void setCenter(Point2D center) {
+	@Override
+	public void setCenter(final Point2D center) {
 		setCenter(center.getX(), center.getY());
 	}
 
-	public void setCenterAndZoom(Point2D min, Point2D max, boolean scaleXandY) {
-		double x = Math.min(min.getX(), max.getX());
-		double y = Math.min(min.getY(), max.getY());
-		double w = Math.abs(min.getX() - max.getX());
-		double h = Math.abs(min.getY() - max.getY());
+	@Override
+	public void setCenterAndZoom(final Point2D min, final Point2D max, final boolean scaleXandY) {
+		final double x = Math.min(min.getX(), max.getX());
+		final double y = Math.min(min.getY(), max.getY());
+		final double w = Math.abs(min.getX() - max.getX());
+		final double h = Math.abs(min.getY() - max.getY());
 		setCenterAndZoom(new Rectangle2D.Double(x, y, w, h), scaleXandY);
 	}
-	public void setCenterAndZoom(Rectangle2D bounds, boolean scaleXandY) {
-		Rectangle visRect = getVisibleRect();
+	@Override
+	public void setCenterAndZoom(final Rectangle2D bounds, final boolean scaleXandY) {
+		final Rectangle visRect = getVisibleRect();
 
 		//bounds.width * scaleX = visRect.getWidth()
-		double scaleX = (1.1 * bounds.getWidth()) / visRect.getWidth();
-		double scaleY = (1.1 * bounds.getHeight()) / visRect.getHeight();
-		double cx = bounds.getCenterX(), cy = bounds.getCenterY();
+		double scaleX = 1.1 * bounds.getWidth() / visRect.getWidth();
+		double scaleY = 1.1 * bounds.getHeight() / visRect.getHeight();
+		final double cx = bounds.getCenterX(), cy = bounds.getCenterY();
 
 
 		if (scaleX <= 0 || !Double.isFinite(scaleX) ||
@@ -424,8 +439,9 @@ public class GraphicsView extends JPanel {
 
 
 	/** Forward the cleared notification to all IGraphicsViewHandler that may relay on Scene content */
+	@Override
 	public void notifySceneCleared() {
-		for (IGraphicsViewHandler handler : mHandler)
+		for (final IGraphicsViewHandler handler : mHandler)
 			handler.notifySceneCleared();
 	}
 

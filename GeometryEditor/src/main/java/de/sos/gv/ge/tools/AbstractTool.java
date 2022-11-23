@@ -6,18 +6,18 @@ import java.awt.event.MouseMotionListener;
 import java.awt.geom.Point2D;
 
 import de.sos.gvc.GraphicsScene;
-import de.sos.gvc.GraphicsView;
+import de.sos.gvc.IGraphicsView;
 import de.sos.gvc.IGraphicsViewHandler;
 
 public abstract class AbstractTool implements IGraphicsViewHandler, MouseListener, MouseMotionListener {
 
-	private GraphicsView 	mView;
+	private IGraphicsView 	mView;
 
 
 	public boolean isActive() { return getView() != null; }
 
 	@Override
-	public void install(final GraphicsView view) {
+	public void install(final IGraphicsView view) {
 		mView = view;
 		view.addMouseListener(this);
 		view.addMouseMotionListener(this);
@@ -26,7 +26,7 @@ public abstract class AbstractTool implements IGraphicsViewHandler, MouseListene
 	}
 
 	@Override
-	public void uninstall(final GraphicsView view) {
+	public void uninstall(final IGraphicsView view) {
 		deactivate();
 
 		view.removeMouseListener(this);
@@ -62,6 +62,8 @@ public abstract class AbstractTool implements IGraphicsViewHandler, MouseListene
 		return getView().getSceneLocation(e.getPoint());
 	}
 
-	protected GraphicsView getView() { return mView; }
-	protected GraphicsScene getScene() { return mView.getScene(); }
+	protected IGraphicsView getView() { return mView; }
+	protected GraphicsScene getScene() {
+		return mView.getScene();
+	}
 }

@@ -22,7 +22,8 @@ import de.sos.gv.geo.tiles.cache.MemoryCache;
 import de.sos.gv.geo.tiles.cache.ThreadedTileProvider;
 import de.sos.gv.geo.tiles.downloader.DefaultTileDownloader;
 import de.sos.gvc.GraphicsScene;
-import de.sos.gvc.GraphicsView;
+import de.sos.gvc.GraphicsViewComponent;
+import de.sos.gvc.IGraphicsView;
 import de.sos.gvc.handler.DefaultViewDragHandler;
 import de.sos.gvc.handler.MouseDelegateHandler;
 import de.sos.gvc.storage.ListStorage;
@@ -46,8 +47,8 @@ public class TileCache2Example extends JFrame {
 		});
 	}
 
-	private GraphicsScene mScene;
-	private GraphicsView mView;
+	private GraphicsScene			mScene;
+	private GraphicsViewComponent	mView;
 
 	/**
 	 * Create the frame.
@@ -73,21 +74,27 @@ public class TileCache2Example extends JFrame {
 		final LatLonPoint llp_brhv = new LatLonPoint(53.523495, 8.641542);
 		GeoUtils.setViewCenter(mView, llp_brhv);
 		mView.setScale(20);
-		mView.getProperty(GraphicsView.PROP_VIEW_SCALE_X).addPropertyChangeListener(pcl -> System.out.println(mView.getScaleX()));
+		mView.getProperty(IGraphicsView.PROP_VIEW_SCALE_X).addPropertyChangeListener(pcl -> System.out.println(mView.getScaleX()));
 
 		new Thread() {
 			@Override
 			public void run() {
 				double s = 0.1;
-				while(s < 41400) {
+				while (s < 41400) {
 					s *= 1.1;
 					mView.setScale(s);
-					try {Thread.sleep(250);}catch(final Exception e) {}
+					try {
+						Thread.sleep(250);
+					} catch (final Exception e) {
+					}
 				}
-				while(s > 0.1) {
+				while (s > 0.1) {
 					s *= 0.9;
 					mView.setScale(s);
-					try {Thread.sleep(250);}catch(final Exception e) {}
+					try {
+						Thread.sleep(250);
+					} catch (final Exception e) {
+					}
 				}
 			}
 		}.start();
@@ -95,7 +102,7 @@ public class TileCache2Example extends JFrame {
 
 	private void createScene() {
 		mScene = new GraphicsScene(new ListStorage(false));
-		mView = new GraphicsView(mScene);
+		mView = new GraphicsViewComponent(mScene);
 
 		// Standard Handler
 		mView.addHandler(new MouseDelegateHandler());
@@ -104,23 +111,20 @@ public class TileCache2Example extends JFrame {
 		setupMap();
 	}
 
-
 	private void setupMap() {
-		final Supplier<ITileImageProvider> webCache = () -> new DefaultTileDownloader("https://tile.openstreetmap.org/{z}/{x}/{y}.png");
-		final ITileImageProvider cached = buildCache(webCache);
+		final Supplier<ITileImageProvider>	webCache	= () -> new DefaultTileDownloader("https://tile.openstreetmap.org/{z}/{x}/{y}.png");
+		final ITileImageProvider			cached		= buildCache(webCache);
 
-		final ITileFactory factory = new TileFactory(cached, "TileFactoryWorker", 8);
+		final ITileFactory					factory		= new TileFactory(cached, "TileFactoryWorker", 8);
 		mView.addHandler(new TileHandler(factory));
 
 	}
 
 	private ITileImageProvider buildCache(final Supplier<ITileImageProvider> webCache) {
-		final ThreadedTileProvider osm = new ThreadedTileProvider(webCache);
-		final FileCache fc = new FileCache(osm, new File("cache/"), 8, SizeUnit.MegaByte);
-		final MemoryCache mc = new MemoryCache(fc, 1, SizeUnit.MegaByte);
+		final ThreadedTileProvider	osm	= new ThreadedTileProvider(webCache);
+		final FileCache				fc	= new FileCache(osm, new File("cache/"), 8, SizeUnit.MegaByte);
+		final MemoryCache			mc	= new MemoryCache(fc, 1, SizeUnit.MegaByte);
 		return mc;
 	}
-
-
 
 }
