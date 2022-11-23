@@ -258,30 +258,43 @@ public class GraphicsItem implements IShapeProvider  {
 
 
 	public GraphicsItem(final Shape shape, final ParameterContext propertyContext) {
-		final ParameterContext pc = propertyContext != null ? propertyContext : sDefaultContext;
-		//ensure that we do have the basic properties
-		mVisible = pc.getValue(PROP_VISIBLE, true);
-		mSelected = pc.getValue(PROP_SELECTED, false);
-		mSelectable = pc.getValue(PROP_SELECTABLE, true);
+		if (propertyContext != null) {
+			//ensure that we do have the basic properties
+			mVisible = propertyContext.getValue(PROP_VISIBLE, true);
+			mSelected = propertyContext.getValue(PROP_SELECTED, false);
+			mSelectable = propertyContext.getValue(PROP_SELECTABLE, true);
 
-		mStyle = pc.getValue(PROP_STYLE, null);
-		mDrawable = pc.getValue(PROP_DRAWABLE, null);
-		mParent = null;
+			mStyle = propertyContext.getValue(PROP_STYLE, null);
+			mDrawable = propertyContext.getValue(PROP_DRAWABLE, null);
+			mParent = null;
 
-		mCenterX = pc.getValue(PROP_CENTER_X, 0.0);
-		mCenterY = pc.getValue(PROP_CENTER_Y, 0.0);
+			mCenterX = propertyContext.getValue(PROP_CENTER_X, 0.0);
+			mCenterY = propertyContext.getValue(PROP_CENTER_Y, 0.0);
 
-		mRotation = pc.getValue(PROP_ROTATION, 0.0);
+			mRotation = propertyContext.getValue(PROP_ROTATION, 0.0);
 
-		mScaleX = pc.getValue(PROP_SCALE_X, 1.0);
-		mScaleY = pc.getValue(PROP_SCALE_Y, 1.0);
-
+			mScaleX = propertyContext.getValue(PROP_SCALE_X, 1.0);
+			mScaleY = propertyContext.getValue(PROP_SCALE_Y, 1.0);
+			mZOrder = propertyContext.getValue(PROP_Z_ORDER, 100.0f);
+		}else {
+			//use standard values...
+			mVisible = true;
+			mSelected = false;
+			mSelectable = true;
+			mStyle = null;
+			mDrawable = null;
+			mParent = null;
+			mCenterX = 0;
+			mCenterY = 0;
+			mRotation = 0;
+			mScaleX = 1.0;
+			mScaleY = 1.0;
+			mZOrder = 100.0f;
+		}
 		setShape(shape);
 
-		mZOrder = pc.getValue(PROP_Z_ORDER, 100.0f);
-
-		if (pc != sDefaultContext) //only listen if it is not the default pc
-			pc.registerListener(mChildListener);
+		if (propertyContext != null)
+			propertyContext.registerListener(mChildListener);
 	}
 
 

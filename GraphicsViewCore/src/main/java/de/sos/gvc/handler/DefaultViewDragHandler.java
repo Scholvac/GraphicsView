@@ -21,7 +21,7 @@ public class DefaultViewDragHandler implements IGraphicsViewHandler, MouseListen
 
 	private GraphicsView mView;
 
-	private Point mLastScreenPosition; //used to remember the last position, for dx / dy calculation during drag
+	protected Point mLastScreenPosition; //used to remember the last position, for dx / dy calculation during drag
 
 	@Override
 	public void install(GraphicsView view) {
@@ -104,7 +104,8 @@ public class DefaultViewDragHandler implements IGraphicsViewHandler, MouseListen
 		final double scaleY = mView.getScaleY() * factor;
 		mView.setScale(scaleX, scaleY);
 	}
-
-
-
+	
+	protected GraphicsView getView() {
+		return mView;
+	}
 }

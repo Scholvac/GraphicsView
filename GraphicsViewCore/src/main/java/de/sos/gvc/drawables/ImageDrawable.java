@@ -10,41 +10,41 @@ import de.sos.gvc.styles.DrawableStyle;
 
 public class ImageDrawable extends AbstractDrawable {
 
-		private BufferedImage 		mImage;
-		private Rectangle2D 		mBoundingBox;
+	private BufferedImage 		mImage;
+	private Rectangle2D 		mBoundingBox;
 
-		private double 				mScaleX;
-		private double 				mScaleY;
-		private double 				mOffsetX;
-		private double 				mOffsetY;
+	private double 				mScaleX;
+	private double 				mScaleY;
+	private double 				mOffsetX;
+	private double 				mOffsetY;
 
-		public ImageDrawable(Rectangle2D bb, BufferedImage image) {
-			mImage = image;
-			mBoundingBox = bb;
+	public ImageDrawable(final Rectangle2D bb, final BufferedImage image) {
+		mImage = image;
+		mBoundingBox = bb;
 
-			double iw = mImage.getWidth();
-			double ih = mImage.getHeight();
-			double iw2 = iw / 2.0;
-			double ih2 = ih / 2.0;
+		final double iw = mImage.getWidth();
+		final double ih = mImage.getHeight();
+		final double iw2 = iw / 2.0;
+		final double ih2 = ih / 2.0;
 
-			double bbw = mBoundingBox.getWidth();
-			double bbh = mBoundingBox.getHeight();
+		final double bbw = mBoundingBox.getWidth();
+		final double bbh = mBoundingBox.getHeight();
 
-			mScaleX = bbw / iw;
-			mScaleY = bbh / ih;
-			mOffsetX = -iw2 * mScaleX;
-			mOffsetY = ih * mScaleY;
-		}
-
-		public BufferedImage getImage() {return mImage;}
-		public Rectangle2D getBoundingBox() {return mBoundingBox;}
-
-		@Override
-		public void paintItem(Graphics2D g, DrawableStyle style, IDrawContext ctx) {
-			AffineTransform t = new AffineTransform();
-			t.translate(mOffsetX/1.0, mOffsetY/2.0);
-			t.scale(mScaleX, -mScaleY);
-			g.drawImage(mImage, t, null);
-		}
-
+		mScaleX = bbw / iw;
+		mScaleY = bbh / ih;
+		mOffsetX = -iw2 * mScaleX;
+		mOffsetY = ih * mScaleY;
 	}
+
+	public BufferedImage getImage() {return mImage;}
+	public Rectangle2D getBoundingBox() {return mBoundingBox;}
+
+	@Override
+	public void paintItem(final Graphics2D g, final DrawableStyle style, final IDrawContext ctx) {
+		final AffineTransform t = new AffineTransform();
+		t.translate(mOffsetX/1.0, mOffsetY/2.0);
+		t.scale(mScaleX, -mScaleY);
+		g.drawImage(mImage, t, null);
+	}
+
+}
