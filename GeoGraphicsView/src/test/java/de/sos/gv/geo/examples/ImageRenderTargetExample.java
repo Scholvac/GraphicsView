@@ -1,27 +1,13 @@
-package de.sos.gv.gt.examples;
+package de.sos.gv.geo.examples;
 
-import java.awt.BasicStroke;
 import java.awt.BorderLayout;
-import java.awt.Color;
 import java.awt.EventQueue;
 import java.io.File;
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
 
 import javax.swing.JFrame;
 import javax.swing.JPanel;
 import javax.swing.WindowConstants;
 import javax.swing.border.EmptyBorder;
-
-import org.geotools.data.DataStore;
-import org.geotools.data.DataStoreFinder;
-import org.geotools.data.FeatureSource;
-import org.geotools.feature.FeatureCollection;
-import org.geotools.feature.FeatureIterator;
-import org.opengis.feature.simple.SimpleFeature;
-import org.opengis.feature.simple.SimpleFeatureType;
-import org.opengis.filter.Filter;
 
 import de.sos.gv.geo.GeoUtils;
 import de.sos.gv.geo.LatLonPoint;
@@ -30,15 +16,14 @@ import de.sos.gv.geo.tiles.ITileImageProvider;
 import de.sos.gv.geo.tiles.SizeUnit;
 import de.sos.gv.geo.tiles.TileFactory;
 import de.sos.gv.geo.tiles.TileHandler;
-import de.sos.gv.gta.FeatureReader;
-import de.sos.gvc.GraphicsItem;
 import de.sos.gvc.GraphicsScene;
 import de.sos.gvc.GraphicsView;
 import de.sos.gvc.handler.DefaultViewDragHandler;
 import de.sos.gvc.handler.MouseDelegateHandler;
-import de.sos.gvc.styles.DrawableStyle;
+import de.sos.gvc.rt.ImageRenderTarget;
+import de.sos.gvc.rt.ImageRenderTarget.BufferedImageRenderTarget;
 
-public class GermanyShapeFiles extends JFrame {
+public class ImageRenderTargetExample extends JFrame {
 
 	/**
 	 * Launch the application.
@@ -48,7 +33,7 @@ public class GermanyShapeFiles extends JFrame {
 			@Override
 			public void run() {
 				try {
-					final GermanyShapeFiles frame = new GermanyShapeFiles("ShapeFiles");
+					final ImageRenderTargetExample frame = new ImageRenderTargetExample("Image Render Target");
 					frame.setVisible(true);
 				} catch (final Exception e) {
 					e.printStackTrace();
@@ -63,9 +48,8 @@ public class GermanyShapeFiles extends JFrame {
 
 	/**
 	 * Create the frame.
-	 * @throws IOException
 	 */
-	public GermanyShapeFiles(final String title) throws IOException {
+	public ImageRenderTargetExample(final String title) {
 		super(title);
 		setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
 		setBounds(100, 100, 800, 800);
@@ -81,40 +65,26 @@ public class GermanyShapeFiles extends JFrame {
 		configure();
 	}
 
-	public void configure() throws IOException {
+	// TODO: do the example specific part
+	public void configure() {
 		final LatLonPoint llp_brhv = new LatLonPoint(53.523495, 8.641542);
 		GeoUtils.setViewCenter(mView, llp_brhv);
-		mView.setScale(5000);
-
-		final File file = new File("src/test/resources/Germany/gadm40_DEU_1.shp");
-		final Map<String, Object> map = new HashMap<>();
-		map.put("url", file.toURI().toURL());
-
-		final DataStore dataStore = DataStoreFinder.getDataStore(map);
-		final String typeName = dataStore.getTypeNames()[0];
-
-		final FeatureSource<SimpleFeatureType, SimpleFeature> source = dataStore.getFeatureSource(typeName);
-		final Filter filter = Filter.INCLUDE; // ECQL.toFilter("BBOX(THE_GEOM, 10,20,30,40)")
-
-		final FeatureCollection<SimpleFeatureType, SimpleFeature> collection = source.getFeatures(filter);
-		try (FeatureIterator<SimpleFeature> features = collection.features()) {
-			while (features.hasNext()) {
-				final SimpleFeature feature = features.next();
-				final GraphicsItem item = FeatureReader.createSimpleItem(feature);
-				item.setStyle(new DrawableStyle("", Color.BLUE, new BasicStroke(2), new Color(128, 50, 50, 50)));
-				mScene.addItem(item);
-				//				break;
-			}
-		}catch(final Exception e) {
-			e.printStackTrace();
-		}
+		mView.setScale(20);
 	}
-
 
 
 	private void createScene() {
 		mScene = new GraphicsScene();
-		mView = new GraphicsView(mScene);
+		//@since Version 2.0.0 the render target to which the GraphicsView shall
+		//paint its content, can be defined when creating the view.
+		//To paint into a UI, use a JPanelRenderTarget, however the resulting image may only displayed once
+		//and can not be reused. For this purpose the ImageRenderTarget can be used.
+		//There are two ImageREnderTargets available:
+		// 1) BufferedImageRenderTarget: The view draws into a BufferedImage, with easy handling.
+		// 2) VolatileImageRenderTarget: Draws into a VolatileImage, which is way more performant as an BufferedImage, but not that easy to handle.
+		// The rendered image can be accessed either using a callback: {@link ImageRenderTarget#getImage()}
+		final ImageRenderTarget rt = new BufferedImageRenderTarget(1,1, true);
+		mView = new GraphicsView(mScene, rt);
 
 		//Standard Handler
 		mView.addHandler(new MouseDelegateHandler());

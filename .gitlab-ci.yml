@@ -64,6 +64,5 @@ deploy:jdk8.gitlab.repository:
     - 'mvn $MAVEN_CLI_OPTS -Pgitlab-snapshot deploy -s ci_settings.xml'
   except:
     - tags  
- # only: 
- #   - tags
- #   - $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+  only: 
+    - $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH

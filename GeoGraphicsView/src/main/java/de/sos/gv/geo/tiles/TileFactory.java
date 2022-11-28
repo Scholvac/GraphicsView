@@ -1,6 +1,5 @@
 package de.sos.gv.geo.tiles;
 
-import java.awt.Rectangle;
 import java.awt.image.BufferedImage;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
@@ -46,8 +45,8 @@ public class TileFactory implements ITileFactory {
 	}
 
 	@Override
-	public int[][] getRequiredTileInfos(final LatLonBox area, final Rectangle viewBounds) {
-		return mCalculator.calculateTileCoordinates(area, viewBounds);
+	public int[][] getRequiredTileInfos(final LatLonBox area, final int imgWidth, final int imgHeight) {
+		return mCalculator.calculateTileCoordinates(area, imgWidth);
 	}
 
 	public void setProvider(final ITileImageProvider provider) {

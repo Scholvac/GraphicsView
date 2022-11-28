@@ -1,6 +1,5 @@
 package de.sos.gv.geo.tiles;
 
-import java.awt.Rectangle;
 import java.io.File;
 
 import de.sos.gv.geo.LatLonBox;
@@ -10,7 +9,7 @@ import de.sos.gvc.log.GVLog;
 
 public interface ITileFactory {
 
-	int[][] getRequiredTileInfos(LatLonBox area, Rectangle viewBounds);
+	int[][] getRequiredTileInfos(LatLonBox area, final int imgWidth, final int imgHeight);
 
 	TileItem load(int[] tileInfo);
 

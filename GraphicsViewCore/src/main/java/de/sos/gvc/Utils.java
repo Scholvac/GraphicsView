@@ -11,6 +11,7 @@ import java.awt.geom.Rectangle2D;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.stream.DoubleStream;
 
 import de.sos.gvc.GraphicsScene.IItemFilter;
 import de.sos.gvc.GraphicsScene.ShapeSelectionFilter;
@@ -297,4 +298,43 @@ public class Utils {
 	}
 
 
+	///////////////////////////////////////////////////////////////////////////////////////////
+	//					Statistic
+	///////////////////////////////////////////////////////////////////////////////////////////
+
+	public static class WindowStat {
+		final double[] 		mBuffer;
+		int					mIndex = 0;
+		double				mSum = 0;
+		int					mCount = 0;
+
+		public WindowStat(final int windowSize) {
+			mBuffer = new double[windowSize];
+		}
+
+		public void accept(final double v) {
+			mSum -= mBuffer[mIndex];
+			mSum += v;
+			mBuffer[mIndex] = v;
+			mCount++;
+			if (mIndex++ >= mBuffer.length-1)
+				mIndex = 0;
+		}
+		public double avg() {
+			final double c = mCount > mBuffer.length ? mBuffer.length : mCount;
+			return mSum / c;
+		}
+		public double sum() { return mSum;}
+		public double min() {return DoubleStream.of(mBuffer).min().getAsDouble();}
+		public double max() {return DoubleStream.of(mBuffer).max().getAsDouble();}
+		public int windowSize() { return mBuffer.length;}
+		public int count() { return mCount;}
+
+		@Override
+		public String toString() {
+			return String.format(
+					"%s{count=%d, sum=%f, min=%f, average=%f, max=%f}",
+					this.getClass().getSimpleName(), count(), sum(), min(), avg(), max());
+		}
+	}
 }

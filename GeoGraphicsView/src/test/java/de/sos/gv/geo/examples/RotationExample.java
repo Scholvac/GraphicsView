@@ -76,7 +76,7 @@ public class RotationExample {
 		frame.setSize(800, 800);
 		frame.setLocation(2000, 200);
 		frame.setLayout(new BorderLayout());
-		frame.add(view, BorderLayout.CENTER);
+		frame.add(view.getComponent(), BorderLayout.CENTER);
 		frame.setVisible(true);
 
 		view.addHandler(new MouseDelegateHandler());

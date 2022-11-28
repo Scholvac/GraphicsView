@@ -1,7 +1,6 @@
 package de.sos.gv.geo.tiles;
 
 import java.awt.Graphics2D;
-import java.awt.Rectangle;
 import java.awt.geom.Rectangle2D;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
@@ -60,7 +59,6 @@ public class TileHandler implements IGraphicsViewHandler, IPaintListener {
 	private final LatLonPoint			_ll = new LatLonPoint();
 	private final LatLonPoint			_ur = new LatLonPoint();
 	private final LatLonBox				_viewBB = new LatLonBox();
-	private final Rectangle				_viewBounds = new Rectangle();
 	private final LinkedList<int[]>		_tilesToAdd = new LinkedList<>();
 	private final HashSet<String>		_tilesToRemove = new HashSet<>();
 	@Override
@@ -77,9 +75,8 @@ public class TileHandler implements IGraphicsViewHandler, IPaintListener {
 				_ur.setLongitude(179.999);
 			}
 			_viewBB.setAndCorrect(_ll, _ur);
-			view.getBounds(_viewBounds);
 
-			final int[][] requiredTiles = mFactory.getRequiredTileInfos(_viewBB, _viewBounds);
+			final int[][] requiredTiles = mFactory.getRequiredTileInfos(_viewBB, view.getImageWidth(), view.getImageHeight());
 			_tilesToRemove.addAll(mActiveTiles.keySet());
 			if (requiredTiles != null) {
 				for (int i = 0; i < requiredTiles.length; i++) {

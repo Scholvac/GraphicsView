@@ -37,7 +37,6 @@ import de.sos.gvc.IDrawContext;
 import de.sos.gvc.handler.DefaultViewDragHandler;
 import de.sos.gvc.handler.MouseDelegateHandler;
 import de.sos.gvc.handler.SelectionHandler;
-import de.sos.gvc.param.ParameterContext;
 import de.sos.gvc.styles.DrawableStyle;
 
 
@@ -56,7 +55,7 @@ public class GeoItemsIntroduction {
 
 		//Create a new Scene and a new View
 		final GraphicsScene scene = new GraphicsScene();
-		view = new GraphicsView(scene, new ParameterContext());
+		view = new GraphicsView(scene);
 
 
 		//Standard Handler
@@ -94,7 +93,7 @@ public class GeoItemsIntroduction {
 		frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
 		frame.setSize(800, 800);
 		frame.getContentPane().setLayout(new BorderLayout(0, 0));
-		frame.getContentPane().add(view);
+		frame.getContentPane().add(view.getComponent());
 
 		final JPanel panel = new JPanel();
 		frame.getContentPane().add(panel, BorderLayout.WEST);

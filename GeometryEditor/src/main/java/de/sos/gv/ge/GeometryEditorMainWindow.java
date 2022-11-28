@@ -140,7 +140,7 @@ public class GeometryEditorMainWindow {
 		testItem.setCenter(150, 150);
 		mScene.addItem(testItem);
 
-		return mView;
+		return mView.getComponent();
 	}
 
 }
