@@ -22,7 +22,6 @@ import de.sos.gvc.handler.SelectionHandler.IScaleCallback;
 import de.sos.gvc.handler.SelectionHandler.ItemMoveEvent;
 import de.sos.gvc.handler.SelectionHandler.ItemRotateEvent;
 import de.sos.gvc.handler.SelectionHandler.ItemScaleEvent;
-import de.sos.gvc.param.ParameterContext;
 import de.sos.gvc.storage.ListStorage;
 import de.sos.gvc.styles.DrawableStyle;
 
@@ -39,7 +38,7 @@ public class MoveScaleRotateItemExample {
 	public static void main(final String[] args) {
 		//Create a new Scene and a new View
 		final GraphicsScene scene = new GraphicsScene(new ListStorage());
-		final GraphicsView view = new GraphicsView(scene, new ParameterContext());
+		final GraphicsView view = new GraphicsView(scene);
 
 
 		//Standard Handler
@@ -137,7 +136,7 @@ public class MoveScaleRotateItemExample {
 		frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
 		frame.setSize(800, 800);
 		frame.setLayout(new BorderLayout());
-		frame.add(view, BorderLayout.CENTER);
+		frame.add(view.getComponent(), BorderLayout.CENTER);
 		frame.setVisible(true);
 
 		frame.setLocation(200, 200);

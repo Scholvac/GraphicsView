@@ -18,7 +18,6 @@ import de.sos.gvc.IDrawContext;
 import de.sos.gvc.handler.DefaultViewDragHandler;
 import de.sos.gvc.handler.MouseDelegateHandler;
 import de.sos.gvc.handler.SelectionHandler;
-import de.sos.gvc.param.ParameterContext;
 import de.sos.gvc.storage.QuadTreeStorage;
 import de.sos.gvc.styles.DrawableStyle;
 
@@ -35,7 +34,7 @@ public class SelectionExample {
 	public static void main(final String[] args) {
 		//Create a new Scene and a new View
 		final GraphicsScene scene = new GraphicsScene(new QuadTreeStorage());
-		final GraphicsView view = new GraphicsView(scene, new ParameterContext());
+		final GraphicsView view = new GraphicsView(scene);
 
 
 		//Standard Handler
@@ -92,7 +91,7 @@ public class SelectionExample {
 		frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
 		frame.setSize(800, 800);
 		frame.setLayout(new BorderLayout());
-		frame.add(view, BorderLayout.CENTER);
+		frame.add(view.getComponent(), BorderLayout.CENTER);
 		frame.setVisible(true);
 
 		frame.setLocation(2400, 200);

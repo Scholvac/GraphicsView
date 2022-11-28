@@ -1,7 +1,5 @@
 package de.sos.gv.geo.tiles;
 
-import java.awt.Rectangle;
-
 import de.sos.gv.geo.GeoUtils;
 import de.sos.gv.geo.LatLonBox;
 import de.sos.gv.geo.LatLonPoint;
@@ -11,8 +9,8 @@ public class OSMTileCalculator implements ITileCalculator {
 
 
 	@Override
-	public int[][] calculateTileCoordinates(final LatLonBox area, final Rectangle viewBounds) {
-		int zoom = calculateZoom(area, viewBounds.getWidth());
+	public int[][] calculateTileCoordinates(final LatLonBox area, final int imgWidth) {
+		int zoom = calculateZoom(area, imgWidth);
 		if (zoom < 0){
 			return null;
 		}

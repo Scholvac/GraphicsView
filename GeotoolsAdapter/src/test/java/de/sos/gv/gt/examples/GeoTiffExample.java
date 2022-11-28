@@ -66,7 +66,7 @@ public class GeoTiffExample extends JFrame {
 		contentPane.setLayout(new BorderLayout());
 
 		createScene();
-		contentPane.add(mView, BorderLayout.CENTER);
+		contentPane.add(mView.getComponent(), BorderLayout.CENTER);
 
 		final GridCoverage2DItem item = configure();
 

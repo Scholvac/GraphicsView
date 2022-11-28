@@ -36,6 +36,7 @@ import de.sos.gvc.index.impl.BIGLeaf;
 import de.sos.gvc.index.impl.BIGNode;
 import de.sos.gvc.index.impl.DefaultEntry;
 import de.sos.gvc.param.ParameterContext;
+import de.sos.gvc.rt.JPanelRenderTarget;
 import de.sos.gvc.storage.ListStorage;
 import de.sos.gvc.styles.DrawableStyle;
 
@@ -147,10 +148,10 @@ public class InteractiveIndexExample {
 		frame.getContentPane().add(splitPane, BorderLayout.CENTER);
 
 		final GraphicsView treeView = new GraphicsView(treeScene);
-		splitPane.setLeftComponent(treeView);
+		splitPane.setLeftComponent(treeView.getComponent());
 		final ParameterContext	itemViewContext = new ParameterContext();
-		final GraphicsView itemView = new GraphicsView(itemScene, itemViewContext);
-		splitPane.setRightComponent(itemView);
+		final GraphicsView itemView = new GraphicsView(itemScene, new JPanelRenderTarget(), itemViewContext);
+		splitPane.setRightComponent(itemView.getComponent());
 		itemView.addHandler(new MouseDelegateHandler());
 		itemView.addHandler(new DefaultViewDragHandler());
 		itemView.addHandler(new TileHandler(factory));

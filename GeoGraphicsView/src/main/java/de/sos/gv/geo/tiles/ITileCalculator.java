@@ -6,5 +6,5 @@ import de.sos.gv.geo.LatLonBox;
 
 public interface ITileCalculator {
 
-	public int[][] calculateTileCoordinates(LatLonBox area, Rectangle viewBounds);
+	public int[][] calculateTileCoordinates(LatLonBox area, final int imgWidth);
 }
