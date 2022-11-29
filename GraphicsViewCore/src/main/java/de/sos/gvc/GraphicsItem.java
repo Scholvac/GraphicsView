@@ -11,7 +11,6 @@ import java.awt.geom.NoninvertibleTransformException;
 import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;
-import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeSupport;
 import java.util.ArrayList;
@@ -240,12 +239,7 @@ public class GraphicsItem implements IShapeProvider  {
 	private GraphicsItem								mParent;
 	private List<GraphicsItem>							mChildren = new ArrayList<>();
 
-	private PropertyChangeListener						mChildListener = new PropertyChangeListener() { //listen to events of child items and delegates them
-		@Override
-		public void propertyChange(final PropertyChangeEvent evt) {
-			mAllEventDelegate.firePropertyChange(evt);
-		}
-	};
+	private PropertyChangeListener						mChildListener;
 	private GraphicsScene 								mScene;
 
 
@@ -257,31 +251,38 @@ public class GraphicsItem implements IShapeProvider  {
 	}
 
 
-	public GraphicsItem(final Shape shape, final ParameterContext propertyContext) {
-		final ParameterContext pc = propertyContext != null ? propertyContext : sDefaultContext;
-		//ensure that we do have the basic properties
-		mVisible = pc.getValue(PROP_VISIBLE, true);
-		mSelected = pc.getValue(PROP_SELECTED, false);
-		mSelectable = pc.getValue(PROP_SELECTABLE, true);
+	public GraphicsItem(final Shape shape, final ParameterContext pc) {
+		if (pc != null) {
+			//ensure that we do have the basic properties
+			mVisible = pc.getValue(PROP_VISIBLE, true);
+			mSelected = pc.getValue(PROP_SELECTED, false);
+			mSelectable = pc.getValue(PROP_SELECTABLE, true);
 
-		mStyle = pc.getValue(PROP_STYLE, null);
-		mDrawable = pc.getValue(PROP_DRAWABLE, null);
+			mStyle = pc.getValue(PROP_STYLE, null);
+			mDrawable = pc.getValue(PROP_DRAWABLE, null);
+
+			mCenterX = pc.getValue(PROP_CENTER_X, 0.0);
+			mCenterY = pc.getValue(PROP_CENTER_Y, 0.0);
+
+			mRotation = pc.getValue(PROP_ROTATION, 0.0);
+			mScaleX = pc.getValue(PROP_SCALE_X, 1.0);
+			mScaleY = pc.getValue(PROP_SCALE_Y, 1.0);
+			mZOrder = pc.getValue(PROP_Z_ORDER, 100.0f);
+
+			pc.registerListener(getChildListener());
+		}else {
+			mVisible = true;
+			mSelected = false;
+			mSelectable = true;
+			mStyle = null;
+			mDrawable = null;
+			mCenterX = mCenterY = 0;
+			mScaleX = mScaleY = 1;
+			mRotation = 0;
+			mZOrder = 100;
+		}
 		mParent = null;
-
-		mCenterX = pc.getValue(PROP_CENTER_X, 0.0);
-		mCenterY = pc.getValue(PROP_CENTER_Y, 0.0);
-
-		mRotation = pc.getValue(PROP_ROTATION, 0.0);
-
-		mScaleX = pc.getValue(PROP_SCALE_X, 1.0);
-		mScaleY = pc.getValue(PROP_SCALE_Y, 1.0);
-
 		setShape(shape);
-
-		mZOrder = pc.getValue(PROP_Z_ORDER, 100.0f);
-
-		if (pc != sDefaultContext) //only listen if it is not the default pc
-			pc.registerListener(mChildListener);
 	}
 
 
@@ -843,6 +844,7 @@ public class GraphicsItem implements IShapeProvider  {
 		}
 	}
 
+
 	public boolean addItem(final GraphicsItem child) {
 		synchronized (mChildren) {
 			if (child == null || mChildren.contains(child))
@@ -850,7 +852,7 @@ public class GraphicsItem implements IShapeProvider  {
 			child.setParent(this);
 			mChildren.add(child);
 			markDirtyWorldBound(); //this may not be called, if the child already has an invalid bound. If thats not the case, this method does nothing
-			child.mAllEventDelegate.addPropertyChangeListener(mChildListener);
+			child.mAllEventDelegate.addPropertyChangeListener(getChildListener());
 
 			mAllEventDelegate.firePropertyChange(PROP_CHILD_ADDED, null, child);
 		}
@@ -961,4 +963,15 @@ public class GraphicsItem implements IShapeProvider  {
 		}
 	}
 
+
+	/////////////////////////////////////////////////////////////////////////////////
+	//							Utils
+	/////////////////////////////////////////////////////////////////////////////////
+
+	private PropertyChangeListener getChildListener() {
+		if (mChildListener == null) {
+			mChildListener = pcl -> mAllEventDelegate.firePropertyChange(pcl); //listen to events of child items and delegates them
+		}
+		return mChildListener;
+	}
 }
