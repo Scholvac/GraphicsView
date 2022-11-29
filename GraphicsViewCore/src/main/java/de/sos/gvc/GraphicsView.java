@@ -4,6 +4,8 @@ import java.awt.Component;
 import java.awt.Graphics2D;
 import java.awt.Point;
 import java.awt.Rectangle;
+import java.awt.RenderingHints;
+import java.awt.RenderingHints.Key;
 import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
 import java.awt.event.MouseWheelListener;
@@ -68,9 +70,6 @@ public class GraphicsView {
 	/** maximum repaints (triggered by dirty scene) per second */
 	private int								mRepaintDelay = 1000/30; //default: maximum of 30 repaints per second, triggered by dirty scene
 
-	//	private Timer							mRepaintTimer;
-	//	private TimerTask						mRepaintTimerTask = null;
-
 	private DoubleSummaryStatistics			mOverallStatitic = new DoubleSummaryStatistics();
 	private WindowStat						mWindowStatistic = new WindowStat(20);
 
@@ -81,6 +80,7 @@ public class GraphicsView {
 	private ScheduledExecutorService 		mScheduler = Executors.newScheduledThreadPool(1);
 	private ScheduledFuture<Integer> 		mScheduledFuture;
 
+	private RenderingHints					mRenderHints = null;
 	/**
 	 * List of listener that will be notified before and after the painting has been done, for example to prepare a paint or clean up after painting
 	 */
@@ -175,6 +175,8 @@ public class GraphicsView {
 	public void setSchedulerService(final ScheduledExecutorService scheduler) {
 		mScheduler = scheduler;
 	}
+	public void setRenderHints(final RenderingHints rh) { mRenderHints = rh; }
+	public RenderingHints getREnderHints() { return mRenderHints;}
 
 	public void addPaintListener(final IPaintListener listener) {
 		if (listener != null && !mPaintListener.contains(listener)) {
@@ -241,6 +243,12 @@ public class GraphicsView {
 			}
 		}
 
+		RenderingHints oldHints = null;
+		if (mRenderHints != null) {
+			oldHints = g2d.getRenderingHints();
+			g2d.setRenderingHints(mRenderHints);
+		}
+
 		//transform the view but remember the old transform
 		final AffineTransform oldTransform = g2d.getTransform();
 		g2d.transform(getViewTransform());
@@ -263,10 +271,11 @@ public class GraphicsView {
 			}
 		}
 
-		//reset the old transform
+		//reset the old transform & hints
 		g2d.setTransform(oldTransform);
 		mScene.markClean(); //remember that the scene is no longer dirty, at least not in terms of visualisation
-
+		if (mRenderHints != null && oldHints != null) //otherwise we did not change them...
+			g2d.setRenderingHints(oldHints);
 
 		for (final IPaintListener pl : mPaintListener) {
 			try {
@@ -276,6 +285,7 @@ public class GraphicsView {
 				e.printStackTrace();
 			}
 		}
+
 		//		System.out.println("Finish:"  + mUpdateCounter.get());
 	}
 
@@ -481,6 +491,10 @@ public class GraphicsView {
 			handler.notifySceneCleared();
 	}
 
+	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	//							Mouse Handling - Forward
+	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 	/** Forward to the component of the underlying render target, if available */
 	public void addMouseListener(final MouseListener listener) {
 		ifNotNull(getComponent(), c -> c.addMouseListener(listener));
@@ -506,12 +520,57 @@ public class GraphicsView {
 		ifNotNull(getComponent(), c -> c.removeMouseWheelListener(listener));
 	}
 
+	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	//							Render Target forwards
+	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	/**
+	 * Sets the value of a single preference for the rendering algorithms.
+	 * Hint categories include controls for rendering quality and overall
+	 * time/quality trade-off in the rendering process.  Refer to the
+	 * {@code RenderingHints} class for definitions of some common
+	 * keys and values.
+	 * @param hintKey the key of the hint to be set.
+	 * @param hintValue the value indicating preferences for the specified
+	 * hint category.
+	 * @see #getRenderingHint(RenderingHints.Key)
+	 * @see RenderingHints
+	 */
+	public void setRenderingHint(final Key hintKey, final Object hintValue) {
+		if (mRenderHints == null) mRenderHints = new RenderingHints(hintKey, hintValue);
+		else mRenderHints.put(hintKey, hintValue);
+	}
 
+	/**
+	 * Returns the value of a single preference for the rendering algorithms.
+	 * Hint categories include controls for rendering quality and overall
+	 * time/quality trade-off in the rendering process.  Refer to the
+	 * {@code RenderingHints} class for definitions of some common
+	 * keys and values.
+	 * @param hintKey the key corresponding to the hint to get.
+	 * @return an object representing the value for the specified hint key.
+	 * Some of the keys and their associated values are defined in the
+	 * {@code RenderingHints} class.
+	 * @see RenderingHints
+	 * @see #setRenderingHint(RenderingHints.Key, Object)
+	 */
+	public Object getRenderingHint(final Key hintKey) {
+		if (mRenderHints == null)
+			return null;
+		return mRenderHints.get(hintKey);
+	}
+
+
+	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	//							Statistics
+	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 	public DoubleSummaryStatistics getPaintDurationStatistic() { return mOverallStatitic;}
 	public WindowStat getMovingWindowDurationStatistic() { return mWindowStatistic;}
 
 
+	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	//							Utils
+	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	private <T> void ifNotNull(final T obj, final Consumer<T> func){
 		if (obj != null)
 			func.accept(obj);
