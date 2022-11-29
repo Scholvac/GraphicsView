@@ -16,8 +16,11 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.DoubleSummaryStatistics;
 import java.util.List;
-import java.util.Timer;
-import java.util.TimerTask;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
 import org.slf4j.Logger;
@@ -38,11 +41,13 @@ import de.sos.gvc.rt.JPanelRenderTarget;
  */
 public class GraphicsView {
 
-	public static final String PROP_VIEW_CENTER_X = "VIEW_CENTER_X";
-	public static final String PROP_VIEW_CENTER_Y = "VIEW_CENTER_Y";
-	public static final String PROP_VIEW_SCALE_X = "VIEW_SCALE_X";
-	public static final String PROP_VIEW_SCALE_Y = "VIEW_SCALE_Y";
-	public static final String PROP_VIEW_ROTATE = "VIEW_ROTATE";
+	public static final String PROP_VIEW_CENTER_X 	= "VIEW_CENTER_X";
+	public static final String PROP_VIEW_CENTER_Y 	= "VIEW_CENTER_Y";
+	public static final String PROP_VIEW_SCALE_X 	= "VIEW_SCALE_X";
+	public static final String PROP_VIEW_SCALE_Y 	= "VIEW_SCALE_Y";
+	public static final String PROP_VIEW_ROTATE 	= "VIEW_ROTATE";
+	public static final String PROP_VIEW_WIDTH 		= "VIEW_WIDTH";
+	public static final String PROP_VIEW_HEIGHT 	= "VIEW_HEIGHT";
 
 
 	private static Logger LOG = GVLog.getLogger(GraphicsView.class);
@@ -55,18 +60,27 @@ public class GraphicsView {
 	protected IParameter<Double> 			mScaleX;
 	protected IParameter<Double> 			mScaleY;
 	protected IParameter<Double> 			mRotation;
+	protected IParameter<Integer>			mRTWidth;
+	protected IParameter<Integer>			mRTHeight;
 
 	private AffineTransform					mViewTransform = null;
 
 	/** maximum repaints (triggered by dirty scene) per second */
 	private int								mRepaintDelay = 1000/30; //default: maximum of 30 repaints per second, triggered by dirty scene
-	private Timer							mRepaintTimer;
-	private TimerTask						mRepaintTimerTask = null;
+
+	//	private Timer							mRepaintTimer;
+	//	private TimerTask						mRepaintTimerTask = null;
 
 	private DoubleSummaryStatistics			mOverallStatitic = new DoubleSummaryStatistics();
 	private WindowStat						mWindowStatistic = new WindowStat(20);
 
 	private final IRenderTarget				mRenderTarget;
+
+	private AtomicInteger 					mUpdateCounter = new AtomicInteger(0);
+	private AtomicInteger 					mRequestCounter = new AtomicInteger(0);
+	private ScheduledExecutorService 		mScheduler = Executors.newScheduledThreadPool(1);
+	private ScheduledFuture<Integer> 		mScheduledFuture;
+
 	/**
 	 * List of listener that will be notified before and after the painting has been done, for example to prepare a paint or clean up after painting
 	 */
@@ -87,7 +101,7 @@ public class GraphicsView {
 	private PropertyChangeListener			mRepaintListener = new PropertyChangeListener() {
 		@Override
 		public void propertyChange(final PropertyChangeEvent evt) {
-			triggerRepaint();
+			markViewAsDirty();
 		}
 	};
 	private List<IGraphicsViewHandler>		mHandler = new ArrayList<>();
@@ -95,16 +109,7 @@ public class GraphicsView {
 	private DirtyListener					mDirtySceneListener = new DirtyListener() {
 		@Override
 		public void notifyDirty() {
-			if (mRepaintTimerTask != null) {
-				return ; //repaint is already scheduled
-			}
-			mRepaintTimer.schedule(mRepaintTimerTask = new TimerTask() {
-				@Override
-				public void run() {
-					mRepaintTimerTask = null;
-					triggerRepaint();
-				}
-			}, mRepaintDelay);
+			markViewAsDirty();
 		}
 		@Override
 		public void notifyClean() {}
@@ -137,25 +142,38 @@ public class GraphicsView {
 
 		mPropertyContext = propertyContext;
 
-		mCenterX = mPropertyContext.getProperty(PROP_VIEW_CENTER_X, 0.0);
-		mCenterY = mPropertyContext.getProperty(PROP_VIEW_CENTER_Y, 0.0);
-		mScaleX = mPropertyContext.getProperty(PROP_VIEW_SCALE_X, 1.0);
-		mScaleY = mPropertyContext.getProperty(PROP_VIEW_SCALE_Y, 1.0);
-		mRotation = mPropertyContext.getProperty(PROP_VIEW_ROTATE, 0.0);
+		mCenterX 	= mPropertyContext.getProperty(PROP_VIEW_CENTER_X, 0.0);
+		mCenterY 	= mPropertyContext.getProperty(PROP_VIEW_CENTER_Y, 0.0);
+		mScaleX 	= mPropertyContext.getProperty(PROP_VIEW_SCALE_X, 1.0);
+		mScaleY 	= mPropertyContext.getProperty(PROP_VIEW_SCALE_Y, 1.0);
+		mRotation 	= mPropertyContext.getProperty(PROP_VIEW_ROTATE, 0.0);
+		mRTWidth 	= mPropertyContext.getProperty(PROP_VIEW_WIDTH, 0);
+		mRTHeight 	= mPropertyContext.getProperty(PROP_VIEW_HEIGHT, 0);
+
 		mCenterX.addPropertyChangeListener(mTransformListener);
 		mCenterY.addPropertyChangeListener(mTransformListener);
 		mScaleX.addPropertyChangeListener(mTransformListener);
 		mScaleY.addPropertyChangeListener(mTransformListener);
 		mRotation.addPropertyChangeListener(mTransformListener);
+		mRTWidth.addPropertyChangeListener(mTransformListener);
+		mRTHeight.addPropertyChangeListener(mTransformListener);
 
 		mPropertyContext.registerListener(mRepaintListener);
 		mScene.registerDirtyListener(mDirtySceneListener);
-		mRepaintTimer = new Timer("GraphicsViewRepaintTimer", true);
 	}
 
 
 	public void setMaximumFPS(final int fps) {
 		mRepaintDelay = 1000 / fps;
+	}
+	/** Sets the internal scheduler service to a custom instance.
+	 * The scheduler-thread is most likely the thread that triggers the rendering
+	 * and may also performs the rendering.
+	 *
+	 * @param scheduler
+	 */
+	public void setSchedulerService(final ScheduledExecutorService scheduler) {
+		mScheduler = scheduler;
 	}
 
 	public void addPaintListener(final IPaintListener listener) {
@@ -194,6 +212,9 @@ public class GraphicsView {
 		mScaleY.set(scaleY);
 	}
 
+	private void triggerRTRepaint() {
+		mRenderTarget.requestRepaint();
+	}
 	public void doPaint(final Graphics2D g2d) {
 		final long profile_time_start = System.currentTimeMillis();
 
@@ -205,6 +226,11 @@ public class GraphicsView {
 		mWindowStatistic.accept(profile_time_sec);
 	}
 	private synchronized void internalPaint(final Graphics2D g2d) {
+
+		mUpdateCounter.set(mRequestCounter.get());
+
+		//check for changes
+		validateView();
 
 		for (final IPaintListener pl : mPaintListener) {
 			try {
@@ -250,6 +276,14 @@ public class GraphicsView {
 				e.printStackTrace();
 			}
 		}
+		//		System.out.println("Finish:"  + mUpdateCounter.get());
+	}
+
+	/** checks some properties and may invalidate the view matrix */
+	private void validateView() {
+		//just set the new value, if something has changed, the parameter will do the notification as well as the invalidation of the view matrix (e.g. TransformLIstener)
+		mRTWidth.set(mRenderTarget.getWidth());
+		mRTHeight.set(mRenderTarget.getHeight());
 	}
 	/**
 	 * Requests the GraphicsView to repaint it's content.
@@ -259,7 +293,7 @@ public class GraphicsView {
 	 * required or not.
 	 */
 	public void triggerRepaint() {
-		mRenderTarget.requestRepaint();
+		markViewAsDirty();
 	}
 	public Component getComponent() {
 		return mRenderTarget.getComponent();
@@ -269,8 +303,8 @@ public class GraphicsView {
 		if (mViewTransform == null) {
 			final AffineTransform t = new AffineTransform();
 			//add offset so 0.0, 0.0 would be in the center of the sceen
-			final double w2 = mRenderTarget.getWidth() / 2.0;
-			final double h2 = mRenderTarget.getHeight() / 2.0;
+			final double w2 = getImageWidth() / 2.0;
+			final double h2 = getImageHeight() / 2.0;
 			final double rdeg = mRotation.get();
 			final double r = Math.toRadians(-rdeg);
 
@@ -481,6 +515,20 @@ public class GraphicsView {
 	private <T> void ifNotNull(final T obj, final Consumer<T> func){
 		if (obj != null)
 			func.accept(obj);
+	}
+
+	private void markViewAsDirty() {
+		final int request = mRequestCounter.addAndGet(1);
+		if (mScheduledFuture == null) {
+			mScheduledFuture = mScheduler.schedule(() -> {
+				mScheduledFuture = null;
+				triggerRTRepaint();
+				final int update = mUpdateCounter.get();
+				if (update != mRequestCounter.get())
+					markViewAsDirty();
+				return request;
+			}, mRepaintDelay, TimeUnit.MILLISECONDS);
+		}
 	}
 
 }

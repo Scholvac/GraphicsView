@@ -20,7 +20,6 @@ import de.sos.gvc.GraphicsScene;
 import de.sos.gvc.GraphicsView;
 import de.sos.gvc.handler.DefaultViewDragHandler;
 import de.sos.gvc.handler.MouseDelegateHandler;
-import de.sos.gvc.rt.ImageRenderTarget;
 import de.sos.gvc.rt.ImageRenderTarget.BufferedImageRenderTarget;
 
 public class ImageRenderTargetExample extends JFrame {
@@ -83,7 +82,7 @@ public class ImageRenderTargetExample extends JFrame {
 		// 1) BufferedImageRenderTarget: The view draws into a BufferedImage, with easy handling.
 		// 2) VolatileImageRenderTarget: Draws into a VolatileImage, which is way more performant as an BufferedImage, but not that easy to handle.
 		// The rendered image can be accessed either using a callback: {@link ImageRenderTarget#getImage()}
-		final ImageRenderTarget rt = new BufferedImageRenderTarget(1,1, true);
+		final BufferedImageRenderTarget rt = new BufferedImageRenderTarget(1,1, true);
 		mView = new GraphicsView(mScene, rt);
 
 		//Standard Handler
