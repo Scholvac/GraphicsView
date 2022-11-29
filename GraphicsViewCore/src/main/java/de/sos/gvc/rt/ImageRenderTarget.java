@@ -68,6 +68,7 @@ public abstract class ImageRenderTarget<ImageType extends Image> implements IRen
 		public void componentResized(final ComponentEvent e) {
 			final Dimension size = e.getComponent().getSize();
 			resetImage(e.getComponent().getWidth(), e.getComponent().getHeight());
+			mView.triggerRepaint();
 		}
 	};
 

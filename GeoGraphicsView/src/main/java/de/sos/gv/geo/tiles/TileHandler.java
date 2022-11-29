@@ -44,6 +44,8 @@ public class TileHandler implements IGraphicsViewHandler, IPaintListener {
 		view.getProperty(GraphicsView.PROP_VIEW_CENTER_Y).addPropertyChangeListener(mTileUpdateListener);
 		view.getProperty(GraphicsView.PROP_VIEW_SCALE_X).addPropertyChangeListener(mTileUpdateListener);
 		view.getProperty(GraphicsView.PROP_VIEW_SCALE_Y).addPropertyChangeListener(mTileUpdateListener);
+		view.getProperty(GraphicsView.PROP_VIEW_WIDTH).addPropertyChangeListener(mTileUpdateListener);
+		view.getProperty(GraphicsView.PROP_VIEW_HEIGHT).addPropertyChangeListener(mTileUpdateListener);
 
 	}
 
@@ -53,6 +55,8 @@ public class TileHandler implements IGraphicsViewHandler, IPaintListener {
 		view.getProperty(GraphicsView.PROP_VIEW_CENTER_Y).removePropertyChangeListener(mTileUpdateListener);
 		view.getProperty(GraphicsView.PROP_VIEW_SCALE_X).removePropertyChangeListener(mTileUpdateListener);
 		view.getProperty(GraphicsView.PROP_VIEW_SCALE_Y).removePropertyChangeListener(mTileUpdateListener);
+		view.getProperty(GraphicsView.PROP_VIEW_WIDTH).removePropertyChangeListener(mTileUpdateListener);
+		view.getProperty(GraphicsView.PROP_VIEW_HEIGHT).removePropertyChangeListener(mTileUpdateListener);
 		view.removePaintListener(this);
 	}
 
