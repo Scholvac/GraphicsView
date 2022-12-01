@@ -268,9 +268,8 @@ public class GraphicsScene {
 		return false;
 	}
 	public void markDirty() {
-		if (!mDirty) {
+		if (!mDirty) {//filter unnecessary notifications
 			mDirty = true;
-			//notify listener
 			for (final DirtyListener element : mDirtyListener)
 				element.notifyDirty();
 		}
@@ -312,7 +311,7 @@ public class GraphicsScene {
 	 * @param items
 	 * @return true if all items has been removed, false otherwise.
 	 */
-	public boolean removeItems(final Collection<GraphicsItem> items) {
+	public boolean removeItems(final Collection<? extends GraphicsItem> items) {
 		if (items == null) return false;
 		boolean res = true;
 		for (final GraphicsItem item : items)

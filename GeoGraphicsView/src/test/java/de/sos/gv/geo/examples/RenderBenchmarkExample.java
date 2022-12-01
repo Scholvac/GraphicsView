@@ -1,6 +1,7 @@
 package de.sos.gv.geo.examples;
 
 import java.awt.BorderLayout;
+import java.awt.Color;
 import java.awt.Component;
 import java.awt.EventQueue;
 import java.awt.Font;
@@ -29,7 +30,7 @@ import de.sos.gvc.IPaintListener.PaintAdapter;
 import de.sos.gvc.Utils.WindowStat;
 import de.sos.gvc.handler.DefaultViewDragHandler;
 import de.sos.gvc.handler.MouseDelegateHandler;
-import de.sos.gvc.rt.IRenderTarget;
+import de.sos.gvc.rt.ImageRenderTarget;
 import de.sos.gvc.rt.ImageRenderTarget.VolatileImageRenderTarget;
 import de.sos.gvc.styles.DrawableStyle;
 
@@ -188,12 +189,14 @@ public class RenderBenchmarkExample extends JFrame {
 		});
 	}
 
-	IRenderTarget createRenderTarget(){
+	ImageRenderTarget createRenderTarget(){
 		return new VolatileImageRenderTarget(800, 800, true);
 	}
 
 	private void createView() {
-		mView = new GraphicsView(mScene, createRenderTarget());
+		final ImageRenderTarget irt = createRenderTarget();
+		irt.setClearColor(Color.GREEN);
+		mView = new GraphicsView(mScene, irt);
 
 
 		// Standard Handler

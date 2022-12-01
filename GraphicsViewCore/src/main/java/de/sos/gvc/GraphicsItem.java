@@ -146,10 +146,7 @@ public class GraphicsItem implements IShapeProvider  {
 	public static final String PROP_CHILD_REMOVED			= "child removed";
 
 
-
 	private static final ParameterContext sDefaultContext 	= new ParameterContext();
-
-
 
 
 	private transient PropertyChangeSupport 			mAllEventDelegate = new PropertyChangeSupport(this);

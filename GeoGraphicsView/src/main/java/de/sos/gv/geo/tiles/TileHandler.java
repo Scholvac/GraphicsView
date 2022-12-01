@@ -58,6 +58,11 @@ public class TileHandler implements IGraphicsViewHandler, IPaintListener {
 		view.getProperty(GraphicsView.PROP_VIEW_WIDTH).removePropertyChangeListener(mTileUpdateListener);
 		view.getProperty(GraphicsView.PROP_VIEW_HEIGHT).removePropertyChangeListener(mTileUpdateListener);
 		view.removePaintListener(this);
+
+		final GraphicsScene scene = view.getScene();
+		_tilesToRemove.addAll(mActiveTiles.keySet());
+		for (final String key : _tilesToRemove)
+			removeTile(scene, key);
 	}
 
 	private final LatLonPoint			_ll = new LatLonPoint();

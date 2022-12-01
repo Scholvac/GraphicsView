@@ -228,9 +228,7 @@ public class GraphicsView {
 		mWindowStatistic.accept(profile_time_sec);
 	}
 	private synchronized void internalPaint(final Graphics2D g2d) {
-
 		mUpdateCounter.set(mRequestCounter.get());
-
 		//check for changes
 		validateView();
 
@@ -577,15 +575,13 @@ public class GraphicsView {
 	}
 
 	private void markViewAsDirty() {
-		final int request = mRequestCounter.addAndGet(1);
+		mRequestCounter.incrementAndGet();
+
 		if (mScheduledFuture == null) {
 			mScheduledFuture = mScheduler.schedule(() -> {
 				mScheduledFuture = null;
 				triggerRTRepaint();
-				final int update = mUpdateCounter.get();
-				if (update != mRequestCounter.get())
-					markViewAsDirty();
-				return request;
+				return 0;
 			}, mRepaintDelay, TimeUnit.MILLISECONDS);
 		}
 	}

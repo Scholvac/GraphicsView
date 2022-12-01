@@ -31,9 +31,11 @@ public abstract class ImageRenderTarget<ImageType extends Image> implements IRen
 		@Override
 		protected void paintComponent(final Graphics g) {
 			super.paintComponent(g);
-			final Image img = getImage();
-			if (img != null)
-				g.drawImage(img, 0, 0, null);
+			synchronized (mSyncObject) {
+				final Image img = getImage();
+				if (img != null)
+					g.drawImage(img, 0, 0, null);
+			}
 		}
 	}
 
@@ -51,12 +53,15 @@ public abstract class ImageRenderTarget<ImageType extends Image> implements IRen
 		public void postRender(final Image renderTarget) { }
 	}
 
+	private final Boolean		mSyncObject = true;//object used to synchronize the image panel and the draw method
 	private GraphicsView		mView;
 	private int 				mImageType;
 	private int 				mWidth = 1;
 	private int					mHeight = 1;
 	private Rectangle			mRectangle;
 	private boolean				mAllowResize	= true;
+	/** If not null, the image is cleared with this color, during pre-paint event */
+	private Color				mClearColor 	= null;
 
 	private List<IImageRenderListener> mRenderListener = null;
 
@@ -93,6 +98,10 @@ public abstract class ImageRenderTarget<ImageType extends Image> implements IRen
 		}else if (!allow && mComponent != null)
 			mComponent.removeComponentListener(mResizeListener);
 	}
+	public void setClearColor(final Color color) {
+		mClearColor = color;
+	}
+
 	@Override
 	public void setGraphicsView(final GraphicsView view) {
 		mView = view;
@@ -116,22 +125,29 @@ public abstract class ImageRenderTarget<ImageType extends Image> implements IRen
 
 	@Override
 	public void requestRepaint() {
-		final ImageType imgTarget = getImage();
-		final Graphics2D g2d = getGraphics2D(imgTarget);
+		synchronized (mSyncObject) {
+			final ImageType imgTarget = getImage();
+			final Graphics2D g2d = getGraphics2D(imgTarget);
 
-		if (mRenderListener != null) {
-			mRenderListener.forEach(it -> it.preRender(imgTarget));
+			if ( mClearColor != null) {
+				g2d.setColor(mClearColor);
+				g2d.fillRect(0, 0, mWidth, mHeight);
+			}
+
+			if (mRenderListener != null) {
+				mRenderListener.forEach(it -> it.preRender(imgTarget));
+			}
+
+			mView.doPaint(g2d);
+
+			if (mRenderListener != null)
+				mRenderListener.forEach(it -> it.postRender(imgTarget));
+
+			g2d.dispose();
+
+			if (mComponent != null)
+				mComponent.repaint();
 		}
-
-		mView.doPaint(g2d);
-
-		if (mRenderListener != null)
-			mRenderListener.forEach(it -> it.postRender(imgTarget));
-
-		g2d.dispose();
-
-		if (mComponent != null)
-			mComponent.repaint();
 	}
 
 	protected Graphics2D getGraphics2D(final Image imgTarget) {
