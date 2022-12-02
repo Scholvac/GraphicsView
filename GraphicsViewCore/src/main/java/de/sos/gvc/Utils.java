@@ -104,6 +104,22 @@ public class Utils {
 		};
 	}
 
+	public static Point2D[] getVertices(final Rectangle2D rect, final Point2D[] dest) {
+		if (dest == null || dest.length < 4)
+			return getVertices(rect);
+
+		final double mix = rect.getMinX();
+		final double max = rect.getMaxX();
+		final double miy = rect.getMinY();
+		final double may = rect.getMaxY();
+
+		dest[0].setLocation(mix, may);
+		dest[1].setLocation(max, may);
+		dest[2].setLocation(max, miy);
+		dest[3].setLocation(mix, miy);
+		return dest;
+	}
+
 	public static List<Rectangle2D> verticesToRectangle(final List<Point2D[]> verticesList) {
 		final ArrayList<Rectangle2D> out = new ArrayList<>();
 		for (final Point2D[] vertices : verticesList) {
