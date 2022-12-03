@@ -258,7 +258,7 @@ public class GraphicsScene {
 			return true;//alread inside but no notification
 		if (mItemStore.addItem(item)) {
 			item._setScene(this);
-			item.addPropertyChangeListener(mItemListener);
+			//			item.addPropertyChangeListener(mItemListener);
 			markDirty();
 
 			mPropertySupport.firePropertyChange(ITEM_LIST_PROPERTY, null, item);

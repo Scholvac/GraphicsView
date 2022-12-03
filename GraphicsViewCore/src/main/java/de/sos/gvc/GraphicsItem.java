@@ -20,6 +20,7 @@ import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import de.sos.gvc.Utils.TmpVars;
 import de.sos.gvc.drawables.ImageDrawable;
@@ -236,7 +237,7 @@ public class GraphicsItem implements IShapeProvider  {
 	private boolean 									mInvalidDrawable = true;
 
 	private GraphicsItem								mParent;
-	private List<GraphicsItem>							mChildren = new ArrayList<>();
+	private List<GraphicsItem>							mChildren = new CopyOnWriteArrayList();
 
 	private PropertyChangeListener						mChildListener;
 	private GraphicsScene 								mScene;
@@ -347,6 +348,7 @@ public class GraphicsItem implements IShapeProvider  {
 			}else {
 				mCenterX = x;
 			}
+			markDirtyTransform();
 			markDirtyWorldBound();
 		}
 	}
@@ -359,6 +361,7 @@ public class GraphicsItem implements IShapeProvider  {
 			}else {
 				mCenterY = y;
 			}
+			markDirtyTransform();
 			markDirtyWorldBound();
 		}
 	}
@@ -383,6 +386,7 @@ public class GraphicsItem implements IShapeProvider  {
 				mRotation = rot_deg;
 			}
 			markDirtyLocalBound();
+			markDirtyTransform();
 		}
 	}
 	public double getRotation() { return mRotation; }
@@ -431,6 +435,7 @@ public class GraphicsItem implements IShapeProvider  {
 			}else {
 				mScaleX = scaleX;
 			}
+			markDirtyTransform();
 			markDirtyLocalBound();
 		}
 	}
@@ -443,6 +448,7 @@ public class GraphicsItem implements IShapeProvider  {
 			}else {
 				mScaleY = scaleY;
 			}
+			markDirtyTransform();
 			markDirtyLocalBound();
 		}
 	}
@@ -657,13 +663,13 @@ public class GraphicsItem implements IShapeProvider  {
 			Utils.transform(lb, getWorldTransform(), mWorldBounds);
 
 			if (mChildren != null && !mChildren.isEmpty()) {
-				synchronized (mChildren) {
-					for (final GraphicsItem child : mChildren) {
-						final Rectangle2D cb = child.getSceneBounds();
-						if (cb != null)
-							Rectangle2D.union(mWorldBounds, cb, mWorldBounds);
-					}
+				//				synchronized (mChildren) {
+				for (final GraphicsItem child : mChildren) {
+					final Rectangle2D cb = child.getSceneBounds();
+					if (cb != null)
+						Rectangle2D.union(mWorldBounds, cb, mWorldBounds);
 				}
+				//				}
 			}
 			mInvalidWorldBound = false;
 		}
@@ -715,6 +721,8 @@ public class GraphicsItem implements IShapeProvider  {
 		mInvalidLocalBound = true;
 		if (mParent != null && !mParent.mInvalidWorldBound) {
 			mParent.markDirtyWorldBound(); //recursive mark all parents dirty, until we found one that is already dirty
+		}else if (mScene != null) {
+			mScene.markDirty();
 		}
 	}
 
@@ -894,29 +902,29 @@ public class GraphicsItem implements IShapeProvider  {
 
 
 	public boolean addItem(final GraphicsItem child) {
-		synchronized (mChildren) {
-			if (child == null || mChildren.contains(child))
-				return false;
-			child.setParent(this);
-			mChildren.add(child);
-			markDirtyWorldBound();
-			if (mAllEventDelegate != null)
-				mAllEventDelegate.firePropertyChange(PROP_CHILD_ADDED, null, child);
-		}
+		//		synchronized (mChildren) {
+		if (child == null || mChildren.contains(child))
+			return false;
+		child.setParent(this);
+		mChildren.add(child);
+		markDirtyWorldBound();
+		if (mAllEventDelegate != null)
+			mAllEventDelegate.firePropertyChange(PROP_CHILD_ADDED, null, child);
+		//		}
 		return true;
 	}
 
 	public boolean removeItem(final GraphicsItem child) {
-		synchronized (mChildren) {
-			if (child == null || !mChildren.contains(child))
-				return false;
-			child.setParent(null);
+		//		synchronized (mChildren) {
+		if (child == null || !mChildren.contains(child))
+			return false;
+		child.setParent(null);
 
-			final boolean res = mChildren.remove(child);
-			if (mAllEventDelegate != null)
-				mAllEventDelegate.firePropertyChange(PROP_CHILD_REMOVED, child, null);
-			return res;
-		}
+		final boolean res = mChildren.remove(child);
+		if (mAllEventDelegate != null)
+			mAllEventDelegate.firePropertyChange(PROP_CHILD_REMOVED, child, null);
+		return res;
+		//		}
 	}
 	public Collection<GraphicsItem> clearChildren() {
 		final Set<GraphicsItem> c = new HashSet<>(getChildren());
@@ -957,9 +965,9 @@ public class GraphicsItem implements IShapeProvider  {
 	public boolean isSelectable() { return mSelectable;}
 	public boolean hasChildren() { return !getChildren().isEmpty(); }
 	public List<GraphicsItem> getChildren() {
-		synchronized (mChildren) {
-			return Collections.unmodifiableList(mChildren);
-		}
+		//		synchronized (mChildren) {
+		return mChildren;
+		//		}
 	}
 
 	public float getZOrder() { return mZOrder; }
