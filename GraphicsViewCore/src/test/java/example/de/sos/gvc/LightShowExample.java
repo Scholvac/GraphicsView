@@ -5,6 +5,7 @@ import java.awt.Color;
 import java.awt.Component;
 import java.awt.geom.AffineTransform;
 import java.awt.geom.GeneralPath;
+import java.util.LongSummaryStatistics;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -27,8 +28,8 @@ import de.sos.gvc.styles.DrawableStyle;
  */
 public class LightShowExample {
 
-	public static final int ROWS = 200;
-	public static final int COLUMNS = 2048;
+	public static final int ROWS = 104;
+	public static final int COLUMNS = 1024;
 
 	public static void main(final String[] args) throws InterruptedException {
 		System.out.println("Expect: " + ROWS * COLUMNS + " Elements");
@@ -59,7 +60,7 @@ public class LightShowExample {
 		scheduler.scheduleAtFixedRate(() -> {
 			mRenderTarget.requestRepaint();
 			System.out.println(mView.getMovingWindowDurationStatistic());
-		}, 100, 1000, TimeUnit.MILLISECONDS);
+		}, 100, 200, TimeUnit.MILLISECONDS);
 	}
 
 	private final RowItem[] mRowItems = new RowItem[ROWS];
@@ -67,22 +68,31 @@ public class LightShowExample {
 	RowItem getRow(final int r) {
 		if (mRowItems[r] == null) {
 			mRowItems[r] = new RowItem(r);
-			mRowItems[r].setCenter(-1024, r);
+			mRowItems[r].setCenter(-COLUMNS/2., r - ROWS/2.);
 			mScene.addItem(mRowItems[r]);
 		}
 		return mRowItems[r];
 	}
 	public void run() throws InterruptedException {
 		double angle = -Math.PI;
-		final double deltaAngle = 2*Math.PI / ROWS;
+		final double deltaAngle = Math.PI / 42.;
 		int idx = 0;
+		final LongSummaryStatistics updateStat = new LongSummaryStatistics();
 		while(true) {
-			if (idx >= ROWS) idx = 0;
+			if (idx >= ROWS) {
+				idx = 0;
+				System.out.println("Update: " + updateStat.getAverage() + "[ms]");
+				System.out.println("Paint: " + mView.getMovingWindowDurationStatistic().avg() + "[s]");
+				Thread.sleep(1);
+			}
 			if (angle > Math.PI) angle = -Math.PI;
 
 			final RowItem ri = getRow(idx);
+			final long upStart = System.currentTimeMillis();
 			ri.update(angle += deltaAngle);
-			Thread.sleep(1);
+			final long upEnd = System.currentTimeMillis();
+			final long upDiff = upEnd-upStart;
+			updateStat.accept(upDiff);
 
 			idx++;
 		}
@@ -101,6 +111,7 @@ public class LightShowExample {
 		mView.enableRepaintTrigger(false);
 
 		mView.addHandler(new DefaultViewDragHandler());
+		mView.setScale(2);
 	}
 
 	static class RowItem extends GraphicsItem {
@@ -174,7 +185,7 @@ public class LightShowExample {
 		private static DrawableStyle getStyle(final int color) {
 			final int c = Math.abs(color % 255);
 			if (sStyles[c] == null) {
-				final Color fc = new Color(c, (c+23)%255, (c+53)%255);
+				final Color fc = new Color(c, (c+53)%255, (c+123)%255);
 				sStyles[c] = new DrawableStyle("Cell_" + c, null, null, fc);
 			}
 			return sStyles[c];

@@ -87,6 +87,14 @@ public class SelectionExample {
 			scene.addItem(item);
 		}
 
+		final GraphicsItem parentItem = GraphicsItem.createFromWKT(wkts[0]);
+		parentItem.setStyle(new DrawableStyle(null, null, null, Color.blue));
+		final GraphicsItem childItem = GraphicsItem.createFromWKT(wkts[1]);
+		childItem.setStyle(new DrawableStyle(null, null, null, Color.orange));
+		childItem.setCenter(100, 100);
+		parentItem.addItem(childItem);
+		scene.addItem(parentItem);
+
 		final JFrame frame = new JFrame("OSMExample");
 		frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
 		frame.setSize(800, 800);
