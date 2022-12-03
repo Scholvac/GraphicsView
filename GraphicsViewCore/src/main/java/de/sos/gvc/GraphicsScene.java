@@ -13,6 +13,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import de.sos.gvc.storage.ListStorage;
 import de.sos.gvc.storage.QuadTreeStorage;
@@ -152,9 +153,7 @@ public class GraphicsScene {
 		//		public ItemListener(IParameter<Boolean> dp) { mDP = dp;}
 		@Override
 		public void propertyChange(final PropertyChangeEvent evt) {
-			if (!mDirty) {
-				markDirty();
-			}
+			markDirty();
 		}
 	}
 
@@ -166,7 +165,7 @@ public class GraphicsScene {
 
 	private List<GraphicsView> 						mViews = new ArrayList<>();
 
-	private boolean									mDirty = true;
+	private final AtomicBoolean						mDirty = new AtomicBoolean(true);
 	private ArrayList<DirtyListener>				mDirtyListener = new ArrayList<>();
 
 	private transient PropertyChangeSupport 		mPropertySupport = new PropertyChangeSupport(this);
@@ -268,8 +267,7 @@ public class GraphicsScene {
 		return false;
 	}
 	public void markDirty() {
-		if (!mDirty) {//filter unnecessary notifications
-			mDirty = true;
+		if (!mDirty.getAndSet(true)) { //filter unnecessary notifications
 			for (final DirtyListener element : mDirtyListener)
 				element.notifyDirty();
 		}
@@ -279,8 +277,7 @@ public class GraphicsScene {
 	 * @note this method shall only be called by the GraphicsView after drawing the current scene
 	 */
 	void markClean() {
-		if (mDirty) {
-			mDirty = false;
+		if (mDirty.getAndSet(false)) {
 			//notify listener
 			for (final DirtyListener element : mDirtyListener)
 				element.notifyClean();

@@ -1,3 +1,5 @@
+package example.de.sos.gvc;
+
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.LinearGradientPaint;

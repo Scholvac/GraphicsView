@@ -588,7 +588,7 @@ public class GraphicsView {
 			func.accept(obj);
 	}
 
-	private void markViewAsDirty() {
+	private synchronized void markViewAsDirty() {
 		mRequestCounter.incrementAndGet();
 
 		if (mScheduledFuture == null) {
