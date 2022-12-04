@@ -27,6 +27,7 @@ import de.sos.gvc.drawables.ImageDrawable;
 import de.sos.gvc.drawables.ShapeDrawable;
 import de.sos.gvc.drawables.ShapeDrawable.IShapeProvider;
 import de.sos.gvc.drawables.TextDrawable;
+import de.sos.gvc.param.IParameter.IDisposeable;
 import de.sos.gvc.param.Parameter;
 import de.sos.gvc.param.ParameterContext;
 import de.sos.gvc.styles.DrawableStyle;
@@ -141,7 +142,10 @@ public class GraphicsItem implements IShapeProvider  {
 	public static final String PROP_MOUSE_SUPPORT 			= "MOUSE_SUPPORT";
 
 	public static final String PROP_LOCAL_BOUNDS 			= "LOCAL_BOUNDS";
+	/** Fires if works bounds changed, old parameter (of event) is current world bound */
 	public static final String PROP_SCENE_BOUNDS 			= "SCENE_BOUNDS";
+	/** Fires if works bounds changed, old parameter (of event) is current world bound */
+	public static final String PROP_DRAWABLE_DIRTY			= "DIRTY_DRAWABLE";
 
 	public static final String PROP_CHILD_ADDED				= "child added";
 	public static final String PROP_CHILD_REMOVED			= "child removed";
@@ -295,9 +299,10 @@ public class GraphicsItem implements IShapeProvider  {
 	 * Adds a listener that will be notified for all event of this Items as well as all events of children and childs of childs
 	 * @param pcl
 	 */
-	public void addPropertyChangeListener(final PropertyChangeListener pcl) {
+	public IDisposeable addPropertyChangeListener(final PropertyChangeListener pcl) {
 		if (mAllEventDelegate == null) mAllEventDelegate = new PropertyChangeSupport(this);
 		mAllEventDelegate.addPropertyChangeListener(pcl);
+		return () -> removePropertyChangeListener(pcl);
 	}
 	public void removePropertyChangeListener(final PropertyChangeListener pcl) {
 		if (mAllEventDelegate == null) return ;
@@ -305,9 +310,10 @@ public class GraphicsItem implements IShapeProvider  {
 		if (mAllEventDelegate.hasListeners(null) == false)
 			mAllEventDelegate = null;
 	}
-	public void addPropertyChangeListener(final String evtName, final PropertyChangeListener pcl) {
+	public IDisposeable addPropertyChangeListener(final String evtName, final PropertyChangeListener pcl) {
 		if (mAllEventDelegate == null) mAllEventDelegate = new PropertyChangeSupport(this);
 		mAllEventDelegate.addPropertyChangeListener(evtName, pcl);
+		return () -> removePropertyChangeListener(evtName, pcl);
 	}
 	public void removePropertyChangeListener(final String evtName, final PropertyChangeListener pcl) {
 		if (mAllEventDelegate == null) return ;
@@ -608,8 +614,10 @@ public class GraphicsItem implements IShapeProvider  {
 	}
 
 	public void markDirtyTransform() {
-		mInvalidLocalTransform = mInvalidWorldTransform = true;
-		markDirtyBounds();
+		if (mInvalidLocalTransform == false) {
+			mInvalidLocalTransform = mInvalidWorldTransform = true;
+			markDirtyBounds();
+		}
 	}
 
 	/**
@@ -698,6 +706,9 @@ public class GraphicsItem implements IShapeProvider  {
 			}else {
 				throw new RuntimeException("No one to notify");
 			}
+			if (mAllEventDelegate != null) {
+				mAllEventDelegate.firePropertyChange(PROP_DRAWABLE_DIRTY, mWorldBounds, null);
+			}
 		}
 	}
 
@@ -717,12 +728,16 @@ public class GraphicsItem implements IShapeProvider  {
 		markDirtyWorldBound();
 	}
 	private void markDirtyWorldBound() {
-		mInvalidWorldBound = true;
-		mInvalidLocalBound = true;
-		if (mParent != null && !mParent.mInvalidWorldBound) {
-			mParent.markDirtyWorldBound(); //recursive mark all parents dirty, until we found one that is already dirty
-		}else if (mScene != null) {
-			mScene.markDirty();
+		if (mInvalidWorldBound == false) {
+			mInvalidWorldBound = true;
+			mInvalidLocalBound = true;
+			if (mParent != null && !mParent.mInvalidWorldBound) {
+				mParent.markDirtyWorldBound(); //recursive mark all parents dirty, until we found one that is already dirty
+			}else if (mScene != null) {
+				mScene.markDirty();
+			}
+			if (mAllEventDelegate != null)
+				mAllEventDelegate.firePropertyChange(PROP_SCENE_BOUNDS, mWorldBounds, null); //do not send the new bounds yet, may be changed till next render...
 		}
 	}
 

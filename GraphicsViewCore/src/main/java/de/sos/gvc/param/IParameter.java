@@ -11,31 +11,35 @@ import java.util.List;
  */
 public interface IParameter<T> extends Serializable, Cloneable {
 
-    public String getName();
+	public interface IDisposeable {
+		void dispose();
+	}
 
-    public String getDescription();
+	public String getName();
 
-    public Class<?> getType();
+	public String getDescription();
 
-    public T get();
+	public Class<?> getType();
 
-    public void set(T value);
+	public T get();
 
-    public boolean isEditable();
+	public void set(T value);
 
-    public String getCategory();
+	public boolean isEditable();
 
-    public void addPropertyChangeListener(PropertyChangeListener listener);
+	public String getCategory();
 
-    public void removePropertyChangeListener(PropertyChangeListener listener);
+	public IDisposeable addPropertyChangeListener(PropertyChangeListener listener);
 
-    public IParameter getParentProperty();
+	public void removePropertyChangeListener(PropertyChangeListener listener);
 
-    public List<IParameter> getSubProperties();
+	public IParameter getParentProperty();
 
-    /**
-     * creates a deep copy of the property
-     * @return
-     */
+	public List<IParameter> getSubProperties();
+
+	/**
+	 * creates a deep copy of the property
+	 * @return
+	 */
 	public IParameter copy();
 }

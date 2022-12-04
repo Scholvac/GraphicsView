@@ -1,4 +1,4 @@
-package de.sos.gv.geo.examples;
+package example.de.sos.gvc;
 
 import java.awt.BorderLayout;
 import java.awt.Color;

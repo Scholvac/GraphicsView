@@ -15,6 +15,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import de.sos.gvc.param.IParameter.IDisposeable;
 import de.sos.gvc.storage.ListStorage;
 import de.sos.gvc.storage.QuadTreeStorage;
 
@@ -178,13 +179,15 @@ public class GraphicsScene {
 		mItemListener = new ItemListener();
 	}
 
-	public void addPropertyListener(final PropertyChangeListener pcl) {
+	public IDisposeable addPropertyListener(final PropertyChangeListener pcl) {
 		if (pcl != null)
 			mPropertySupport.addPropertyChangeListener(pcl);
+		return () -> removePropertyListener(pcl);
 	}
-	public void addPropertyListener(final String propertyName, final PropertyChangeListener pcl) {
+	public IDisposeable addPropertyListener(final String propertyName, final PropertyChangeListener pcl) {
 		if (pcl != null)
 			mPropertySupport.addPropertyChangeListener(propertyName, pcl);
+		return () -> removePropertyListener(propertyName, pcl);
 	}
 	public void removePropertyListener(final PropertyChangeListener pcl) {
 		mPropertySupport.removePropertyChangeListener(pcl);

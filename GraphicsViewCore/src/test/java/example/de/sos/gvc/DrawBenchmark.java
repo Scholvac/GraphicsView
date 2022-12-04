@@ -33,7 +33,6 @@ public class DrawBenchmark {
 	public static void main(final String[] args) throws InterruptedException {
 		System.setProperty("sun.java2d.ddblit", "true");
 		final DrawBenchmark example = new DrawBenchmark();
-		example.run();
 	}
 
 	private GraphicsScene 						mScene;
@@ -151,10 +150,4 @@ public class DrawBenchmark {
 		mView.setScale(2);
 
 	}
-
-
-	public void run() throws InterruptedException {
-
-	}
-
 }
