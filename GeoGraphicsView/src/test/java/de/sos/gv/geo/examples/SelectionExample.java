@@ -15,6 +15,7 @@ import de.sos.gvc.GraphicsItem;
 import de.sos.gvc.GraphicsScene;
 import de.sos.gvc.GraphicsView;
 import de.sos.gvc.IDrawContext;
+import de.sos.gvc.Utils;
 import de.sos.gvc.handler.DefaultViewDragHandler;
 import de.sos.gvc.handler.MouseDelegateHandler;
 import de.sos.gvc.handler.SelectionHandler;
@@ -60,7 +61,7 @@ public class SelectionExample {
 		};
 
 		for (int i = 0; i < wkts.length; i++) {
-			final Shape shape = ExampleUtils.wkt2Shape(wkts[i]);
+			final Shape shape = Utils.wkt2Shape(wkts[i]);
 			final GraphicsItem item = new GraphicsItem(shape) {
 				@Override
 				public void draw(final Graphics2D g, final IDrawContext ctx) {

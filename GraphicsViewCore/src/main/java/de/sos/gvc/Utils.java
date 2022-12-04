@@ -8,6 +8,8 @@ import java.awt.geom.GeneralPath;
 import java.awt.geom.NoninvertibleTransformException;
 import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -312,6 +314,56 @@ public class Utils {
 	public static Arc2D.Double createArc2D(final double radius){
 		return new Arc2D.Double(-radius, -radius, 2*radius, 2*radius, 0, 360, Arc2D.CHORD);
 	}
+
+	public static enum WKTGeometryType {
+		POLYGON, POINT, LINESTRING
+	}
+	public static class WKTGeom {
+		public Shape shape;
+		public WKTGeometryType type;
+	}
+	public static class WKTCollection {
+		public WKTGeom[] geometries;
+	}
+
+	public static WKTCollection parseWKTGeometryCollection(final InputStream stream) throws IOException {
+		final byte[] buffer = new byte[stream.available()];
+		stream.read(buffer);
+		final String str = new String(buffer);
+		return parseWKTGeometryCollection(str);
+	}
+	public static WKTCollection parseWKTGeometryCollection(final String content) {
+		final String firstWord = content.substring(0, content.indexOf(' '));
+		WKTGeom[] geoms;
+		if ("geometrycollection".equalsIgnoreCase(firstWord)) {
+			geoms = parseCollection(content.substring(content.indexOf('(')+1, content.lastIndexOf(')')));
+		}else {
+			geoms = new WKTGeom[] {parseGeometry(content)};
+		}
+		final WKTCollection coll = new WKTCollection();
+		coll.geometries = geoms;
+		return coll;
+	}
+
+	private static WKTGeom[] parseCollection(final String content) {
+		final String[] geometries = content.split("\\),");
+		final WKTGeom[] out = new WKTGeom[geometries.length];
+		for (int i = 0; i < geometries.length; i++) {
+			out[i] = parseGeometry(geometries[i]);
+		}
+		return out;
+	}
+
+	public static WKTGeom parseGeometry(final String wkt) {
+		final int i1 = wkt.indexOf('(');
+		final String firstWord = wkt.substring(0, i1).trim();
+		final WKTGeom out = new WKTGeom();
+		out.type = WKTGeometryType.valueOf(firstWord.toUpperCase());
+		if (out.type == WKTGeometryType.POLYGON)
+			out.shape = wkt2Shape(wkt);
+		return out;
+	}
+
 
 
 	///////////////////////////////////////////////////////////////////////////////////////////

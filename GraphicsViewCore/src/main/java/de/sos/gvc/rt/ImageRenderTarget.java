@@ -151,7 +151,8 @@ public abstract class ImageRenderTarget<ImageType extends Image> implements IRen
 	}
 
 	protected Graphics2D getGraphics2D(final Image imgTarget) {
-		return (Graphics2D) imgTarget.getGraphics();
+		final Graphics2D g2d = (Graphics2D) imgTarget.getGraphics();
+		return g2d;
 	}
 	public ImageType getImage() {
 		if (mImage == null) {
@@ -254,6 +255,11 @@ public abstract class ImageRenderTarget<ImageType extends Image> implements IRen
 				return super.getImage();
 			}
 			return img;
+		}
+		@Override
+		protected Graphics2D getGraphics2D(final Image imgTarget) {
+			// TODO Auto-generated method stub
+			return super.getGraphics2D(imgTarget);
 		}
 	}
 }

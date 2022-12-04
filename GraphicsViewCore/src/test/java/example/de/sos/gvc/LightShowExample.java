@@ -5,10 +5,12 @@ import java.awt.Color;
 import java.awt.Component;
 import java.awt.geom.AffineTransform;
 import java.awt.geom.GeneralPath;
+import java.awt.geom.Rectangle2D;
 import java.util.LongSummaryStatistics;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.IntStream;
 
 import javax.swing.JFrame;
 import javax.swing.WindowConstants;
@@ -28,8 +30,8 @@ import de.sos.gvc.styles.DrawableStyle;
  */
 public class LightShowExample {
 
-	public static final int ROWS = 104;
-	public static final int COLUMNS = 1024;
+	public static final int ROWS = (int) (360/0.8);
+	public static final int COLUMNS = 2*1024;
 
 	public static void main(final String[] args) throws InterruptedException {
 		System.out.println("Expect: " + ROWS * COLUMNS + " Elements");
@@ -60,7 +62,7 @@ public class LightShowExample {
 		scheduler.scheduleAtFixedRate(() -> {
 			mRenderTarget.requestRepaint();
 			System.out.println(mView.getMovingWindowDurationStatistic());
-		}, 100, 200, TimeUnit.MILLISECONDS);
+		}, 100, 20, TimeUnit.MILLISECONDS);
 	}
 
 	private final RowItem[] mRowItems = new RowItem[ROWS];
@@ -74,28 +76,31 @@ public class LightShowExample {
 		return mRowItems[r];
 	}
 	public void run() throws InterruptedException {
-		double angle = -Math.PI;
-		final double deltaAngle = Math.PI / 42.;
-		int idx = 0;
-		final LongSummaryStatistics updateStat = new LongSummaryStatistics();
-		while(true) {
-			if (idx >= ROWS) {
-				idx = 0;
-				System.out.println("Update: " + updateStat.getAverage() + "[ms]");
-				System.out.println("Paint: " + mView.getMovingWindowDurationStatistic().avg() + "[s]");
-				Thread.sleep(1);
+		new Thread(() -> {
+			double angle = -Math.PI;
+			final double deltaAngle = Math.PI / 42.;
+			int idx = 0;
+			final LongSummaryStatistics updateStat = new LongSummaryStatistics();
+			while(true) {
+				if (idx >= ROWS) {
+					idx = 0;
+					System.out.println("Update: " + updateStat.getAverage() + "[ms]");
+					System.out.println("Paint: " + mView.getMovingWindowDurationStatistic().avg() + "[s]");
+					try{Thread.sleep(100);}catch(final Exception e) {}
+					//					continue;
+				}
+				if (angle > Math.PI) angle = -Math.PI;
+
+				final RowItem ri = getRow(idx);
+				final long upStart = System.currentTimeMillis();
+				ri.update(angle += deltaAngle);
+				final long upEnd = System.currentTimeMillis();
+				final long upDiff = upEnd-upStart;
+				updateStat.accept(upDiff);
+				try{Thread.sleep(1);}catch(final Exception e) {}
+				idx++;
 			}
-			if (angle > Math.PI) angle = -Math.PI;
-
-			final RowItem ri = getRow(idx);
-			final long upStart = System.currentTimeMillis();
-			ri.update(angle += deltaAngle);
-			final long upEnd = System.currentTimeMillis();
-			final long upDiff = upEnd-upStart;
-			updateStat.accept(upDiff);
-
-			idx++;
-		}
+		}, "Updater").start();
 	}
 	public void setupScene() {
 		mItemStore = new ListStorage(true);
@@ -117,9 +122,7 @@ public class LightShowExample {
 	static class RowItem extends GraphicsItem {
 
 		static class CellItem extends GraphicsItem {
-			public final GeneralPath gp = new GeneralPath();
 			CellItem(){
-				setShape(gp);
 			}
 		}
 
@@ -139,11 +142,13 @@ public class LightShowExample {
 			return mCellItems[idx];
 		}
 
-		final double[] _newVertices = new double[8];
-		final AffineTransform _transform = new AffineTransform();
 
 
-		void updatePath(final GeneralPath p, final double distance, final double angleRad) {
+
+		static final void updatePath(final GeneralPath p, final double distance, final double angleRad) {
+			final double[] _newVertices = new double[8];
+			final AffineTransform _transform = new AffineTransform();
+
 			_transform.setToTranslation(distance, 0);
 			_transform.rotate(angleRad);
 			_transform.scale(0.7, 0.5);
@@ -172,13 +177,17 @@ public class LightShowExample {
 
 		public void update(final double phase) {
 			final double deltaAngle = 2.0 * Math.PI / COLUMNS;
-			double angleRad = phase;
-			for (int c = 0; c < COLUMNS; c++, angleRad+=deltaAngle) {
+			IntStream.range(0, COLUMNS-1).parallel()
+			.forEach(c -> {
+				final double angleRad = phase + deltaAngle * c;
 				final CellItem cell = getCellItem(c);
-				updatePath(cell.gp, c, angleRad);
+				//				updatePath(cell.gp, c, 0);// angleRad);
+				if (cell.getShape() == null)
+					cell.setShape(new Rectangle2D.Double(-0.3 + c, -0.3, 0.6, 0.6));
 				final int color = (int)(Math.sin(angleRad) * 255 + 128);
 				cell.setStyle(getStyle(color));
-			}
+				cell.setCenterX(10*angleRad);
+			});
 		}
 
 		private static DrawableStyle[] sStyles = new DrawableStyle[255];

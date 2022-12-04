@@ -26,7 +26,7 @@ import de.sos.gvc.styles.DrawableStyle;
  */
 public class Example {
 
-	private static Shape wkt2Shape(final String wkt) {
+	public static Shape wkt2Shape(final String wkt) {
 		final int idx1 = wkt.lastIndexOf("(")+1;
 		final int idx2 = wkt.indexOf(")");
 		final String coords1 = wkt.substring(idx1, idx2);
@@ -52,6 +52,7 @@ public class Example {
 
 		final GraphicsScene scene = new GraphicsScene();
 		final GraphicsView view = new GraphicsView(scene);
+
 
 		final GraphicsItem item = new GraphicsItem(wkt2Shape("POLYGON ((-100 -100, 100 -100, 100 100, 0 200, -100 100, -100 -100))"));
 		scene.addItem(item);
