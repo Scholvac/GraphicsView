@@ -1,4 +1,4 @@
-package de.sos.gv.geo.examples;
+package example.de.sos.gvc;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
@@ -12,10 +12,11 @@ import javax.swing.JPanel;
 import javax.swing.WindowConstants;
 import javax.swing.border.EmptyBorder;
 
-import de.sos.gv.geo.examples.ExampleUtils.WKTCollection;
 import de.sos.gvc.GraphicsItem;
 import de.sos.gvc.GraphicsScene;
 import de.sos.gvc.GraphicsView;
+import de.sos.gvc.Utils;
+import de.sos.gvc.Utils.WKTCollection;
 import de.sos.gvc.handler.DefaultViewDragHandler;
 import de.sos.gvc.handler.MouseDelegateHandler;
 import de.sos.gvc.styles.DrawableStyle;
@@ -77,7 +78,7 @@ public class TriangleExample extends JFrame {
 			//The file contains a Skierpinski carpet plane fractal (https://en.wikipedia.org/wiki/Sierpi%C5%84ski_carpet)
 			//that has been triangulated with a restricted Delaunay triangulation (https://en.wikipedia.org/wiki/Delaunay_triangulation)
 			//using the JTS Topology Suite Test Builder: https://github.com/locationtech/jts
-			final WKTCollection collection = ExampleUtils.parseWKTGeometryCollection(cl.getResourceAsStream("delaunaySierpinskiCarpet.wkt"));
+			final WKTCollection collection = Utils.parseWKTGeometryCollection(cl.getResourceAsStream("delaunaySierpinskiCarpet.wkt"));
 
 			//we do use the texture mode of the Drawable Style to colorize the triangles
 			//Each triangle of the geometry gets it's own texture, thus none of the images will be fully visible.

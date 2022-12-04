@@ -20,6 +20,7 @@ import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import de.sos.gvc.Utils.TmpVars;
 import de.sos.gvc.drawables.ImageDrawable;
@@ -149,7 +150,7 @@ public class GraphicsItem implements IShapeProvider  {
 	private static final ParameterContext sDefaultContext 	= new ParameterContext();
 
 
-	private transient PropertyChangeSupport 			mAllEventDelegate = new PropertyChangeSupport(this);
+	private transient PropertyChangeSupport 			mAllEventDelegate;//= new PropertyChangeSupport(this);
 
 	/**
 	 * If an item is not visible, the item will neither be drawn nor will it be selected or notified for mouse events
@@ -233,11 +234,14 @@ public class GraphicsItem implements IShapeProvider  {
 	protected final AffineTransform						mWorldTransform = new AffineTransform();
 	protected boolean									mInvalidWorldTransform = true;
 
+	private boolean 									mInvalidDrawable = true;
+
 	private GraphicsItem								mParent;
-	private List<GraphicsItem>							mChildren = new ArrayList<>();
+	private List<GraphicsItem>							mChildren = new CopyOnWriteArrayList();
 
 	private PropertyChangeListener						mChildListener;
 	private GraphicsScene 								mScene;
+
 
 
 	public GraphicsItem() {
@@ -292,16 +296,24 @@ public class GraphicsItem implements IShapeProvider  {
 	 * @param pcl
 	 */
 	public void addPropertyChangeListener(final PropertyChangeListener pcl) {
+		if (mAllEventDelegate == null) mAllEventDelegate = new PropertyChangeSupport(this);
 		mAllEventDelegate.addPropertyChangeListener(pcl);
 	}
 	public void removePropertyChangeListener(final PropertyChangeListener pcl) {
+		if (mAllEventDelegate == null) return ;
 		mAllEventDelegate.removePropertyChangeListener(pcl);
+		if (mAllEventDelegate.hasListeners(null) == false)
+			mAllEventDelegate = null;
 	}
 	public void addPropertyChangeListener(final String evtName, final PropertyChangeListener pcl) {
+		if (mAllEventDelegate == null) mAllEventDelegate = new PropertyChangeSupport(this);
 		mAllEventDelegate.addPropertyChangeListener(evtName, pcl);
 	}
 	public void removePropertyChangeListener(final String evtName, final PropertyChangeListener pcl) {
+		if (mAllEventDelegate == null) return ;
 		mAllEventDelegate.removePropertyChangeListener(evtName, pcl);
+		if (mAllEventDelegate.hasListeners(null) == false)
+			mAllEventDelegate = null;
 	}
 
 
@@ -329,24 +341,28 @@ public class GraphicsItem implements IShapeProvider  {
 
 	public void setCenterX(final double x) {
 		if (x != mCenterX) {
-			final double old = mCenterX;
-			mCenterX = x;
-
-			mInvalidLocalTransform = mInvalidWorldTransform = true;
+			if (mAllEventDelegate != null) {
+				final double old = mCenterX;
+				mCenterX = x;
+				mAllEventDelegate.firePropertyChange(PROP_CENTER_X, old, mCenterX);
+			}else {
+				mCenterX = x;
+			}
+			markDirtyTransform();
 			markDirtyWorldBound();
-
-			mAllEventDelegate.firePropertyChange(PROP_CENTER_X, old, mCenterX);
 		}
 	}
 	public void setCenterY(final double y) {
 		if (y != mCenterY) {
-			final double old = mCenterY;
-			mCenterY = y;
-
-			mInvalidLocalTransform = mInvalidWorldTransform = true;
+			if (mAllEventDelegate != null) {
+				final double old = mCenterY;
+				mCenterY = y;
+				mAllEventDelegate.firePropertyChange(PROP_CENTER_Y, old, mCenterY);
+			}else {
+				mCenterY = y;
+			}
+			markDirtyTransform();
 			markDirtyWorldBound();
-
-			mAllEventDelegate.firePropertyChange(PROP_CENTER_Y, old, mCenterY);
 		}
 	}
 	public void setCenter(final double x, final double y) {
@@ -362,13 +378,15 @@ public class GraphicsItem implements IShapeProvider  {
 
 	public void setRotation(final double rot_deg) {
 		if (rot_deg != mRotation) {
-			final double old = mRotation;
-			mRotation = rot_deg;
-
-			mInvalidLocalTransform = mInvalidWorldTransform = true;
+			if (mAllEventDelegate != null) {
+				final double old = mRotation;
+				mRotation = rot_deg;
+				mAllEventDelegate.firePropertyChange(PROP_ROTATION, old, mRotation);
+			}else {
+				mRotation = rot_deg;
+			}
 			markDirtyLocalBound();
-
-			mAllEventDelegate.firePropertyChange(PROP_ROTATION, old, mRotation);
+			markDirtyTransform();
 		}
 	}
 	public double getRotation() { return mRotation; }
@@ -410,24 +428,28 @@ public class GraphicsItem implements IShapeProvider  {
 
 	public void setScaleX(final double scaleX) {
 		if (scaleX != mScaleX) {
-			final double old = mScaleX;
-			mScaleX = scaleX;
-
-			mInvalidLocalTransform = mInvalidWorldTransform = true;
+			if (mAllEventDelegate != null) {
+				final double old = mScaleX;
+				mScaleX = scaleX;
+				mAllEventDelegate.firePropertyChange(PROP_SCALE_X, old, mScaleX);
+			}else {
+				mScaleX = scaleX;
+			}
+			markDirtyTransform();
 			markDirtyLocalBound();
-
-			mAllEventDelegate.firePropertyChange(PROP_SCALE_X, old, mScaleX);
 		}
 	}
 	public void setScaleY(final double scaleY) {
 		if (scaleY != mScaleY) {
-			final double old = mScaleY;
-			mScaleY = scaleY;
-
-			mInvalidLocalTransform = mInvalidWorldTransform = true;
+			if (mAllEventDelegate != null) {
+				final double old = mScaleY;
+				mScaleY = scaleY;
+				mAllEventDelegate.firePropertyChange(PROP_SCALE_Y, old, mScaleY);
+			}else {
+				mScaleY = scaleY;
+			}
+			markDirtyTransform();
 			markDirtyLocalBound();
-
-			mAllEventDelegate.firePropertyChange(PROP_SCALE_Y, old, mScaleY);
 		}
 	}
 	public void setScale(final double x,final  double y) { setLocalScale(x,y); }
@@ -641,13 +663,13 @@ public class GraphicsItem implements IShapeProvider  {
 			Utils.transform(lb, getWorldTransform(), mWorldBounds);
 
 			if (mChildren != null && !mChildren.isEmpty()) {
-				synchronized (mChildren) {
-					for (final GraphicsItem child : mChildren) {
-						final Rectangle2D cb = child.getSceneBounds();
-						if (cb != null)
-							Rectangle2D.union(mWorldBounds, cb, mWorldBounds);
-					}
+				//				synchronized (mChildren) {
+				for (final GraphicsItem child : mChildren) {
+					final Rectangle2D cb = child.getSceneBounds();
+					if (cb != null)
+						Rectangle2D.union(mWorldBounds, cb, mWorldBounds);
 				}
+				//				}
 			}
 			mInvalidWorldBound = false;
 		}
@@ -661,7 +683,22 @@ public class GraphicsItem implements IShapeProvider  {
 	public void markDirty() {
 		markDirtyTransform();
 		markDirtyBounds();
-		mAllEventDelegate.firePropertyChange("ManualRepaint", null, null);
+		markDirtyDrawable();
+		if (mAllEventDelegate != null)
+			mAllEventDelegate.firePropertyChange("ManualRepaint", null, null);
+	}
+
+	public void markDirtyDrawable() {
+		if (mInvalidDrawable == false) {
+			//just trigger the parent, to be dirty as well
+			if (mParent != null) {
+				mParent.markDirtyDrawable();
+			}else if (mScene != null) {
+				mScene.markDirty();
+			}else {
+				throw new RuntimeException("No one to notify");
+			}
+		}
 	}
 
 	/**
@@ -684,6 +721,8 @@ public class GraphicsItem implements IShapeProvider  {
 		mInvalidLocalBound = true;
 		if (mParent != null && !mParent.mInvalidWorldBound) {
 			mParent.markDirtyWorldBound(); //recursive mark all parents dirty, until we found one that is already dirty
+		}else if (mScene != null) {
+			mScene.markDirty();
 		}
 	}
 
@@ -749,6 +788,8 @@ public class GraphicsItem implements IShapeProvider  {
 	}
 
 	public void draw(final Graphics2D g, final IDrawContext ctx) {
+		mInvalidDrawable = false;
+
 		final AffineTransform old = g.getTransform();
 		g.transform(getWorldTransform());
 		final IDrawable drawable = getDrawable();
@@ -786,11 +827,15 @@ public class GraphicsItem implements IShapeProvider  {
 	 */
 	public void setShape(final Shape shape) {
 		if (shape != mShape) {
-			final Shape old = mShape;
-			mShape = shape;
+			if (mAllEventDelegate != null) {
+				final Shape old = mShape;
+				mShape = shape;
+				mAllEventDelegate.firePropertyChange(PROP_SHAPE, old, mShape);
+			}else
+				mShape = shape;
 
 			markDirtyLocalBound();
-			mAllEventDelegate.firePropertyChange(PROP_SHAPE, old, mShape);
+
 		}
 	}
 
@@ -798,16 +843,23 @@ public class GraphicsItem implements IShapeProvider  {
 	public void setVisible(final boolean b) {
 		if (b != mVisible) {
 			mVisible = b;
-			mAllEventDelegate.firePropertyChange(PROP_STYLE, !b, b);
+			if (mAllEventDelegate != null)
+				mAllEventDelegate.firePropertyChange(PROP_STYLE, !b, b);
+			markDirtyDrawable();
 		}
 	}
 	public boolean isVisible() { return mVisible;}
 
 	public void setStyle(final DrawableStyle style) {
 		if (style != mStyle) {
-			final DrawableStyle old = mStyle;
-			mStyle = style;
-			mAllEventDelegate.firePropertyChange(PROP_STYLE, old, mStyle);
+			if (mAllEventDelegate != null) {
+				final DrawableStyle old = mStyle;
+				mStyle = style;
+				mAllEventDelegate.firePropertyChange(PROP_STYLE, old, mStyle);
+			}else {
+				mStyle = style;
+			}
+			markDirtyDrawable();
 		}
 	}
 	public DrawableStyle getStyle() {
@@ -815,9 +867,14 @@ public class GraphicsItem implements IShapeProvider  {
 	}
 	public void setDrawable(final IDrawable drawable) {
 		if (drawable != mDrawable) {
-			final IDrawable old = mDrawable;
-			mDrawable = drawable;
-			mAllEventDelegate.firePropertyChange(PROP_DRAWABLE, old, mDrawable);
+			if (mAllEventDelegate != null) {
+				final IDrawable old = mDrawable;
+				mDrawable = drawable;
+				mAllEventDelegate.firePropertyChange(PROP_DRAWABLE, old, mDrawable);
+			}else {
+				mDrawable = drawable;
+			}
+			markDirtyDrawable();
 		}
 	}
 	public IDrawable getDrawable() {
@@ -831,41 +888,43 @@ public class GraphicsItem implements IShapeProvider  {
 	}
 	protected void setParent(final GraphicsItem parent) {
 		if (parent != mParent) {
-			final GraphicsItem old = mParent;
-			mParent = parent;
-
+			if (mAllEventDelegate != null) {
+				final GraphicsItem old = mParent;
+				mParent = parent;
+				mAllEventDelegate.firePropertyChange(PROP_PARENT, old, mParent);
+			}else {
+				mParent = parent;
+			}
 			mInvalidWorldTransform = true;
 			markDirtyLocalBound();
-
-			mAllEventDelegate.firePropertyChange(PROP_PARENT, old, mParent);
 		}
 	}
 
 
 	public boolean addItem(final GraphicsItem child) {
-		synchronized (mChildren) {
-			if (child == null || mChildren.contains(child))
-				return false;
-			child.setParent(this);
-			mChildren.add(child);
-			markDirtyWorldBound(); //this may not be called, if the child already has an invalid bound. If thats not the case, this method does nothing
-			child.mAllEventDelegate.addPropertyChangeListener(getChildListener());
-
+		//		synchronized (mChildren) {
+		if (child == null || mChildren.contains(child))
+			return false;
+		child.setParent(this);
+		mChildren.add(child);
+		markDirtyWorldBound();
+		if (mAllEventDelegate != null)
 			mAllEventDelegate.firePropertyChange(PROP_CHILD_ADDED, null, child);
-		}
+		//		}
 		return true;
 	}
 
 	public boolean removeItem(final GraphicsItem child) {
-		synchronized (mChildren) {
-			if (child == null || !mChildren.contains(child))
-				return false;
-			child.setParent(null);
+		//		synchronized (mChildren) {
+		if (child == null || !mChildren.contains(child))
+			return false;
+		child.setParent(null);
 
-			final boolean res = mChildren.remove(child);
+		final boolean res = mChildren.remove(child);
+		if (mAllEventDelegate != null)
 			mAllEventDelegate.firePropertyChange(PROP_CHILD_REMOVED, child, null);
-			return res;
-		}
+		return res;
+		//		}
 	}
 	public Collection<GraphicsItem> clearChildren() {
 		final Set<GraphicsItem> c = new HashSet<>(getChildren());
@@ -877,7 +936,8 @@ public class GraphicsItem implements IShapeProvider  {
 	public void setSelected(final boolean b) {
 		if (b != mSelected) {
 			mSelected = b;
-			mAllEventDelegate.firePropertyChange(PROP_SELECTED, !b, b);
+			if (mAllEventDelegate != null)
+				mAllEventDelegate.firePropertyChange(PROP_SELECTED, !b, b);
 		}
 	}
 
@@ -886,13 +946,15 @@ public class GraphicsItem implements IShapeProvider  {
 	public void setSelectable(final boolean selectable) {
 		if (mSelectable != selectable) {
 			mSelectable = selectable;
-			mAllEventDelegate.firePropertyChange(PROP_SELECTABLE, !selectable, selectable);
+			if (mAllEventDelegate != null)
+				mAllEventDelegate.firePropertyChange(PROP_SELECTABLE, !selectable, selectable);
 		}
 	}
 	public void setSelectable(final boolean selectable, final boolean applyToChildren) {
 		if (mSelectable != selectable) {
 			mSelectable = selectable;
-			mAllEventDelegate.firePropertyChange(PROP_SELECTABLE, !selectable, selectable);
+			if (mAllEventDelegate != null)
+				mAllEventDelegate.firePropertyChange(PROP_SELECTABLE, !selectable, selectable);
 		}
 		if (applyToChildren && mChildren != null && !mChildren.isEmpty()) {
 			for (final GraphicsItem c : mChildren)
@@ -903,17 +965,22 @@ public class GraphicsItem implements IShapeProvider  {
 	public boolean isSelectable() { return mSelectable;}
 	public boolean hasChildren() { return !getChildren().isEmpty(); }
 	public List<GraphicsItem> getChildren() {
-		synchronized (mChildren) {
-			return Collections.unmodifiableList(mChildren);
-		}
+		//		synchronized (mChildren) {
+		return mChildren;
+		//		}
 	}
 
 	public float getZOrder() { return mZOrder; }
 	public void setZOrder(final float z) {
 		if (z != mZOrder) {
-			final float old = mZOrder;
-			mZOrder = z;
-			mAllEventDelegate.firePropertyChange(PROP_Z_ORDER, old, z);
+			if (mAllEventDelegate != null) {
+				final float old = mZOrder;
+				mZOrder = z;
+				mAllEventDelegate.firePropertyChange(PROP_Z_ORDER, old, z);
+			}else {
+				mZOrder = z;
+			}
+			markDirtyDrawable();
 		}
 	}
 
@@ -933,7 +1000,8 @@ public class GraphicsItem implements IShapeProvider  {
 		if (l != mMouseWheelSupport) {
 			final MouseWheelListener old = mMouseWheelSupport;
 			mMouseWheelSupport = l;
-			mAllEventDelegate.firePropertyChange(PROP_MOUSE_WHEEL_SUPPORT, old, mMouseWheelSupport);
+			if (mAllEventDelegate != null)
+				mAllEventDelegate.firePropertyChange(PROP_MOUSE_WHEEL_SUPPORT, old, mMouseWheelSupport);
 		}
 	}
 
@@ -945,7 +1013,8 @@ public class GraphicsItem implements IShapeProvider  {
 		if (l != mMouseMotionSupport) {
 			final MouseMotionListener old = mMouseMotionSupport;
 			mMouseMotionSupport = l;
-			mAllEventDelegate.firePropertyChange(PROP_MOUSE_MOTION_SUPPORT, old, mMouseMotionSupport);
+			if (mAllEventDelegate != null)
+				mAllEventDelegate.firePropertyChange(PROP_MOUSE_MOTION_SUPPORT, old, mMouseMotionSupport);
 		}
 	}
 
@@ -956,7 +1025,8 @@ public class GraphicsItem implements IShapeProvider  {
 		if (mMouseSupport != l) {
 			final MouseListener old = mMouseSupport;
 			mMouseSupport = l;
-			mAllEventDelegate.firePropertyChange(PROP_MOUSE_SUPPORT, old, mMouseSupport);
+			if (mAllEventDelegate != null)
+				mAllEventDelegate.firePropertyChange(PROP_MOUSE_SUPPORT, old, mMouseSupport);
 		}
 	}
 

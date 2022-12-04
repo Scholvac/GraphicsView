@@ -47,6 +47,8 @@ public class TileHandler implements IGraphicsViewHandler, IPaintListener {
 		view.getProperty(GraphicsView.PROP_VIEW_WIDTH).addPropertyChangeListener(mTileUpdateListener);
 		view.getProperty(GraphicsView.PROP_VIEW_HEIGHT).addPropertyChangeListener(mTileUpdateListener);
 
+		mActiveTiles.clear();//if added a second time
+		mTileUpdateRequired = true;
 	}
 
 	@Override
@@ -63,6 +65,8 @@ public class TileHandler implements IGraphicsViewHandler, IPaintListener {
 		_tilesToRemove.addAll(mActiveTiles.keySet());
 		for (final String key : _tilesToRemove)
 			removeTile(scene, key);
+
+		mTileUpdateRequired = true;
 	}
 
 	private final LatLonPoint			_ll = new LatLonPoint();

@@ -97,25 +97,29 @@ public class DrawableStyle {
 		return getLinePaint() != null;
 	}
 
+	protected TexturePaint getTexturePaint(final Shape shape) {
+		if (mTexturePaint != null) { //check if we still have the same values
+			if (mTexturePaint.getImage() != mTexture)
+				mTexturePaint = null;
+			else {
+				final Rectangle2D b = shape.getBounds2D();
+
+				if (mTextureAnchorRect.x != b.getX() || mTextureAnchorRect.y != b.getY() || mTextureAnchorRect.width != b.getWidth() || mTextureAnchorRect.height != -b.getHeight())
+					mTexturePaint = null;
+			}
+		}
+		if (mTexturePaint == null) {
+			final Rectangle2D b = shape.getBounds2D();
+			mTexturePaint = new TexturePaint(getTexture(), new Rectangle2D.Double(b.getX(), b.getY(), b.getWidth(), -b.getHeight()));
+			mTextureAnchorRect = (Rectangle2D.Double)mTexturePaint.getAnchorRect();
+		}
+		return mTexturePaint;
+	}
 
 	public void applyFillPaint(final Graphics2D g, final IDrawContext ctx, final Shape shape) {
 		if (hasTexture()) {
-			if (mTexturePaint != null) { //check if we still have the same values
-				if (mTexturePaint.getImage() != mTexture)
-					mTexturePaint = null;
-				else {
-					final Rectangle2D b = shape.getBounds2D();
-
-					if (mTextureAnchorRect.x != b.getX() || mTextureAnchorRect.y != b.getY() || mTextureAnchorRect.width != b.getWidth() || mTextureAnchorRect.height != -b.getHeight())
-						mTexturePaint = null;
-				}
-			}
-			if (mTexturePaint == null) {
-				final Rectangle2D b = shape.getBounds2D();
-				mTexturePaint = new TexturePaint(getTexture(), new Rectangle2D.Double(b.getX(), b.getY(), b.getWidth(), -b.getHeight()));
-				mTextureAnchorRect = (Rectangle2D.Double)mTexturePaint.getAnchorRect();
-			}
-			g.setPaint(mTexturePaint);
+			final TexturePaint tp = getTexturePaint(shape);
+			g.setPaint(tp);
 		}else {
 			final Paint fillPaint = getFillPaint();
 			if (fillPaint != null) {

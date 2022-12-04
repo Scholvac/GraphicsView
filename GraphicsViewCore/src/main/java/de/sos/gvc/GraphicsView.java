@@ -74,7 +74,9 @@ public class GraphicsView {
 	private WindowStat						mWindowStatistic = new WindowStat(20);
 
 	private final IRenderTarget				mRenderTarget;
-
+	/** Whether the GraphicsView shall trigger repaints, if a change in the scene or the view has been detected.
+	 */
+	private boolean							mTriggersRepaint = true;
 	private AtomicInteger 					mUpdateCounter = new AtomicInteger(0);
 	private AtomicInteger 					mRequestCounter = new AtomicInteger(0);
 	private ScheduledExecutorService 		mScheduler = Executors.newScheduledThreadPool(1);
@@ -163,6 +165,17 @@ public class GraphicsView {
 	}
 
 
+	/** Whether the GraphicsView shall trigger repaints, if a change in the scene or the view has been detected.
+	 *
+	 * Disable repaint trigger may be usefull if rendered within another render loop
+	 *
+	 * @param enabled true, if the GraphicsView shall trigger a repaint if a change was detected, false otherwise.
+	 */
+	public void enableRepaintTrigger(final boolean enabled) {
+		mTriggersRepaint = enabled;
+	}
+	public boolean isRepaintTriggerEnabled() { return mTriggersRepaint;}
+
 	public void setMaximumFPS(final int fps) {
 		mRepaintDelay = 1000 / fps;
 	}
@@ -215,7 +228,8 @@ public class GraphicsView {
 	}
 
 	private void triggerRTRepaint() {
-		mRenderTarget.requestRepaint();
+		if (isRepaintTriggerEnabled())
+			mRenderTarget.requestRepaint();
 	}
 	public void doPaint(final Graphics2D g2d) {
 		final long profile_time_start = System.currentTimeMillis();
@@ -574,7 +588,7 @@ public class GraphicsView {
 			func.accept(obj);
 	}
 
-	private void markViewAsDirty() {
+	private synchronized void markViewAsDirty() {
 		mRequestCounter.incrementAndGet();
 
 		if (mScheduledFuture == null) {

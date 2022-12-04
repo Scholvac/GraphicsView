@@ -34,6 +34,7 @@ import de.sos.gvc.GraphicsItem;
 import de.sos.gvc.GraphicsScene;
 import de.sos.gvc.GraphicsView;
 import de.sos.gvc.IDrawContext;
+import de.sos.gvc.Utils;
 import de.sos.gvc.handler.DefaultViewDragHandler;
 import de.sos.gvc.handler.MouseDelegateHandler;
 import de.sos.gvc.handler.SelectionHandler;
@@ -298,7 +299,7 @@ public class GeoItemsIntroduction {
 		final DrawableStyle errorStyle = new DrawableStyle(); errorStyle.setLinePaint(Color.RED);
 		final DrawableStyle correctedStyle = new DrawableStyle(); correctedStyle.setLinePaint(Color.GREEN);
 		//create an arrow shape that points with fix size to the scale error items
-		final Shape arrowShape = ExampleUtils.wkt2Shape("POLYGON ((-10 0, 0 10, 10 0, 5 0, 5 -10, -5 -10, -5 0, -10 0))");
+		final Shape arrowShape = Utils.wkt2Shape("POLYGON ((-10 0, 0 10, 10 0, 5 0, 5 -10, -5 -10, -5 0, -10 0))");
 		//create an 100m (high) rectangle to show the scale effect, correct and error shape only differ in with to be distinguishable even near the aquator
 		final Rectangle2D errorRect = new Rectangle2D.Double(-1, -50, 2, 100);
 		final Rectangle2D correctRect = new Rectangle2D.Double(-2, -50, 4, 100);

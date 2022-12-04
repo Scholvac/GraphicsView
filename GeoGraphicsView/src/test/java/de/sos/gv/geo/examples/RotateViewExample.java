@@ -22,6 +22,7 @@ import de.sos.gv.geo.tiles.TileHandler;
 import de.sos.gvc.GraphicsItem;
 import de.sos.gvc.GraphicsScene;
 import de.sos.gvc.GraphicsView;
+import de.sos.gvc.Utils;
 import de.sos.gvc.handler.DefaultViewDragHandler;
 import de.sos.gvc.handler.MouseDelegateHandler;
 import de.sos.gvc.styles.DrawableStyle;
@@ -65,10 +66,10 @@ public class RotateViewExample {
 		style.setLinePaint(Color.BLACK);
 
 		//build also a mixed item to show how it works on item hierarchies
-		final GraphicsItem mixedItem = new GraphicsItem(ExampleUtils.wkt2Shape(arrowWKT));
+		final GraphicsItem mixedItem = new GraphicsItem(Utils.wkt2Shape(arrowWKT));
 		mixedItem.setScale(1, 1);
 		mixedItem.setStyle(style);
-		final GraphicsItem subStar = new GraphicsItem(ExampleUtils.wkt2Shape(sinStarWKT));
+		final GraphicsItem subStar = new GraphicsItem(Utils.wkt2Shape(sinStarWKT));
 		subStar.setCenter(0, 100);
 		subStar.setStyle(style);
 		subStar.setScale(0.25, 0.25);
