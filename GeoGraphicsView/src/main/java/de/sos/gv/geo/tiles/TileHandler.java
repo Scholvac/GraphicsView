@@ -80,7 +80,7 @@ public class TileHandler implements IGraphicsViewHandler, IPaintListener {
 			final GraphicsView view = context.getView();
 			final GraphicsScene	scene = view.getScene();
 
-			final Rectangle2D sceneRect = view.getVisibleSceneRect();
+			final Rectangle2D sceneRect = context.getVisibleSceneRect();
 			GeoUtils.getLatLon(sceneRect.getMinX(), sceneRect.getMinY(), _ll);
 			GeoUtils.getLatLon(sceneRect.getMaxX(), sceneRect.getMaxY(), _ur);
 			if (sceneRect.getWidth() > GeoUtils.EARTH_CIRCUMFERENCE) {

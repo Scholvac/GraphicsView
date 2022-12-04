@@ -117,16 +117,29 @@ public class GraphicsView {
 		public void notifyClean() {}
 	};
 
-	IDrawContext							mDrawContext = new IDrawContext() {
+	static class GVDrawContext implements IDrawContext {
+		final GraphicsView 			view;
+		final Rectangle2D.Double 	visibleScreenRect = new Rectangle2D.Double();
+		final Rectangle2D.Double 	visibleSceneRect = new Rectangle2D.Double();
+
+		public GVDrawContext(final GraphicsView v) {
+			view = v;
+		}
+
 		@Override
 		public GraphicsView getView() {
-			return GraphicsView.this;
+			return view;
 		}
 		@Override
 		public AffineTransform getViewTransform() {
-			return GraphicsView.this.getViewTransform();
+			return view.getViewTransform();
 		}
-	};
+		@Override
+		public Rectangle2D.Double getVisibleSceneRect(){ return visibleSceneRect;}
+		@Override
+		public Rectangle2D.Double getVisibleScreenRect() { return visibleScreenRect;}
+	}
+	private final GVDrawContext				mDrawContext;
 
 
 	public GraphicsView(final GraphicsScene scene) {
@@ -141,6 +154,7 @@ public class GraphicsView {
 		mScene._addView(this);
 		mRenderTarget = renderTarget;
 		mRenderTarget.setGraphicsView(this);
+		mDrawContext = new GVDrawContext(this);
 
 		mPropertyContext = propertyContext;
 
@@ -231,20 +245,48 @@ public class GraphicsView {
 		if (isRepaintTriggerEnabled())
 			mRenderTarget.requestRepaint();
 	}
+
 	public void doPaint(final Graphics2D g2d) {
-		final long profile_time_start = System.currentTimeMillis();
-
-		internalPaint(g2d);
-
-		final long profile_time_end = System.currentTimeMillis();
-		final double profile_time_sec = (profile_time_end - profile_time_start) / 1000.0;
-		mOverallStatitic.accept(profile_time_sec);
-		mWindowStatistic.accept(profile_time_sec);
+		doPaint(g2d, 0, 0, getImageWidth(), getImageHeight());
 	}
-	private synchronized void internalPaint(final Graphics2D g2d) {
+	/**
+	 * Paint the given area
+	 *
+	 * @param g2d
+	 * @param x
+	 * @param y
+	 * @param width
+	 * @param height
+	 */
+	public void doPaint(final Graphics2D g2d, final int x, final int y, final int width, final int height) {
+		synchronized (mUpdateCounter) {
+			final long profile_time_start = System.currentTimeMillis();
+
+			internalPaint(g2d, x, y, width, height);
+
+			final long profile_time_end = System.currentTimeMillis();
+			final double profile_time_sec = (profile_time_end - profile_time_start) / 1000.0;
+			mOverallStatitic.accept(profile_time_sec);
+			mWindowStatistic.accept(profile_time_sec);
+		}
+	}
+	private void internalPaint(final Graphics2D g2d, int x, int y, int width, int height) {
 		mUpdateCounter.set(mRequestCounter.get());
 		//check for changes
 		validateView();
+
+		final int rtWidth = getImageWidth();
+		final int rtHeight = getImageHeight();
+		//clip to max area = render target area.
+		// @note: this has no effect on the view matrix but only on the area that items that are repainted.
+		if (x < 0) x = 0;
+		if (y < 0) y = 0;
+		if (x+width > rtWidth) width = rtWidth-x;
+		if (y+height > rtHeight) height = rtHeight-y;
+
+		mDrawContext.visibleScreenRect.setRect(x, y, width, height);
+		getVisibleSceneRect(mDrawContext.visibleScreenRect, mDrawContext.visibleSceneRect);
+
 
 		for (final IPaintListener pl : mPaintListener) {
 			try {
@@ -266,8 +308,7 @@ public class GraphicsView {
 		g2d.transform(getViewTransform());
 
 		//get all visible items, depending on the visible rect
-		final Rectangle2D rect = getVisibleSceneRect();
-		final List<GraphicsItem> itemList = mScene.getItems(rect);
+		final List<GraphicsItem> itemList = mScene.getItems(mDrawContext.visibleSceneRect);
 
 		//sort to overdraw the correct items, for example background items
 		itemList.sort(Comparator.comparing(GraphicsItem::getZOrder));
@@ -381,12 +422,16 @@ public class GraphicsView {
 
 	/**
 	 * Returns the currently visible area as rectangle in scene coordinates.
+	 *
+	 * @param src the visible screen coordinates
+	 * @param store the area to store the scene coordinates into (may be null)
 	 * @return
 	 */
-	public Rectangle2D getVisibleSceneRect() {
-		final Rectangle vr = mRenderTarget.getVisibleRect();
-		final Rectangle2D rect = Utils.inverseTransform(vr, getViewTransform());
-		return rect;
+	public Rectangle2D getVisibleSceneRect(final Rectangle2D src, final Rectangle2D.Double store) {
+		//		final Rectangle vr = mRenderTarget.getVisibleRect();
+		//		final Rectangle2D rect = Utils.inverseTransform(vr, getViewTransform());
+		return Utils.inverseTransform(src, getViewTransform(), store);
+		//		return rect;
 	}
 
 	/**
@@ -588,15 +633,17 @@ public class GraphicsView {
 			func.accept(obj);
 	}
 
-	private synchronized void markViewAsDirty() {
-		mRequestCounter.incrementAndGet();
+	private void markViewAsDirty() {
+		synchronized (mRequestCounter) {
+			mRequestCounter.incrementAndGet();
 
-		if (mScheduledFuture == null) {
-			mScheduledFuture = mScheduler.schedule(() -> {
-				mScheduledFuture = null;
-				triggerRTRepaint();
-				return 0;
-			}, mRepaintDelay, TimeUnit.MILLISECONDS);
+			if (mScheduledFuture == null) {
+				mScheduledFuture = mScheduler.schedule(() -> {
+					mScheduledFuture = null;
+					triggerRTRepaint();
+					return 0;
+				}, mRepaintDelay, TimeUnit.MILLISECONDS);
+			}
 		}
 	}
 

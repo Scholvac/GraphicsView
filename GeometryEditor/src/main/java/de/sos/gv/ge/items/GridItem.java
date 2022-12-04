@@ -30,7 +30,7 @@ public class GridItem extends GraphicsItem {
 		TextDrawable mTextDrawable = new TextDrawable(mLabelProperty);
 		@Override
 		public void paintItem(final Graphics2D g, final DrawableStyle style, final IDrawContext ctx) {
-			final Rectangle2D rect = ctx.getView().getVisibleSceneRect();
+			final Rectangle2D rect = ctx.getVisibleSceneRect();
 			final double width = rect.getWidth();
 			final double height = rect.getHeight();
 
@@ -38,7 +38,7 @@ public class GridItem extends GraphicsItem {
 			double step = width / minColumns;
 			int decimalPower = getDezimalPower(step);
 			step = Math.pow(10, decimalPower);
-			StringBuilder legend = new StringBuilder("X=").append(step).append("[m] /");
+			final StringBuilder legend = new StringBuilder("X=").append(step).append("[m] /");
 
 			double start = rect.getX();
 			start = ((int)(start / step)-1) * step;
@@ -91,7 +91,7 @@ public class GridItem extends GraphicsItem {
 
 	@Override
 	public void draw(final Graphics2D g, final IDrawContext ctx) {
-		setShape(ctx.getView().getVisibleSceneRect()); //we always draw into the whole view
+		setShape(ctx.getVisibleSceneRect()); //we always draw into the whole view
 		super.draw(g, ctx);
 	}
 

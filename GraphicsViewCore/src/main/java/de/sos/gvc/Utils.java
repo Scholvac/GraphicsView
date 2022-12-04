@@ -59,7 +59,8 @@ public class Utils {
 		return transform(rect, transform, null);
 	}
 
-	public static Rectangle2D inverseTransform(final Rectangle2D rect, final AffineTransform transform) {
+	public static Rectangle2D inverseTransform(final Rectangle2D rect, final AffineTransform transform) { return inverseTransform(rect, transform, null); }
+	public static Rectangle2D inverseTransform(final Rectangle2D rect, final AffineTransform transform, final Rectangle2D.Double store) {
 		double mix = rect.getMinX();
 		double max = rect.getMaxX();
 		double miy = rect.getMinY();
@@ -89,7 +90,10 @@ public class Utils {
 		}
 		final double w = max - mix;
 		final double h = may - miy;
-		return new Rectangle2D.Double(mix, miy, w, h);
+		if (store == null)
+			return new Rectangle2D.Double(mix, miy, w, h);
+		store.setRect(mix, miy, w, h);
+		return store;
 	}
 
 	public static Point2D[] getVertices(final Rectangle2D rect) {
@@ -160,6 +164,9 @@ public class Utils {
 		public final double[]					doubles = new double[64];
 		public final int[]						ints = new int[64];
 		public final boolean[]					booleans = new boolean[64];
+		public final Rectangle2D.Double			rect1 = new Rectangle2D.Double(0,0,1,1);
+		public final Rectangle2D.Double			rect2 = new Rectangle2D.Double(0,0,1,1);
+		public final Rectangle2D.Double			rect3 = new Rectangle2D.Double(0,0,1,1);
 
 		private static final int STACK_SIZE = 5;
 
