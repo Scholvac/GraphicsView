@@ -696,7 +696,7 @@ public class GraphicsItem implements IShapeProvider  {
 			}else if (mScene != null) {
 				mScene.markDirty();
 			}else {
-				throw new RuntimeException("No one to notify");
+				//				throw new RuntimeException("No one to notify");
 			}
 		}
 	}
