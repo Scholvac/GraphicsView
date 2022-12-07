@@ -3,7 +3,6 @@ package de.sos.gv.geo.tiles;
 import de.sos.gv.geo.GeoUtils;
 import de.sos.gv.geo.LatLonBox;
 import de.sos.gv.geo.LatLonPoint;
-import net.jafama.FastMath;
 
 public class OSMTileCalculator implements ITileCalculator {
 
@@ -40,9 +39,9 @@ public class OSMTileCalculator implements ITileCalculator {
 		final double distanceMeter = GeoUtils.distance(area.getUpperLeft(_ul), area.getUpperRight(_ur));
 		final double reqMeterPerPixel = distanceMeter / imgWidth;
 		final double llRadLat = area.getLowerLeft().getLatitude() * GeoUtils.TO_RAD;
-		final double cos_llRadLat = FastMath.cos(llRadLat);
+		final double cos_llRadLat = Math.cos(llRadLat);
 		for (int i = 0; i < 20; i++) {
-			final double zoomMeterPerPixel = 156543.03 * cos_llRadLat / FastMath.pow(2, i);//Exact length of the equator (according to wikipedia) is 40075.016686 km in WGS-84. At zoom 0, one pixel would equal 156543.03 meters (assuming a tile size of 256 px):
+			final double zoomMeterPerPixel = 156543.03 * cos_llRadLat / Math.pow(2, i);//Exact length of the equator (according to wikipedia) is 40075.016686 km in WGS-84. At zoom 0, one pixel would equal 156543.03 meters (assuming a tile size of 256 px):
 			if (zoomMeterPerPixel <= reqMeterPerPixel)
 				return i-2;
 		}
