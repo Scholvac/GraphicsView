@@ -19,6 +19,7 @@ import java.util.List;
 import javax.swing.JPanel;
 
 import de.sos.gvc.GraphicsView;
+import de.sos.gvc.handler.RenderManager;
 
 public abstract class ImageRenderTarget<ImageType extends Image> implements IRenderTarget {
 
@@ -88,7 +89,7 @@ public abstract class ImageRenderTarget<ImageType extends Image> implements IRen
 		}
 	}
 
-	public GraphicsView getView() { return mView;}
+	//	public GraphicsView getView() { return mView;}
 
 	protected abstract ImageType createNewImage(final int width, final int height, final int type);
 
@@ -124,7 +125,7 @@ public abstract class ImageRenderTarget<ImageType extends Image> implements IRen
 	}
 
 	@Override
-	public void requestRepaint() {
+	public void proposeRepaint(final RenderManager renderManager) {
 		synchronized (mSyncObject) {
 			final ImageType imgTarget = getImage();
 			final Graphics2D g2d = getGraphics2D(imgTarget);
@@ -138,7 +139,10 @@ public abstract class ImageRenderTarget<ImageType extends Image> implements IRen
 				mRenderListener.forEach(it -> it.preRender(imgTarget));
 			}
 
-			mView.doPaint(g2d);
+			if (renderManager != null)
+				renderManager.doPaint(g2d);
+			else
+				mView.doPaint(g2d);
 
 			if (mRenderListener != null)
 				mRenderListener.forEach(it -> it.postRender(imgTarget));
@@ -148,6 +152,12 @@ public abstract class ImageRenderTarget<ImageType extends Image> implements IRen
 			if (mComponent != null)
 				mComponent.repaint();
 		}
+
+	}
+
+	@Override
+	public void requestRepaint() {
+		proposeRepaint(null);
 	}
 
 	protected Graphics2D getGraphics2D(final Image imgTarget) {

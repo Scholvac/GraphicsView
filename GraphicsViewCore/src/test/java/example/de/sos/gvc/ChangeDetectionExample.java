@@ -6,32 +6,27 @@ import java.awt.EventQueue;
 import java.awt.LinearGradientPaint;
 import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
-import java.awt.geom.Rectangle2D.Double;
-import java.util.ArrayList;
-import java.util.HashSet;
+import java.io.IOException;
 import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
 
+import javax.imageio.ImageIO;
 import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
 import javax.swing.JSplitPane;
 import javax.swing.WindowConstants;
 
-import com.github.romankh3.image.comparison.model.Rectangle;
-
 import de.sos.gvc.GraphicsItem;
 import de.sos.gvc.GraphicsScene;
 import de.sos.gvc.GraphicsView;
-import de.sos.gvc.IGraphicsViewHandler;
 import de.sos.gvc.Utils;
+import de.sos.gvc.handler.ChangeDetectionHandler;
 import de.sos.gvc.handler.DefaultViewDragHandler;
 import de.sos.gvc.handler.MouseDelegateHandler;
 import de.sos.gvc.handler.SelectionHandler;
 import de.sos.gvc.handler.SelectionHandler.IMoveCallback;
 import de.sos.gvc.handler.SelectionHandler.ItemMoveEvent;
-import de.sos.gvc.param.IParameter.IDisposeable;
+import de.sos.gvc.rt.JPanelRenderTarget;
 import de.sos.gvc.styles.DrawableStyle;
 
 public class ChangeDetectionExample {
@@ -42,6 +37,7 @@ public class ChangeDetectionExample {
 	private GraphicsView mChangeView;
 	private GraphicsScene mChangeScene;
 	private ChangeDetectionHandler mChangeDetector;
+	private GraphicsView mManagedView;
 
 	/**
 	 * Launch the application.
@@ -77,13 +73,20 @@ public class ChangeDetectionExample {
 
 		setupScene();
 		setupChangeDisplay();
+		setupManaged();
 
 		final JSplitPane splitPane = new JSplitPane();
-		splitPane.setResizeWeight(0.5);
+		splitPane.setResizeWeight(0.33);
 		frame.getContentPane().add(splitPane, BorderLayout.CENTER);
 
 		splitPane.setLeftComponent(mView.getComponent());
-		splitPane.setRightComponent(mChangeView.getComponent());
+
+		final JSplitPane split2 = new JSplitPane();
+		split2.setResizeWeight(0.5);
+		splitPane.setRightComponent(split2);
+		split2.setLeftComponent(mChangeView.getComponent());
+		split2.setRightComponent(mManagedView.getComponent());
+
 
 		final JPanel panel = new JPanel();
 		frame.getContentPane().add(panel, BorderLayout.NORTH);
@@ -96,7 +99,6 @@ public class ChangeDetectionExample {
 
 		btnNewButton.addActionListener(al -> paintRegions());
 		btnNewButton_1.addActionListener(al -> clear());
-
 	}
 
 	public void clear() {
@@ -104,161 +106,27 @@ public class ChangeDetectionExample {
 		mChangeScene.clear();
 	}
 	private void paintRegions() {
-		final List<Rectangle2D.Double> regionsToRepaint = new ArrayList();
-		mChangeDetector.getRepaintRegions(regionsToRepaint);
+		final List<Rectangle2D.Double> regionsToRepaint = mChangeDetector.getRepaintRegions();
 		final DrawableStyle style =new DrawableStyle(null, Color.red, null, null);
 		for (final Rectangle2D rect : regionsToRepaint) {
 			final GraphicsItem gi = new GraphicsItem(rect);
 			gi.setStyle(style);
 			mChangeScene.addItem(gi);
-
 		}
 	}
 
-	public static class ChangeDetectionHandler implements IGraphicsViewHandler {
-		private GraphicsScene mScene;
-		private List<IDisposeable> mDisposeables = new ArrayList<>();
 
-		private Set<GraphicsItem> 	mItemsToRevalidate = new HashSet();
-		private List<Rectangle2D.Double> 	mRegionsToRepaint = new ArrayList();
 
-		private final Rectangle2D zeroRect = new Rectangle2D.Double();
-		@Override
-		public void install(final GraphicsView view) {
-			mScene = view.getScene();
-			mDisposeables.add(mScene.addPropertyListener(GraphicsScene.ITEM_LIST_PROPERTY, pcl -> registerTopLevelItem((GraphicsItem)pcl.getNewValue())));
 
-		}
 
-		public void clear() {
-			mItemsToRevalidate.clear();
-			mRegionsToRepaint.clear();
-		}
-		/**
-		 * Find overlapping rectangles and merge them.
-		 */
-		private List<Rectangle2D.Double> mergeRectangles(final List<Rectangle2D.Double> rectangles) {
-			int position = 0;
-			int maxIter = rectangles.size() * 10;
-			while (position < rectangles.size() && maxIter-- > 0) {
-				if (rectangles.get(position).equals(zeroRect)) {
-					position++;
-					continue;
-				}
-				for (int i = 1 + position; i < rectangles.size(); i++) {
-					final Rectangle2D.Double r1 = rectangles.get(position);
-					final Rectangle2D.Double r2 = rectangles.get(i);
-					if (r2.equals(zeroRect)) {
-						continue;
-					}
-					if (isOverlapping(r1, r2)) {
-						rectangles.set(position, merge(r1, r2));
-						r2.setRect(0, 0, 0, 0);//invalidate
-						if (position != 0) {
-							position--;
-						}
-					}
-				}
-				position++;
-			}
-
-			final List<Double> toRemove = rectangles.stream().filter(it -> it.equals(zeroRect)).collect(Collectors.toList());
-			rectangles.removeAll(toRemove);
-			return rectangles;
-		}
-		private Rectangle2D.Double merge(final Rectangle2D.Double r1, final Rectangle2D.Double r2) {
-			final double mix = Math.min(r1.x, r2.x);
-			final double miy = Math.min(r1.y, r2.y);
-			final double max = Math.max(r1.getMaxX(), r2.getMaxX());
-			final double may = Math.max(r1.getMaxY(), r2.getMaxY());
-			r1.setRect(mix, miy, max-mix, may-miy);
-			return r1;
-		}
-
-		private boolean isOverlapping(final Rectangle2D.Double r1, final Rectangle2D.Double r2) {
-			if (r1.getMaxY() < r2.getMinY() || r2.getMaxY() < r1.getMinY())
-				return false;
-
-			return r1.getMaxX() >= r2.getMinX() && r2.getMaxX() >= r1.getMinX();
-		}
-
-		private List<Rectangle> mergeRectangles2(final List<Rectangle> rectangles) {
-			int position = 0;
-			while (position < rectangles.size()) {
-				if (rectangles.get(position).equals(Rectangle.createZero())) {
-					position++;
-				}
-				for (int i = 1 + position; i < rectangles.size(); i++) {
-					final Rectangle r1 = rectangles.get(position);
-					final Rectangle r2 = rectangles.get(i);
-					if (r2.equals(Rectangle.createZero())) {
-						continue;
-					}
-					if (r1.isOverlapping(r2)) {
-						rectangles.set(position, r1.merge(r2));
-						r2.makeZeroRectangle();
-						if (position != 0) {
-							position--;
-						}
-					}
-				}
-				position++;
-			}
-
-			return rectangles.stream().filter(it -> !it.equals(Rectangle.createZero())).collect(Collectors.toList());
-		}
-		public void getRepaintRegions(final List<Rectangle2D.Double> regionsToRepaint) {
-			mItemsToRevalidate.forEach(it -> rememberRectangle(it.getSceneBounds()));
-			regionsToRepaint.addAll(mRegionsToRepaint);
-			mergeRectangles(regionsToRepaint);
-			final List<Rectangle> toRect = regionsToRepaint.stream().map(r -> new Rectangle((int)(r.x*100), (int)(r.y*100), (int)(r.width*100), (int)(r.height*100))).collect(Collectors.toList());
-			final List<Rectangle> tmp = mergeRectangles2(toRect);
-		}
-
-		private void registerTopLevelItem(final GraphicsItem topLevelItem) {
-			if (topLevelItem == null)
-				return ;
-			mDisposeables.add(topLevelItem.addPropertyChangeListener(GraphicsItem.PROP_SCENE_BOUNDS, pcl -> onWorldBoundsChanged((GraphicsItem)pcl.getSource(), (Rectangle2D)pcl.getOldValue())));
-			mDisposeables.add(topLevelItem.addPropertyChangeListener(GraphicsItem.PROP_DRAWABLE, pcl -> onDrawableChanged((GraphicsItem)pcl.getSource(), (Rectangle2D)pcl.getOldValue())));
-		}
-
-		private void onDrawableChanged(final GraphicsItem source, final Rectangle2D oldValue) {
-			//just remember the current rectangle to be redrawn
-			if (oldValue != null) //added the first time
-				rememberRectangle(oldValue);
-			else
-				rememberItem(source);
-		}
-
-		public void onWorldBoundsChanged(final GraphicsItem source, final Rectangle2D oldValue) {
-			//rember the current rectangle to be redrawn (cleared old image) and the item which will have a new world transform and thus a new rectangle on next render
-			if (oldValue != null)
-				rememberRectangle(oldValue);
-			rememberItem(source);
-		}
-		private void rememberRectangle(final Rectangle2D ov) {
-			mRegionsToRepaint.add(new Rectangle2D.Double(ov.getX(), ov.getY(), ov.getWidth(), ov.getHeight()));
-		}
-
-		private void rememberItem(final GraphicsItem source) {
-			mItemsToRevalidate.add(source);
-		}
-
-		@Override
-		public void uninstall(final GraphicsView view) {
-			mDisposeables.forEach(IDisposeable::dispose);
-		}
-	}
 
 	private void setupChangeDisplay() {
-
-
 		mChangeScene = new GraphicsScene();
-		mChangeView= new GraphicsView(mChangeScene);
-		mChangeView.addHandler(new DefaultViewDragHandler());
-		mChangeView.setScale(2);
+		mChangeView= new GraphicsView(mChangeScene, new JPanelRenderTarget(), mView.getPropertyContext());
 	}
-
+	private void setupManaged() {
+		mManagedView = new GraphicsView(mScene, new JPanelRenderTarget(), mView.getPropertyContext());
+	}
 
 
 	private void setupScene() {
@@ -324,6 +192,18 @@ public class ChangeDetectionExample {
 		subStar.setScale(0.25, 0.25);
 		mixedItem.addItem(subStar);
 		mScene.addItem(mixedItem);
+
+
+		try {
+			final GraphicsItem backgroundImg = GraphicsItem.createFromImage(ImageIO.read(getClass().getClassLoader().getResource("texture/pexels-anni-roenkae-2832432.jpg")));
+			backgroundImg.setZOrder(20); //default is 100
+			backgroundImg.setScale(0.5);
+			mScene.addItem(backgroundImg);
+
+		} catch (final IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 
 }

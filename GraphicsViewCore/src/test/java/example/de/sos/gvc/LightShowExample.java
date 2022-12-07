@@ -30,7 +30,7 @@ import de.sos.gvc.styles.DrawableStyle;
  */
 public class LightShowExample {
 
-	public static final int ROWS = (int) (360/0.8);
+	public static final int ROWS = (int) (360/0.4);
 	public static final int COLUMNS = 2*1024;
 
 	public static void main(final String[] args) throws InterruptedException {

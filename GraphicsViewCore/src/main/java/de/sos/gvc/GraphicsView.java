@@ -12,24 +12,19 @@ import java.awt.event.MouseWheelListener;
 import java.awt.geom.AffineTransform;
 import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
-import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.DoubleSummaryStatistics;
 import java.util.List;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
 import org.slf4j.Logger;
 
-import de.sos.gvc.GraphicsScene.DirtyListener;
 import de.sos.gvc.GraphicsScene.IItemFilter;
 import de.sos.gvc.Utils.WindowStat;
+import de.sos.gvc.handler.RenderManager;
 import de.sos.gvc.log.GVLog;
 import de.sos.gvc.param.IParameter;
 import de.sos.gvc.param.ParameterContext;
@@ -67,22 +62,27 @@ public class GraphicsView {
 
 	private AffineTransform					mViewTransform = null;
 
-	/** maximum repaints (triggered by dirty scene) per second */
-	private int								mRepaintDelay = 1000/30; //default: maximum of 30 repaints per second, triggered by dirty scene
+
 
 	private DoubleSummaryStatistics			mOverallStatitic = new DoubleSummaryStatistics();
 	private WindowStat						mWindowStatistic = new WindowStat(20);
 
 	private final IRenderTarget				mRenderTarget;
-	/** Whether the GraphicsView shall trigger repaints, if a change in the scene or the view has been detected.
-	 */
-	private boolean							mTriggersRepaint = true;
-	private AtomicInteger 					mUpdateCounter = new AtomicInteger(0);
-	private AtomicInteger 					mRequestCounter = new AtomicInteger(0);
-	private ScheduledExecutorService 		mScheduler = Executors.newScheduledThreadPool(1);
-	private ScheduledFuture<Integer> 		mScheduledFuture;
+	private final RenderManager				mRenderManager;
+
+	//	/** Whether the GraphicsView shall trigger repaints, if a change in the scene or the view has been detected.
+	//	 */
+	//	private boolean							mTriggersRepaint = true;
+	//	private AtomicInteger 					mUpdateCounter = new AtomicInteger(0);
+	//	private AtomicInteger 					mRequestCounter = new AtomicInteger(0);
+	//	private ScheduledExecutorService 		mScheduler = Executors.newScheduledThreadPool(1);
+	//	private ScheduledFuture<Integer> 		mScheduledFuture;
+	//	private ArrayList<DirtyListener>		mDirtyListener = null;#
+	//	/** maximum repaints (triggered by dirty scene) per second */
+	//	private int								mRepaintDelay = 1000/30; //default: maximum of 30 repaints per second, triggered by dirty scene
 
 	private RenderingHints					mRenderHints = null;
+
 	/**
 	 * List of listener that will be notified before and after the painting has been done, for example to prepare a paint or clean up after painting
 	 */
@@ -90,32 +90,24 @@ public class GraphicsView {
 	/**
 	 * Invalidates the view transform and will be registered to all properties that have an effect to the view transform
 	 */
-	private PropertyChangeListener			mTransformListener = new PropertyChangeListener() {
-		@Override
-		public void propertyChange(final PropertyChangeEvent evt) {
-			mViewTransform = null;
-		}
+	private PropertyChangeListener			mTransformListener = pcl -> {
+		mViewTransform = null;
+		getRenderManager().notifyDirty();
 	};
-
 	/**
 	 * Listen to all properties that require a repaint (which are basically all :) )
 	 */
-	private PropertyChangeListener			mRepaintListener = new PropertyChangeListener() {
-		@Override
-		public void propertyChange(final PropertyChangeEvent evt) {
-			markViewAsDirty();
-		}
-	};
+	private PropertyChangeListener			mRepaintListener = pcl -> getRenderManager().notifyDirty();
 	private List<IGraphicsViewHandler>		mHandler = new ArrayList<>();
 
-	private DirtyListener					mDirtySceneListener = new DirtyListener() {
-		@Override
-		public void notifyDirty() {
-			markViewAsDirty();
-		}
-		@Override
-		public void notifyClean() {}
-	};
+	//	private DirtyListener					mDirtySceneListener = new DirtyListener() {
+	//		@Override
+	//		public void notifyDirty() {
+	//			markViewAsDirty();
+	//		}
+	//		@Override
+	//		public void notifyClean() {}
+	//	};
 
 	static class GVDrawContext implements IDrawContext {
 		final GraphicsView 			view;
@@ -152,6 +144,7 @@ public class GraphicsView {
 	public GraphicsView(final GraphicsScene scene, final IRenderTarget renderTarget, final ParameterContext propertyContext) {
 		mScene = scene;
 		mScene._addView(this);
+		mRenderManager = new RenderManager(scene, this);
 		mRenderTarget = renderTarget;
 		mRenderTarget.setGraphicsView(this);
 		mDrawContext = new GVDrawContext(this);
@@ -175,35 +168,50 @@ public class GraphicsView {
 		mRTHeight.addPropertyChangeListener(mTransformListener);
 
 		mPropertyContext.registerListener(mRepaintListener);
-		mScene.registerDirtyListener(mDirtySceneListener);
 	}
 
-
+	public RenderManager getRenderManager() {
+		return mRenderManager;
+	}
 	/** Whether the GraphicsView shall trigger repaints, if a change in the scene or the view has been detected.
 	 *
 	 * Disable repaint trigger may be usefull if rendered within another render loop
 	 *
 	 * @param enabled true, if the GraphicsView shall trigger a repaint if a change was detected, false otherwise.
+	 * @deprecated use {@link getRenderManager().enablePaintProposals}
 	 */
+	@Deprecated
 	public void enableRepaintTrigger(final boolean enabled) {
-		mTriggersRepaint = enabled;
+		getRenderManager().enablePaintProposals(enabled);
 	}
-	public boolean isRepaintTriggerEnabled() { return mTriggersRepaint;}
 
+	/**
+	 * @deprecated use {@link getRenderManager().isPaintProposalEnabled()}
+	 */
+	@Deprecated
+	public boolean isRepaintTriggerEnabled() { return getRenderManager().isPaintProposalEnabled();}
+
+	/** @deprecated use {@link getRenderManager().setMaximumFPS()}
+	 */
+	@Deprecated
 	public void setMaximumFPS(final int fps) {
-		mRepaintDelay = 1000 / fps;
+		getRenderManager().setMaximumFPS(fps);
 	}
+
+
 	/** Sets the internal scheduler service to a custom instance.
 	 * The scheduler-thread is most likely the thread that triggers the rendering
 	 * and may also performs the rendering.
 	 *
 	 * @param scheduler
+	 * @deprecated use {@linkplain #getRenderManager().setSchedulerService}
 	 */
+	@Deprecated
 	public void setSchedulerService(final ScheduledExecutorService scheduler) {
-		mScheduler = scheduler;
+		getRenderManager().setSchedulerService(scheduler);
 	}
 	public void setRenderHints(final RenderingHints rh) { mRenderHints = rh; }
-	public RenderingHints getREnderHints() { return mRenderHints;}
+	public RenderingHints getRenderHints() { return mRenderHints;}
 
 	public void addPaintListener(final IPaintListener listener) {
 		if (listener != null && !mPaintListener.contains(listener)) {
@@ -249,8 +257,12 @@ public class GraphicsView {
 	public void doPaint(final Graphics2D g2d) {
 		doPaint(g2d, 0, 0, getImageWidth(), getImageHeight());
 	}
+
+
+
+
 	/**
-	 * Paint the given area
+	 * Paint the given (screen) area
 	 *
 	 * @param g2d
 	 * @param x
@@ -259,7 +271,7 @@ public class GraphicsView {
 	 * @param height
 	 */
 	public void doPaint(final Graphics2D g2d, final int x, final int y, final int width, final int height) {
-		synchronized (mUpdateCounter) {
+		synchronized (mRenderManager) {
 			final long profile_time_start = System.currentTimeMillis();
 
 			internalPaint(g2d, x, y, width, height);
@@ -270,8 +282,9 @@ public class GraphicsView {
 			mWindowStatistic.accept(profile_time_sec);
 		}
 	}
+
+	private final Rectangle _mClipRectangle = new Rectangle();
 	private void internalPaint(final Graphics2D g2d, int x, int y, int width, int height) {
-		mUpdateCounter.set(mRequestCounter.get());
 		//check for changes
 		validateView();
 
@@ -287,6 +300,8 @@ public class GraphicsView {
 		mDrawContext.visibleScreenRect.setRect(x, y, width, height);
 		getVisibleSceneRect(mDrawContext.visibleScreenRect, mDrawContext.visibleSceneRect);
 
+		final Rectangle oldClip = g2d.getClipBounds();
+		g2d.setClip(x, y, width, height);
 
 		for (final IPaintListener pl : mPaintListener) {
 			try {
@@ -324,12 +339,6 @@ public class GraphicsView {
 			}
 		}
 
-		//reset the old transform & hints
-		g2d.setTransform(oldTransform);
-		mScene.markClean(); //remember that the scene is no longer dirty, at least not in terms of visualisation
-		if (mRenderHints != null && oldHints != null) //otherwise we did not change them...
-			g2d.setRenderingHints(oldHints);
-
 		for (final IPaintListener pl : mPaintListener) {
 			try {
 				pl.postPaint(g2d, mDrawContext);
@@ -339,7 +348,13 @@ public class GraphicsView {
 			}
 		}
 
-		//		System.out.println("Finish:"  + mUpdateCounter.get());
+		//reset the old transform & hints
+		g2d.setTransform(oldTransform);
+		if (mRenderHints != null && oldHints != null) //otherwise we did not change them...
+			g2d.setRenderingHints(oldHints);
+		g2d.setClip(_mClipRectangle);
+
+		mRenderManager.notifyClean();
 	}
 
 	/** checks some properties and may invalidate the view matrix */
@@ -356,7 +371,7 @@ public class GraphicsView {
 	 * required or not.
 	 */
 	public void triggerRepaint() {
-		markViewAsDirty();
+		getRenderManager().notifyDirty();
 	}
 	public Component getComponent() {
 		return mRenderTarget.getComponent();
@@ -428,10 +443,7 @@ public class GraphicsView {
 	 * @return
 	 */
 	public Rectangle2D getVisibleSceneRect(final Rectangle2D src, final Rectangle2D.Double store) {
-		//		final Rectangle vr = mRenderTarget.getVisibleRect();
-		//		final Rectangle2D rect = Utils.inverseTransform(vr, getViewTransform());
 		return Utils.inverseTransform(src, getViewTransform(), store);
-		//		return rect;
 	}
 
 	/**
@@ -633,18 +645,21 @@ public class GraphicsView {
 			func.accept(obj);
 	}
 
-	private void markViewAsDirty() {
-		synchronized (mRequestCounter) {
-			mRequestCounter.incrementAndGet();
-
-			if (mScheduledFuture == null) {
-				mScheduledFuture = mScheduler.schedule(() -> {
-					mScheduledFuture = null;
-					triggerRTRepaint();
-					return 0;
-				}, mRepaintDelay, TimeUnit.MILLISECONDS);
-			}
-		}
-	}
+	//	private void markViewAsDirty() {
+	//		synchronized (mRequestCounter) {
+	//			mRequestCounter.incrementAndGet();
+	//			if (mScheduledFuture == null) {
+	//				if (mDirtyListener != null)
+	//					for (int i = 0; i < mDirtyListener.size(); i++)
+	//						mDirtyListener.get(i).notifyDirty();
+	//
+	//				mScheduledFuture = mScheduler.schedule(() -> {
+	//					mScheduledFuture = null;
+	//					triggerRTRepaint();
+	//					return 0;
+	//				}, mRepaintDelay, TimeUnit.MILLISECONDS);
+	//			}
+	//		}
+	//	}
 
 }

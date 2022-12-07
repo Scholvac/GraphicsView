@@ -9,10 +9,12 @@ import java.awt.event.ComponentEvent;
 import javax.swing.JPanel;
 
 import de.sos.gvc.GraphicsView;
+import de.sos.gvc.handler.RenderManager;
 
 public class JPanelRenderTarget extends JPanel implements IRenderTarget{
 
 	private GraphicsView mView;
+	private RenderManager mLastManager;
 
 	public JPanelRenderTarget() {
 		addComponentListener(new ComponentAdapter() {
@@ -39,8 +41,16 @@ public class JPanelRenderTarget extends JPanel implements IRenderTarget{
 		repaint();
 	}
 	@Override
+	public void proposeRepaint(final RenderManager renderManager) {
+		mLastManager = renderManager;
+		repaint();//forward request to awt
+	}
+	@Override
 	protected void paintComponent(final Graphics g) {
 		super.paintComponent(g);
-		mView.doPaint((Graphics2D) g);
+		if (mLastManager != null) {
+			mLastManager.doPaint((Graphics2D)g);
+		}else
+			mView.doPaint((Graphics2D) g);
 	}
 }

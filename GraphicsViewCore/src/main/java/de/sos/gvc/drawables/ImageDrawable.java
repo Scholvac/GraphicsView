@@ -1,6 +1,7 @@
 package de.sos.gvc.drawables;
 
 import java.awt.Graphics2D;
+import java.awt.Image;
 import java.awt.geom.AffineTransform;
 import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;
@@ -10,41 +11,47 @@ import de.sos.gvc.styles.DrawableStyle;
 
 public class ImageDrawable extends AbstractDrawable {
 
-		private BufferedImage 		mImage;
-		private Rectangle2D 		mBoundingBox;
+	protected BufferedImage 	mImage;
+	protected Rectangle2D 		mBoundingBox;
+	protected AffineTransform 	mTransform;
 
-		private double 				mScaleX;
-		private double 				mScaleY;
-		private double 				mOffsetX;
-		private double 				mOffsetY;
 
-		public ImageDrawable(Rectangle2D bb, BufferedImage image) {
-			mImage = image;
-			mBoundingBox = bb;
-
-			double iw = mImage.getWidth();
-			double ih = mImage.getHeight();
-			double iw2 = iw / 2.0;
-			double ih2 = ih / 2.0;
-
-			double bbw = mBoundingBox.getWidth();
-			double bbh = mBoundingBox.getHeight();
-
-			mScaleX = bbw / iw;
-			mScaleY = bbh / ih;
-			mOffsetX = -iw2 * mScaleX;
-			mOffsetY = ih * mScaleY;
-		}
-
-		public BufferedImage getImage() {return mImage;}
-		public Rectangle2D getBoundingBox() {return mBoundingBox;}
-
-		@Override
-		public void paintItem(Graphics2D g, DrawableStyle style, IDrawContext ctx) {
-			AffineTransform t = new AffineTransform();
-			t.translate(mOffsetX/1.0, mOffsetY/2.0);
-			t.scale(mScaleX, -mScaleY);
-			g.drawImage(mImage, t, null);
-		}
-
+	public ImageDrawable(final Rectangle2D bb, final BufferedImage image) {
+		mImage = image;
+		mBoundingBox = bb;
 	}
+
+	public BufferedImage getImage() {return mImage;}
+	public Rectangle2D getBoundingBox() {return mBoundingBox;}
+
+	protected AffineTransform getTransform() {
+		if (mTransform == null) {
+			final double iw = mImage.getWidth();
+			final double ih = mImage.getHeight();
+			final double iw2 = iw / 2.0;
+			final double ih2 = ih / 2.0;
+
+			final double bbw = mBoundingBox.getWidth();
+			final double bbh = mBoundingBox.getHeight();
+
+			final double scaleX = bbw / iw;
+			final double scaleY = bbh / ih;
+			final double offsetX = -iw2 * scaleX;
+			final double offsetY = ih2 * scaleY;
+
+			final AffineTransform t = new AffineTransform();
+			t.translate(offsetX, offsetY);
+			t.scale(scaleX, -scaleY); //-scaleY = take care of the inverted y-axis from GraphicsView
+			mTransform = t;
+		}
+		return mTransform;
+	}
+	@Override
+	public void paintItem(final Graphics2D g, final DrawableStyle style, final IDrawContext ctx) {
+		final AffineTransform transform = getTransform();
+		final Image image = getImage();
+
+		g.drawImage(image, transform, null);
+	}
+
+}
