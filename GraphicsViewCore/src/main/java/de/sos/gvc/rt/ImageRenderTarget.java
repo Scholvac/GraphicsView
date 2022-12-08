@@ -165,7 +165,7 @@ public abstract class ImageRenderTarget<ImageType extends Image> implements IRen
 		}
 		return mImage;
 	}
-	protected void resetImage(final int width, final int height) {
+	public void resetImage(final int width, final int height) {
 		mWidth = width; mHeight = height;
 		mImage = null;
 	}
