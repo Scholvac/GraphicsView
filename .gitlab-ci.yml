@@ -85,9 +85,8 @@ spotbugs-sast:
     reports:
       sast: gl-sast-report.json
 
-code_quality_html:
-  extends: code_quality
+code_quality:
   variables:
-    REPORT_FORMAT: html
+    REPORT_FORMAT: html | json
   artifacts:
     paths: [gl-code-quality-report.html]      
