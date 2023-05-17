@@ -5,9 +5,14 @@
 # * Caches downloaded dependencies and plugins between invocation.
 # * Verify but don't deploy merge requests.
 # * Deploy built artifacts from master branch only.
+stages:
+  - test
+  - deploy
+
 include:
    - template: Code-Quality.gitlab-ci.yml
-   
+   - template: Jobs/SAST.gitlab-ci.yml
+
 variables:
   # This will suppress any download for dependencies and plugins or upload messages which would clutter the console log.
   # `showDateTime` will show the passed time in milliseconds. You need to specify `--batch-mode` to make this work.
@@ -68,3 +73,21 @@ deploy:jdk8.gitlab.repository:
     - tags  
   only: 
     - $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+
+
+spotbugs-sast:
+  dependencies:
+    - verify:jdk8
+  variables:
+    MAVEN_REPO_PATH: $CI_PROJECT_DIR/.m2/repository
+    COMPILE: "false"
+  artifacts:
+    reports:
+      sast: gl-sast-report.json
+
+code_quality_html:
+  extends: code_quality
+  variables:
+    REPORT_FORMAT: html
+  artifacts:
+    paths: [gl-code-quality-report.html]      
