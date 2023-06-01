@@ -37,10 +37,14 @@ cache:
 .verify: &verify
   stage: test
   script:
-    - 'mvn $MAVEN_CLI_OPTS verify'
+    - 'mvn $MAVEN_CLI_OPTS clean org.jacoco:jacoco-maven-plugin:prepare-agent test jacoco:report'
   except:
     - $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
     - tags
+  artifacts:
+    paths:
+      - target/site/jacoco/jacoco.xml
+
 
 # Verify merge requests using JDK8
 verify:jdk8:
@@ -88,7 +92,7 @@ spotbugs-sast:
 
 code_quality:
   variables:
-    REPORT_FORMAT: html
+#    REPORT_FORMAT: html
   artifacts:
     paths: [gl-code-quality-report.html]    
 
