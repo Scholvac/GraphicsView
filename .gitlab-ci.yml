@@ -43,7 +43,9 @@ cache:
     - tags
   artifacts:
     paths:
-      - target/site/jacoco/jacoco.xml
+      - GraphicsViewCore/target/site/jacoco/jacoco.xml
+      - GeoGraphicsView/target/site/jacoco/jacoco.xml
+      - GeotoolsAdapter/target/site/jacoco/jacoco.xml
 
 
 # Verify merge requests using JDK8
@@ -105,10 +107,10 @@ coverage-jdk8:
   image: registry.gitlab.com/haynes/jacoco2cobertura:1.0.7
   script:
     # convert report from jacoco to cobertura, using relative project path
-    - python /opt/cover2cover.py target/site/jacoco/jacoco.xml $CI_PROJECT_DIR/src/main/java/ > target/site/cobertura.xml
+    - python /opt/cover2cover.py GraphicsViewCore/target/site/jacoco/jacoco.xml $CI_PROJECT_DIR/src/main/java/ > GraphicsViewCore/target/site/cobertura.xml
   needs: ["verify:jdk8"]
   artifacts:
     reports:
       coverage_report:
         coverage_format: cobertura
-        path: target/site/cobertura.xml
+        path: GraphicsViewCore/target/site/cobertura.xml
