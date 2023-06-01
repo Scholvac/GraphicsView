@@ -94,7 +94,7 @@ spotbugs-sast:
 
 code_quality:
   variables:
-#    REPORT_FORMAT: html
+    REPORT_FORMAT: html
   artifacts:
     paths: [gl-code-quality-report.html]    
 
@@ -107,7 +107,7 @@ coverage-jdk8:
   image: registry.gitlab.com/haynes/jacoco2cobertura:1.0.7
   script:
     # convert report from jacoco to cobertura, using relative project path
-    - python /opt/cover2cover.py GraphicsViewCore/target/site/jacoco/jacoco.xml $CI_PROJECT_DIR/src/main/java/ > GraphicsViewCore/target/site/cobertura.xml
+    - python /opt/cover2cover.py GraphicsViewCore/target/site/jacoco/jacoco.xml $CI_PROJECT_DIR/GraphicsViewCore/src/main/java/ > GraphicsViewCore/target/site/cobertura.xml
   needs: ["verify:jdk8"]
   artifacts:
     reports:
