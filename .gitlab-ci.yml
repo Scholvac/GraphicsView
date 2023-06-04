@@ -42,6 +42,15 @@ cache:
     - $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
     - tags
   artifacts:
+    when: always
+    reports:
+      junit:
+        - GraphicsViewCore/target/surefire-reports/TEST-*.xml
+        - GraphicsViewCore/target/failsafe-reports/TEST-*.xml
+        - GeoGraphicsView/target/surefire-reports/TEST-*.xml
+        - GeoGraphicsView/target/failsafe-reports/TEST-*.xml
+        - GeotoolsAdapter/target/surefire-reports/TEST-*.xml
+        - GeotoolsAdapter/target/failsafe-reports/TEST-*.xml
     paths:
       - GraphicsViewCore/target/site/jacoco/jacoco.xml
       - GeoGraphicsView/target/site/jacoco/jacoco.xml
@@ -82,24 +91,7 @@ deploy:jdk8.gitlab.repository:
     - $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
 
 
-spotbugs-sast:
-  dependencies:
-    - verify:jdk8
-  variables:
-    MAVEN_REPO_PATH: $CI_PROJECT_DIR/.m2/repository
-    COMPILE: "false"
-  artifacts:
-    reports:
-      sast: gl-sast-report.json
-
-code_quality:
-  variables:
-    REPORT_FORMAT: html
-  artifacts:
-    paths: [gl-code-quality-report.html]    
-
-
-coverage-jdk8:
+coverage:
   # Must be in a stage later than test-jdk11's stage.
   # The `visualize` stage does not exist by default.
   # Please define it first, or choose an existing stage like `deploy`.
@@ -109,6 +101,8 @@ coverage-jdk8:
     # convert report from jacoco to cobertura, using relative project path
     - python /opt/cover2cover.py GraphicsViewCore/target/site/jacoco/jacoco.xml $CI_PROJECT_DIR/GraphicsViewCore/src/main/java/ > GraphicsViewCore/target/site/cobertura.xml
   needs: ["verify:jdk8"]
+  dependencies:
+    - "verify:jdk8"
   artifacts:
     reports:
       coverage_report:
