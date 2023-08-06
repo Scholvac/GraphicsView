@@ -59,6 +59,7 @@ cache:
 
 # Verify merge requests using JDK8
 verify:jdk8:
+  stage: test
   <<: *verify
 
 # To deploy packages from CI, create a ci_settings.xml file
