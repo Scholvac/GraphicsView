@@ -101,7 +101,6 @@ coverage:
   script:
     # convert report from jacoco to cobertura, using relative project path
     - python /opt/cover2cover.py GraphicsViewCore/target/site/jacoco/jacoco.xml $CI_PROJECT_DIR/GraphicsViewCore/src/main/java/ > GraphicsViewCore/target/site/cobertura.xml
-  needs: ["verify:jdk8"]
   dependencies:
     - "verify:jdk8"
   artifacts:
