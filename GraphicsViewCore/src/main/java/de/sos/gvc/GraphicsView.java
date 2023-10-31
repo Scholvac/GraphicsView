@@ -126,6 +126,10 @@ public class GraphicsView {
 		public AffineTransform getViewTransform() {
 			return GraphicsView.this.getViewTransform();
 		}
+		@Override
+		public Rectangle2D getVisibleSceneRect() {
+			return GraphicsView.this.getVisibleSceneRect();
+		}
 	};
 
 
@@ -588,7 +592,8 @@ public class GraphicsView {
 			func.accept(obj);
 	}
 
-	private synchronized void markViewAsDirty() {
+	private void markViewAsDirty() {
+		//		synchronized (mRequestCounter) {
 		mRequestCounter.incrementAndGet();
 
 		if (mScheduledFuture == null) {
@@ -598,6 +603,7 @@ public class GraphicsView {
 				return 0;
 			}, mRepaintDelay, TimeUnit.MILLISECONDS);
 		}
+		//		}
 	}
 
 }
