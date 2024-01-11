@@ -8,6 +8,8 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 
 import de.sos.gv.geo.GeoUtils;
 import de.sos.gv.geo.LatLonBox;
@@ -74,6 +76,11 @@ public class TileHandler implements IGraphicsViewHandler, IPaintListener {
 	private final LatLonBox				_viewBB = new LatLonBox();
 	private final LinkedList<int[]>		_tilesToAdd = new LinkedList<>();
 	private final HashSet<String>		_tilesToRemove = new HashSet<>();
+	/** The milliseconds to wait for all (active) tiles to be completed. If == 0 no waiting at all, if < 0; wait without timeout.
+	 * Default is == 0, e.g. no waiting at all*/
+	private	long						mTimeToWaitForAllTiles = 0;
+	private boolean 					mLoadingComplete; //Whether all tiles have been loaded or not (invalid if #isWaitForAllTilesEnabled() == false)
+
 	@Override
 	public void prePaint(final Graphics2D graphics, final IDrawContext context) {
 		if (mTileUpdateRequired) {
@@ -107,8 +114,30 @@ public class TileHandler implements IGraphicsViewHandler, IPaintListener {
 					addTile(scene, _tilesToAdd.removeFirst());
 				}
 			}
+			waitForAllActiveTiles();
 			mTileUpdateRequired = false;
 		}
+	}
+
+	private void waitForAllActiveTiles() {
+		if (mTimeToWaitForAllTiles == 0)
+			return ;
+		try {
+			mLoadingComplete = false;
+			final CompletableFuture[] futures = mActiveTiles.values().stream().map(TileItem::getImageFuture).toArray(CompletableFuture[]::new);
+			if (mTimeToWaitForAllTiles < 0)
+				CompletableFuture.allOf(futures).get();
+			else
+				CompletableFuture.allOf(futures).get(mTimeToWaitForAllTiles, TimeUnit.MILLISECONDS);
+			for (final CompletableFuture f : futures) {
+				f.get();
+			}
+			mLoadingComplete = true;
+		}catch(final Exception e) {
+			e.printStackTrace();
+			mLoadingComplete = false;
+		}
+
 	}
 
 	private void addTile(final GraphicsScene scene, final int[] tileInfo) {
@@ -133,5 +162,40 @@ public class TileHandler implements IGraphicsViewHandler, IPaintListener {
 		mActiveTiles.values().forEach(ti -> mFactory.release(ti));
 		mActiveTiles.clear();
 		mTileUpdateRequired = true;
+	}
+
+	/**
+	 * Enable or disable waiting for all tiles to be completly loaded.
+	 * If enabled, the tile handler will wait without timeout that all tiles have been loaded or an exception has been thrown.
+	 * <br>
+	 * @see #waitForAllTiles(long, TimeUnit)
+	 * @param doWait
+	 */
+	public void waitForAllTiles(final boolean doWait) {
+		if (doWait)
+			waitForAllTiles(-1, TimeUnit.MILLISECONDS);
+		else
+			waitForAllTiles(0, TimeUnit.MILLISECONDS);
+	}
+	/**
+	 * Wait for a certain amount of time, that all tiles have been loaded.
+	 * <br>
+	 * if not all tiles have been loaded in time, a timeout exception is logged and the rendering process is continued.
+	 *
+	 * @param time The time in <code>unit</code> to wait until all tiles have been loaded. Set to <ul>
+	 * <li> > 0: the time in given unit
+	 * <li> 0:  do not wait at all, e.g. complete asynchron loading
+	 * <li> < 0: wait without timeout
+	 * @param unit The unit of time
+	 */
+	public void waitForAllTiles(final long time, final TimeUnit unit) {
+		mTimeToWaitForAllTiles = unit.convert(time, TimeUnit.MILLISECONDS);
+	}
+	public boolean isWaitForAllTilesEnabled() {
+		return mTimeToWaitForAllTiles != 0;
+	}
+
+	public boolean isComplete() {
+		return !isWaitForAllTilesEnabled() || mLoadingComplete;
 	}
 }

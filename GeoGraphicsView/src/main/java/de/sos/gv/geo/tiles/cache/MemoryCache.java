@@ -3,9 +3,7 @@ package de.sos.gv.geo.tiles.cache;
 import java.awt.image.BufferedImage;
 import java.util.LinkedList;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 
 import de.sos.gv.geo.tiles.ITileImageProvider;
@@ -46,29 +44,22 @@ public class MemoryCache implements ITileImageProvider {
 	}
 
 	@Override
-	public CompletableFuture<BufferedImage> load(final TileInfo info) {
-		final CompletableFuture<BufferedImage> cf = new CompletableFuture<>();
+	public BufferedImage load(final TileInfo info) {
 		CacheEntry ce = mCache.get(info);
 		if (ce == null) {
 			ce = loadImage(info);
 			mCache.put(info, ce);
 		}
-		cf.complete(ce.image);
-		return cf;
+		return ce.image;
 	}
 
 	private CacheEntry loadImage(final TileInfo ti) {
-		try {
-			final BufferedImage bimg = mProvider.load(ti).get();
-			final CacheEntry ce = new CacheEntry(ti, bimg);
-			mOrder.add(ce);
-			mCurrentSize += ce.length;
-			enforceMaximumSize();
-			return ce;
-		} catch (InterruptedException | ExecutionException e) {
-			e.printStackTrace();
-		}
-		return null;
+		final BufferedImage bimg = mProvider.load(ti);
+		final CacheEntry ce = new CacheEntry(ti, bimg);
+		mOrder.add(ce);
+		mCurrentSize += ce.length;
+		enforceMaximumSize();
+		return ce;
 	}
 	private void enforceMaximumSize() {
 		while(mCurrentSize > mMaxSize) {
