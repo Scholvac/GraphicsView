@@ -5,9 +5,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Map;
 import java.util.TreeSet;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 
 import javax.imageio.ImageIO;
@@ -126,30 +124,25 @@ public class FileCache implements ITileImageProvider {
 		}
 	}
 	@Override
-	public CompletableFuture<BufferedImage> load(final TileInfo info) {
-		final CompletableFuture<BufferedImage> image = new CompletableFuture<>();
+	public BufferedImage load(final TileInfo info) {
 		CacheEntry ce = mCache.get(info);
 		if (ce == null) {
 			ce = saveToFile(info);
 			mCache.put(info, ce);
 		}
-		image.complete(loadFromFile(ce.file));
+		final BufferedImage image = loadFromFile(ce.file);
 		enforceMaximumSize();
 		return image;
 	}
 
 	private CacheEntry saveToFile(final TileInfo ti) {
-		try {
-			return mProvider.load(ti).thenApply(img -> {
-				if (img != null) {
-					final File file = getFile(ti);
-					saveToFile(file, img);
-					return addFile(file, false);
-				}
-				return null;
-			}).get();
-		} catch (InterruptedException | ExecutionException e) {
-			e.printStackTrace();
+		final BufferedImage img = mProvider.load(ti);
+		if (img != null) {
+			if (img != null) {
+				final File file = getFile(ti);
+				saveToFile(file, img);
+				return addFile(file, false);
+			}
 		}
 		return null;
 	}

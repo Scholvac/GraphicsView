@@ -1,7 +1,6 @@
 package de.sos.gv.geo.tiles;
 
 import java.awt.image.BufferedImage;
-import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
 
 import org.slf4j.Logger;
@@ -67,7 +66,7 @@ public class TileFactory implements ITileFactory {
 	}
 
 	protected TileItem createTile(final int[] tileInfo) {
-		return new TileItem(new TileInfo(tileInfo), mErrorImageSupplier.get());
+		return new TileItem(new TileInfo(tileInfo), mLoadingImageSupplier.get());
 	}
 	@Override
 	public void release(final TileItem item) {
@@ -78,31 +77,23 @@ public class TileFactory implements ITileFactory {
 
 	///////////////////////////////////////////////
 	class TileJob implements IJob {
+		private final TileItem 						mItem;
+		private final long							mCreationTime;//used for priority
 
-		private final TileItem 	mItem;
-		private final long		mCreationTime;
 
 		public TileJob(final TileItem item) {
 			mItem = item;
-			mCreationTime = System.currentTimeMillis(); //used for priority
+			mCreationTime = System.currentTimeMillis();
 		}
 
 		@Override
 		public void run() {
-			mItem.setImage(TileStatus.LOADING, mLoadingImageSupplier.get());
-
-			final CompletableFuture<BufferedImage> imgFuture = mImageProvider.load(mItem.getInfo());
-
-			imgFuture.whenComplete((img, ex) -> {
-				if (img != null)
-					mItem.setImage(TileStatus.FINISHED, img);
-				else {
-					mItem.setImage(TileStatus.ERROR, mErrorImageSupplier.get());
-					ex.printStackTrace();
-				}
-			});
-
-
+			final BufferedImage img = mImageProvider.load(mItem.getInfo());
+			if (img != null)
+				mItem.setImage(TileStatus.FINISHED, img);
+			else {
+				mItem.setImage(TileStatus.ERROR, mErrorImageSupplier.get());
+			}
 		}
 		@Override
 		public long getCreationTime() { return mCreationTime; }
