@@ -1,8 +1,6 @@
 package de.sos.gv.geo.tiles;
 
-import java.awt.Rectangle;
 import java.awt.image.BufferedImage;
-import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
 
 import org.slf4j.Logger;
@@ -45,9 +43,22 @@ public class TileFactory implements ITileFactory {
 		mScheduler = new PriorityJobScheduler(threadName, threadCount, queueSize);
 	}
 
+	public void setMaximumZoom(final int maxZoom) {
+		mCalculator.setMaximumZoom(maxZoom);
+	}
+	public int getMaximumZoom() {
+		return mCalculator.getMaximumZoom();
+	}
+	public void setTileCalculator(final ITileCalculator tileCalc) {
+		mCalculator = tileCalc;
+	}
+	public ITileCalculator getTileCalculator() {
+		return mCalculator;
+	}
+
 	@Override
-	public int[][] getRequiredTileInfos(final LatLonBox area, final Rectangle viewBounds) {
-		return mCalculator.calculateTileCoordinates(area, viewBounds);
+	public int[][] getRequiredTileInfos(final LatLonBox area, final int imgWidth, final int imgHeight) {
+		return mCalculator.calculateTileCoordinates(area, imgWidth);
 	}
 
 	public void setProvider(final ITileImageProvider provider) {
@@ -68,7 +79,7 @@ public class TileFactory implements ITileFactory {
 	}
 
 	protected TileItem createTile(final int[] tileInfo) {
-		return new TileItem(new TileInfo(tileInfo), mErrorImageSupplier.get());
+		return new TileItem(new TileInfo(tileInfo), mLoadingImageSupplier.get());
 	}
 	@Override
 	public void release(final TileItem item) {
@@ -79,31 +90,23 @@ public class TileFactory implements ITileFactory {
 
 	///////////////////////////////////////////////
 	class TileJob implements IJob {
+		private final TileItem 						mItem;
+		private final long							mCreationTime;//used for priority
 
-		private final TileItem 	mItem;
-		private final long		mCreationTime;
 
 		public TileJob(final TileItem item) {
 			mItem = item;
-			mCreationTime = System.currentTimeMillis(); //used for priority
+			mCreationTime = System.currentTimeMillis();
 		}
 
 		@Override
 		public void run() {
-			mItem.setImage(TileStatus.LOADING, mLoadingImageSupplier.get());
-
-			final CompletableFuture<BufferedImage> imgFuture = mImageProvider.load(mItem.getInfo());
-
-			imgFuture.whenComplete((img, ex) -> {
-				if (img != null)
-					mItem.setImage(TileStatus.FINISHED, img);
-				else {
-					mItem.setImage(TileStatus.ERROR, mErrorImageSupplier.get());
-					ex.printStackTrace();
-				}
-			});
-
-
+			final BufferedImage img = mImageProvider.load(mItem.getInfo());
+			if (img != null)
+				mItem.setImage(TileStatus.FINISHED, img);
+			else {
+				mItem.setImage(TileStatus.ERROR, mErrorImageSupplier.get());
+			}
 		}
 		@Override
 		public long getCreationTime() { return mCreationTime; }

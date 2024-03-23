@@ -34,10 +34,10 @@ import de.sos.gvc.GraphicsItem;
 import de.sos.gvc.GraphicsScene;
 import de.sos.gvc.GraphicsView;
 import de.sos.gvc.IDrawContext;
+import de.sos.gvc.Utils;
 import de.sos.gvc.handler.DefaultViewDragHandler;
 import de.sos.gvc.handler.MouseDelegateHandler;
 import de.sos.gvc.handler.SelectionHandler;
-import de.sos.gvc.param.ParameterContext;
 import de.sos.gvc.styles.DrawableStyle;
 
 
@@ -56,7 +56,7 @@ public class GeoItemsIntroduction {
 
 		//Create a new Scene and a new View
 		final GraphicsScene scene = new GraphicsScene();
-		view = new GraphicsView(scene, new ParameterContext());
+		view = new GraphicsView(scene);
 
 
 		//Standard Handler
@@ -94,7 +94,7 @@ public class GeoItemsIntroduction {
 		frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
 		frame.setSize(800, 800);
 		frame.getContentPane().setLayout(new BorderLayout(0, 0));
-		frame.getContentPane().add(view);
+		frame.getContentPane().add(view.getComponent());
 
 		final JPanel panel = new JPanel();
 		frame.getContentPane().add(panel, BorderLayout.WEST);
@@ -299,7 +299,7 @@ public class GeoItemsIntroduction {
 		final DrawableStyle errorStyle = new DrawableStyle(); errorStyle.setLinePaint(Color.RED);
 		final DrawableStyle correctedStyle = new DrawableStyle(); correctedStyle.setLinePaint(Color.GREEN);
 		//create an arrow shape that points with fix size to the scale error items
-		final Shape arrowShape = ExampleUtils.wkt2Shape("POLYGON ((-10 0, 0 10, 10 0, 5 0, 5 -10, -5 -10, -5 0, -10 0))");
+		final Shape arrowShape = Utils.wkt2Shape("POLYGON ((-10 0, 0 10, 10 0, 5 0, 5 -10, -5 -10, -5 0, -10 0))");
 		//create an 100m (high) rectangle to show the scale effect, correct and error shape only differ in with to be distinguishable even near the aquator
 		final Rectangle2D errorRect = new Rectangle2D.Double(-1, -50, 2, 100);
 		final Rectangle2D correctRect = new Rectangle2D.Double(-2, -50, 4, 100);

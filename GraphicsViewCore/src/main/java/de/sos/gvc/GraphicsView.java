@@ -1,46 +1,55 @@
 package de.sos.gvc;
 
-import java.awt.Graphics;
+import java.awt.Component;
 import java.awt.Graphics2D;
 import java.awt.Point;
 import java.awt.Rectangle;
 import java.awt.RenderingHints;
-import java.awt.event.ComponentAdapter;
-import java.awt.event.ComponentEvent;
+import java.awt.RenderingHints.Key;
+import java.awt.event.MouseListener;
+import java.awt.event.MouseMotionListener;
+import java.awt.event.MouseWheelListener;
 import java.awt.geom.AffineTransform;
 import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
+import java.util.DoubleSummaryStatistics;
 import java.util.List;
-import java.util.Timer;
-import java.util.TimerTask;
-
-import javax.swing.JPanel;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
 
 import org.slf4j.Logger;
 
 import de.sos.gvc.GraphicsScene.DirtyListener;
 import de.sos.gvc.GraphicsScene.IItemFilter;
+import de.sos.gvc.Utils.WindowStat;
 import de.sos.gvc.log.GVLog;
 import de.sos.gvc.param.IParameter;
 import de.sos.gvc.param.ParameterContext;
+import de.sos.gvc.rt.IRenderTarget;
+import de.sos.gvc.rt.JPanelRenderTarget;
 
 /**
  *
  * @author scholvac
  *
  */
-public class GraphicsView extends JPanel {
+public class GraphicsView {
 
-	public static final String PROP_VIEW_CENTER_X = "VIEW_CENTER_X";
-	public static final String PROP_VIEW_CENTER_Y = "VIEW_CENTER_Y";
-	public static final String PROP_VIEW_SCALE_X = "VIEW_SCALE_X";
-	public static final String PROP_VIEW_SCALE_Y = "VIEW_SCALE_Y";
-	public static final String PROP_VIEW_ROTATE = "VIEW_ROTATE";
+	public static final String PROP_VIEW_CENTER_X 	= "VIEW_CENTER_X";
+	public static final String PROP_VIEW_CENTER_Y 	= "VIEW_CENTER_Y";
+	public static final String PROP_VIEW_SCALE_X 	= "VIEW_SCALE_X";
+	public static final String PROP_VIEW_SCALE_Y 	= "VIEW_SCALE_Y";
+	public static final String PROP_VIEW_ROTATE 	= "VIEW_ROTATE";
+	public static final String PROP_VIEW_WIDTH 		= "VIEW_WIDTH";
+	public static final String PROP_VIEW_HEIGHT 	= "VIEW_HEIGHT";
 
 
 	private static Logger LOG = GVLog.getLogger(GraphicsView.class);
@@ -53,14 +62,27 @@ public class GraphicsView extends JPanel {
 	protected IParameter<Double> 			mScaleX;
 	protected IParameter<Double> 			mScaleY;
 	protected IParameter<Double> 			mRotation;
+	protected IParameter<Integer>			mRTWidth;
+	protected IParameter<Integer>			mRTHeight;
 
 	private AffineTransform					mViewTransform = null;
 
 	/** maximum repaints (triggered by dirty scene) per second */
-	private int							mRepaintDelay = 1000/30; //default: maximum of 30 repaints per second, triggered by dirty scene
-	private Timer						mRepaintTimer;
-	private TimerTask					mRepaintTimerTask = null;
+	private int								mRepaintDelay = 1000/30; //default: maximum of 30 repaints per second, triggered by dirty scene
 
+	private DoubleSummaryStatistics			mOverallStatitic = new DoubleSummaryStatistics();
+	private WindowStat						mWindowStatistic = new WindowStat(20);
+
+	private final IRenderTarget				mRenderTarget;
+	/** Whether the GraphicsView shall trigger repaints, if a change in the scene or the view has been detected.
+	 */
+	private boolean							mTriggersRepaint = true;
+	private AtomicInteger 					mUpdateCounter = new AtomicInteger(0);
+	private AtomicInteger 					mRequestCounter = new AtomicInteger(0);
+	private ScheduledExecutorService 		mScheduler = Executors.newScheduledThreadPool(1);
+	private ScheduledFuture<Integer> 		mScheduledFuture;
+
+	private RenderingHints					mRenderHints = null;
 	/**
 	 * List of listener that will be notified before and after the painting has been done, for example to prepare a paint or clean up after painting
 	 */
@@ -70,7 +92,7 @@ public class GraphicsView extends JPanel {
 	 */
 	private PropertyChangeListener			mTransformListener = new PropertyChangeListener() {
 		@Override
-		public void propertyChange(PropertyChangeEvent evt) {
+		public void propertyChange(final PropertyChangeEvent evt) {
 			mViewTransform = null;
 		}
 	};
@@ -80,8 +102,8 @@ public class GraphicsView extends JPanel {
 	 */
 	private PropertyChangeListener			mRepaintListener = new PropertyChangeListener() {
 		@Override
-		public void propertyChange(PropertyChangeEvent evt) {
-			repaint();
+		public void propertyChange(final PropertyChangeEvent evt) {
+			markViewAsDirty();
 		}
 	};
 	private List<IGraphicsViewHandler>		mHandler = new ArrayList<>();
@@ -89,16 +111,7 @@ public class GraphicsView extends JPanel {
 	private DirtyListener					mDirtySceneListener = new DirtyListener() {
 		@Override
 		public void notifyDirty() {
-			if (mRepaintTimerTask != null) {
-				return ; //repaint is already scheduled
-			}
-			mRepaintTimer.schedule(mRepaintTimerTask = new TimerTask() {
-				@Override
-				public void run() {
-					mRepaintTimerTask = null;
-					repaint();
-				}
-			}, mRepaintDelay);
+			markViewAsDirty();
 		}
 		@Override
 		public void notifyClean() {}
@@ -113,123 +126,157 @@ public class GraphicsView extends JPanel {
 		public AffineTransform getViewTransform() {
 			return GraphicsView.this.getViewTransform();
 		}
+		@Override
+		public Rectangle2D getVisibleSceneRect() {
+			return GraphicsView.this.getVisibleSceneRect();
+		}
 	};
 
 
-	public GraphicsView(GraphicsScene scene) {
-		this(scene, new ParameterContext());
+	public GraphicsView(final GraphicsScene scene) {
+		this(scene, new JPanelRenderTarget());
+	}
+	public GraphicsView(final GraphicsScene scene, final IRenderTarget renderTarget) {
+		this(scene, renderTarget, new ParameterContext());
 	}
 
-
-	public GraphicsView(GraphicsScene scene, ParameterContext propertyContext) {
+	public GraphicsView(final GraphicsScene scene, final IRenderTarget renderTarget, final ParameterContext propertyContext) {
 		mScene = scene;
 		mScene._addView(this);
+		mRenderTarget = renderTarget;
+		mRenderTarget.setGraphicsView(this);
 
 		mPropertyContext = propertyContext;
 
-		mCenterX = mPropertyContext.getProperty(PROP_VIEW_CENTER_X, 0.0);
-		mCenterY = mPropertyContext.getProperty(PROP_VIEW_CENTER_Y, 0.0);
-		mScaleX = mPropertyContext.getProperty(PROP_VIEW_SCALE_X, 1.0);
-		mScaleY = mPropertyContext.getProperty(PROP_VIEW_SCALE_Y, 1.0);
-		mRotation = mPropertyContext.getProperty(PROP_VIEW_ROTATE, 0.0);
+		mCenterX 	= mPropertyContext.getProperty(PROP_VIEW_CENTER_X, 0.0);
+		mCenterY 	= mPropertyContext.getProperty(PROP_VIEW_CENTER_Y, 0.0);
+		mScaleX 	= mPropertyContext.getProperty(PROP_VIEW_SCALE_X, 1.0);
+		mScaleY 	= mPropertyContext.getProperty(PROP_VIEW_SCALE_Y, 1.0);
+		mRotation 	= mPropertyContext.getProperty(PROP_VIEW_ROTATE, 0.0);
+		mRTWidth 	= mPropertyContext.getProperty(PROP_VIEW_WIDTH, 0);
+		mRTHeight 	= mPropertyContext.getProperty(PROP_VIEW_HEIGHT, 0);
+
 		mCenterX.addPropertyChangeListener(mTransformListener);
 		mCenterY.addPropertyChangeListener(mTransformListener);
 		mScaleX.addPropertyChangeListener(mTransformListener);
 		mScaleY.addPropertyChangeListener(mTransformListener);
 		mRotation.addPropertyChangeListener(mTransformListener);
+		mRTWidth.addPropertyChangeListener(mTransformListener);
+		mRTHeight.addPropertyChangeListener(mTransformListener);
 
-		addComponentListener(new ComponentAdapter() {
-			@Override
-			public void componentResized(ComponentEvent e) {
-				mViewTransform = null; //new offset to center 0.0, 0.0
-			}
-		});
 		mPropertyContext.registerListener(mRepaintListener);
-
 		mScene.registerDirtyListener(mDirtySceneListener);
-
-		mRepaintTimer = new Timer("GraphicsViewRepaintTimer", true);
 	}
 
 
-	public void setMaximumFPS(int fps) {
+	/** Whether the GraphicsView shall trigger repaints, if a change in the scene or the view has been detected.
+	 *
+	 * Disable repaint trigger may be usefull if rendered within another render loop
+	 *
+	 * @param enabled true, if the GraphicsView shall trigger a repaint if a change was detected, false otherwise.
+	 */
+	public void enableRepaintTrigger(final boolean enabled) {
+		mTriggersRepaint = enabled;
+	}
+	public boolean isRepaintTriggerEnabled() { return mTriggersRepaint;}
+
+	public void setMaximumFPS(final int fps) {
 		mRepaintDelay = 1000 / fps;
 	}
+	/** Sets the internal scheduler service to a custom instance.
+	 * The scheduler-thread is most likely the thread that triggers the rendering
+	 * and may also performs the rendering.
+	 *
+	 * @param scheduler
+	 */
+	public void setSchedulerService(final ScheduledExecutorService scheduler) {
+		mScheduler = scheduler;
+	}
+	public void setRenderHints(final RenderingHints rh) { mRenderHints = rh; }
+	public RenderingHints getREnderHints() { return mRenderHints;}
 
-	public void addPaintListener(IPaintListener listener) {
+	public void addPaintListener(final IPaintListener listener) {
 		if (listener != null && !mPaintListener.contains(listener)) {
 			if (LOG.isTraceEnabled()) LOG.trace("Register Paint Listener");
 			mPaintListener.add(listener);
 		}
 	}
-	public boolean removePaintListener(IPaintListener listener) {
+	public boolean removePaintListener(final IPaintListener listener) {
 		if (listener != null) {
-			boolean res = mPaintListener.remove(listener);
+			final boolean res = mPaintListener.remove(listener);
 			if (LOG.isTraceEnabled()) LOG.trace("Remove PaintListener " + (res?"successfull":"failed"));
 			return res;
 		}
 		return false;
 	}
 
-	public void addHandler(IGraphicsViewHandler handler) {
+	public void addHandler(final IGraphicsViewHandler handler) {
 		if (handler != null && !mHandler.contains(handler)) {
 			mHandler.add(handler);
 			handler.install(this);
 		}
 	}
-	public void removeHandler(IGraphicsViewHandler handler) {
+	public void removeHandler(final IGraphicsViewHandler handler) {
 		if (handler != null && mHandler.contains(handler)) {
 			mHandler.remove(handler);
 			handler.uninstall(this);
 		}
 	}
 
-	public void setScale(double scaleXY) {
+	public void setScale(final double scaleXY) {
 		setScale(scaleXY, scaleXY);
 	}
-	public void setScale(double scaleX, double scaleY) {
+	public void setScale(final double scaleX, final double scaleY) {
 		mScaleX.set(scaleX);
 		mScaleY.set(scaleY);
 	}
 
-	int pcounter = 0;
-	@Override
-	protected void paintComponent(Graphics g) {
-		//		System.out.println("Paint " + pcounter++ + " Scale: " + getScaleX());
-		super.paintComponent(g);
-		Graphics2D g2d = (Graphics2D)g;
+	private void triggerRTRepaint() {
+		if (isRepaintTriggerEnabled())
+			mRenderTarget.requestRepaint();
+	}
+	public void doPaint(final Graphics2D g2d) {
+		final long profile_time_start = System.currentTimeMillis();
 
-		g2d.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR); //TODO: as property
-		g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+		internalPaint(g2d);
 
-		synchronized (mPaintListener) {
-			for (IPaintListener pl : mPaintListener)
-				try {
-					pl.prePaint(g2d, mDrawContext);
-				}catch(Exception | Error e) {
-					LOG.error("Failed to call PaintListener.prePaint on : " + pl + " Error: " + e.getMessage());
-					e.printStackTrace();
-				}
+		final long profile_time_end = System.currentTimeMillis();
+		final double profile_time_sec = (profile_time_end - profile_time_start) / 1000.0;
+		mOverallStatitic.accept(profile_time_sec);
+		mWindowStatistic.accept(profile_time_sec);
+	}
+	private synchronized void internalPaint(final Graphics2D g2d) {
+		mUpdateCounter.set(mRequestCounter.get());
+		//check for changes
+		validateView();
+
+		for (final IPaintListener pl : mPaintListener) {
+			try {
+				pl.prePaint(g2d, mDrawContext);
+			}catch(Exception | Error e) {
+				LOG.error("Failed to call PaintListener.prePaint on : " + pl + " Error: " + e.getMessage());
+				e.printStackTrace();
+			}
+		}
+
+		RenderingHints oldHints = null;
+		if (mRenderHints != null) {
+			oldHints = g2d.getRenderingHints();
+			g2d.setRenderingHints(mRenderHints);
 		}
 
 		//transform the view but remember the old transform
-		AffineTransform oldTransform = g2d.getTransform();
+		final AffineTransform oldTransform = g2d.getTransform();
 		g2d.transform(getViewTransform());
 
 		//get all visible items, depending on the visible rect
-		Rectangle2D rect = getVisibleSceneRect();
-
-		List<GraphicsItem> itemList = mScene.getItems(rect);
+		final Rectangle2D rect = getVisibleSceneRect();
+		final List<GraphicsItem> itemList = mScene.getItems(rect);
 
 		//sort to overdraw the correct items, for example background items
-		Collections.sort(itemList, new Comparator<GraphicsItem>() {
-			@Override
-			public int compare(GraphicsItem o1, GraphicsItem o2) {
-				return Float.compare(o1.getZOrder(), o2.getZOrder());
-			}
-		});
+		itemList.sort(Comparator.comparing(GraphicsItem::getZOrder));
 
-		for (GraphicsItem item : itemList) {
+		for (final GraphicsItem item : itemList) {
 			try {
 				item.draw(g2d, mDrawContext);
 			}catch(Exception | Error e) {
@@ -240,31 +287,52 @@ public class GraphicsView extends JPanel {
 			}
 		}
 
-		//		g2d.setColor(new Color(255, 0, 0, 180));
-		//		g2d.fill(new Rectangle2D.Double(rect.getX() + 5, rect.getY() + 5, rect.getWidth() - 10, rect.getHeight()-10));
-		//reset the old transform
+		//reset the old transform & hints
 		g2d.setTransform(oldTransform);
 		mScene.markClean(); //remember that the scene is no longer dirty, at least not in terms of visualisation
+		if (mRenderHints != null && oldHints != null) //otherwise we did not change them...
+			g2d.setRenderingHints(oldHints);
 
-		synchronized (mPaintListener) {
-			for (IPaintListener pl : mPaintListener)
-				try {
-					pl.postPaint(g2d, mDrawContext);
-				}catch(Exception | Error e) {
-					LOG.error("Failed to call PaintListener.postPaint on : " + pl + " Error: " + e.getMessage());
-					e.printStackTrace();
-				}
+		for (final IPaintListener pl : mPaintListener) {
+			try {
+				pl.postPaint(g2d, mDrawContext);
+			}catch(Exception | Error e) {
+				LOG.error("Failed to call PaintListener.postPaint on : " + pl + " Error: " + e.getMessage());
+				e.printStackTrace();
+			}
 		}
+
+		//		System.out.println("Finish:"  + mUpdateCounter.get());
+	}
+
+	/** checks some properties and may invalidate the view matrix */
+	private void validateView() {
+		//just set the new value, if something has changed, the parameter will do the notification as well as the invalidation of the view matrix (e.g. TransformLIstener)
+		mRTWidth.set(mRenderTarget.getWidth());
+		mRTHeight.set(mRenderTarget.getHeight());
+	}
+	/**
+	 * Requests the GraphicsView to repaint it's content.
+	 *
+	 * The request is forwarded to the underlying RenderTarget.
+	 * The RenderTarget is in charge to decide whether a repaint is
+	 * required or not.
+	 */
+	public void triggerRepaint() {
+		markViewAsDirty();
+	}
+	public Component getComponent() {
+		return mRenderTarget.getComponent();
 	}
 
 	protected AffineTransform getViewTransform() {
 		if (mViewTransform == null) {
-			AffineTransform t = new AffineTransform();
+			final AffineTransform t = new AffineTransform();
 			//add offset so 0.0, 0.0 would be in the center of the sceen
-			double w2 = getWidth() / 2.0;
-			double h2 = getHeight() / 2.0;
-			double rdeg = mRotation.get();
-			double r = Math.toRadians(-rdeg);
+			final double w2 = getImageWidth() / 2.0;
+			final double h2 = getImageHeight() / 2.0;
+			final double rdeg = mRotation.get();
+			final double r = Math.toRadians(-rdeg);
 
 			t.translate(-w2 * mScaleX.get(), h2 * mScaleY.get());
 			//now the view transform relative to the scene
@@ -275,32 +343,43 @@ public class GraphicsView extends JPanel {
 			t.translate(-w2, -h2);
 			try {
 				mViewTransform = t.createInverse();
-			} catch (Exception e) {
+			} catch (final Exception e) {
 				e.printStackTrace();
 			}
 		}
 		return mViewTransform;
 	}
+	public void resetViewTransform() {
+		mViewTransform = null;
+	}
 
-	public void setCenter(double x, double y) {
+	public void setCenter(final double x, final double y) {
 		mCenterX.set(x);
 		mCenterY.set(y);
 	}
 	public double getCenterX() { return mCenterX.get(); }
 	public double getCenterY() { return mCenterY.get(); }
 
-	public Point2D getPositionInComponent(Point2D sceneLocation) {
+	/** Returns the width of the underlying render target */
+	public int getImageWidth() { return mRenderTarget.getWidth(); }
+	/** Returns the height of the underlying render target */
+	public int getImageHeight() { return mRenderTarget.getHeight(); }
+	public IRenderTarget getRenderTarget() {
+		return mRenderTarget;
+	}
+	public Point2D getPositionInComponent(final Point2D sceneLocation) {
 		try {
-			Point2D tmp = getViewTransform().transform(sceneLocation, null);
+			final Point2D tmp = getViewTransform().transform(sceneLocation, null);
 			return new Point2D.Double(tmp.getX(), tmp.getY());
-		} catch (Exception e) {
+		} catch (final Exception e) {
 			e.printStackTrace();
 		}
 		return null;
 	}
-	public Point2D getPositionOnScreen(Point2D sceneLocation) {
-		Point2D inComp = getPositionInComponent(sceneLocation);
-		inComp.setLocation(inComp.getX() + getLocationOnScreen().x, inComp.getY() + getLocationOnScreen().y);
+	public Point2D getPositionOnScreen(final Point2D sceneLocation) {
+		final Point2D inComp = getPositionInComponent(sceneLocation);
+		final Point screenLoc = getComponent() != null ? getComponent().getLocationOnScreen() : new Point(0,0);
+		inComp.setLocation(inComp.getX() + screenLoc.x, inComp.getY() + screenLoc.y);
 		return inComp;
 	}
 
@@ -309,8 +388,8 @@ public class GraphicsView extends JPanel {
 	 * @return
 	 */
 	public Rectangle2D getVisibleSceneRect() {
-		Rectangle vr = getVisibleRect();
-		Rectangle2D rect = Utils.inverseTransform(vr, getViewTransform());
+		final Rectangle vr = mRenderTarget.getVisibleRect();
+		final Rectangle2D rect = Utils.inverseTransform(vr, getViewTransform());
 		return rect;
 	}
 
@@ -324,9 +403,9 @@ public class GraphicsView extends JPanel {
 	 * @param epsilonY
 	 * @return
 	 */
-	public List<GraphicsItem> getItemsAt(Point point, double epsilonX, double epsilonY) {
-		Point2D scene = getSceneLocation(point, null);
-		Rectangle2D r = new Rectangle2D.Double(scene.getX() - epsilonX/2, scene.getY() - epsilonY/2, epsilonX, epsilonY);
+	public List<GraphicsItem> getItemsAt(final Point point, final double epsilonX, final double epsilonY) {
+		final Point2D scene = getSceneLocation(point, null);
+		final Rectangle2D r = new Rectangle2D.Double(scene.getX() - epsilonX/2, scene.getY() - epsilonY/2, epsilonX, epsilonY);
 		return mScene.getItems(r);
 	}
 
@@ -339,9 +418,9 @@ public class GraphicsView extends JPanel {
 	 * @param filter (may null)
 	 * @return
 	 */
-	public List<GraphicsItem> getAllItemsAt(Point point, double epsilonX, double epsilonY, IItemFilter filter) {
-		Point2D scene = getSceneLocation(point, null);
-		Rectangle2D r = new Rectangle2D.Double(scene.getX() - epsilonX/2, scene.getY() - epsilonY/2, epsilonX, epsilonY);
+	public List<GraphicsItem> getAllItemsAt(final Point point, final double epsilonX, final double epsilonY, final IItemFilter filter) {
+		final Point2D scene = getSceneLocation(point, null);
+		final Rectangle2D r = new Rectangle2D.Double(scene.getX() - epsilonX/2, scene.getY() - epsilonY/2, epsilonX, epsilonY);
 		return mScene.getAllItems(r, filter);
 	}
 
@@ -351,12 +430,12 @@ public class GraphicsView extends JPanel {
 	 * @param scene (may null)
 	 * @return scene point or new point if scene is null
 	 */
-	public Point2D getSceneLocation(Point2D screen, Point2D scene) {
+	public Point2D getSceneLocation(final Point2D screen, Point2D scene) {
 		if (scene == null)
 			scene = new Point2D.Double();
 		try {
 			return getViewTransform().inverseTransform(new Point2D.Double(screen.getX(), /* getHeight() -*/ screen.getY()), scene);
-		} catch (Exception e) {
+		} catch (final Exception e) {
 			e.printStackTrace();
 			return null;
 		}
@@ -366,7 +445,7 @@ public class GraphicsView extends JPanel {
 	 * @param point
 	 * @return
 	 */
-	public Point2D getSceneLocation(Point point) {
+	public Point2D getSceneLocation(final Point point) {
 		return getSceneLocation(point, new Point2D.Double());
 	}
 	public double getScaleX() { return mScaleX.get(); }
@@ -375,35 +454,34 @@ public class GraphicsView extends JPanel {
 	public GraphicsScene getScene() { return mScene; }
 	public ParameterContext getPropertyContext() { return mPropertyContext; }
 
-	public <T> IParameter<T> getProperty(String string) {
+	public <T> IParameter<T> getProperty(final String string) {
 		return mPropertyContext.getProperty(string);
 	}
 
-	public void setRotation(double degrees) {
+	public void setRotation(final double degrees) {
 		mRotation.set(degrees);
 	}
 	public double getRotationDegrees() { return mRotation.get(); }
 
 
-	public void setCenter(Point2D center) {
+	public void setCenter(final Point2D center) {
 		setCenter(center.getX(), center.getY());
 	}
 
-	public void setCenterAndZoom(Point2D min, Point2D max, boolean scaleXandY) {
-		double x = Math.min(min.getX(), max.getX());
-		double y = Math.min(min.getY(), max.getY());
-		double w = Math.abs(min.getX() - max.getX());
-		double h = Math.abs(min.getY() - max.getY());
+	public void setCenterAndZoom(final Point2D min, final Point2D max, final boolean scaleXandY) {
+		final double x = Math.min(min.getX(), max.getX());
+		final double y = Math.min(min.getY(), max.getY());
+		final double w = Math.abs(min.getX() - max.getX());
+		final double h = Math.abs(min.getY() - max.getY());
 		setCenterAndZoom(new Rectangle2D.Double(x, y, w, h), scaleXandY);
 	}
-	public void setCenterAndZoom(Rectangle2D bounds, boolean scaleXandY) {
-		Rectangle visRect = getVisibleRect();
+	public void setCenterAndZoom(final Rectangle2D bounds, final boolean scaleXandY) {
+		final Rectangle visRect = mRenderTarget.getVisibleRect();
 
 		//bounds.width * scaleX = visRect.getWidth()
-		double scaleX = (1.1 * bounds.getWidth()) / visRect.getWidth();
-		double scaleY = (1.1 * bounds.getHeight()) / visRect.getHeight();
-		double cx = bounds.getCenterX(), cy = bounds.getCenterY();
-
+		double scaleX = 1.1 * bounds.getWidth() / visRect.getWidth();
+		double scaleY = 1.1 * bounds.getHeight() / visRect.getHeight();
+		final double cx = bounds.getCenterX(), cy = bounds.getCenterY();
 
 		if (scaleX <= 0 || !Double.isFinite(scaleX) ||
 				scaleY <= 0 || !Double.isFinite(scaleY) ||
@@ -425,8 +503,107 @@ public class GraphicsView extends JPanel {
 
 	/** Forward the cleared notification to all IGraphicsViewHandler that may relay on Scene content */
 	public void notifySceneCleared() {
-		for (IGraphicsViewHandler handler : mHandler)
+		for (final IGraphicsViewHandler handler : mHandler)
 			handler.notifySceneCleared();
+	}
+
+	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	//							Mouse Handling - Forward
+	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+	/** Forward to the component of the underlying render target, if available */
+	public void addMouseListener(final MouseListener listener) {
+		ifNotNull(getComponent(), c -> c.addMouseListener(listener));
+	}
+	/** Forward to the component of the underlying render target, if available */
+	public void addMouseMotionListener(final MouseMotionListener listener) {
+		ifNotNull(getComponent(), c -> c.addMouseMotionListener(listener));
+	}
+	/** Forward to the component of the underlying render target, if available */
+	public void addMouseWheelListener(final MouseWheelListener listener) {
+		ifNotNull(getComponent(), c -> c.addMouseWheelListener(listener));
+	}
+	/** Forward to the component of the underlying render target, if available */
+	public void removeMouseListener(final MouseListener listener) {
+		ifNotNull(getComponent(), c -> c.removeMouseListener(listener));
+	}
+	/** Forward to the component of the underlying render target, if available */
+	public void removeMouseMotionListener(final MouseMotionListener listener) {
+		ifNotNull(getComponent(), c -> c.removeMouseMotionListener(listener));
+	}
+	/** Forward to the component of the underlying render target, if available */
+	public void removeMouseWheelListener(final MouseWheelListener listener) {
+		ifNotNull(getComponent(), c -> c.removeMouseWheelListener(listener));
+	}
+
+	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	//							Render Target forwards
+	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	/**
+	 * Sets the value of a single preference for the rendering algorithms.
+	 * Hint categories include controls for rendering quality and overall
+	 * time/quality trade-off in the rendering process.  Refer to the
+	 * {@code RenderingHints} class for definitions of some common
+	 * keys and values.
+	 * @param hintKey the key of the hint to be set.
+	 * @param hintValue the value indicating preferences for the specified
+	 * hint category.
+	 * @see #getRenderingHint(RenderingHints.Key)
+	 * @see RenderingHints
+	 */
+	public void setRenderingHint(final Key hintKey, final Object hintValue) {
+		if (mRenderHints == null) mRenderHints = new RenderingHints(hintKey, hintValue);
+		else mRenderHints.put(hintKey, hintValue);
+	}
+
+	/**
+	 * Returns the value of a single preference for the rendering algorithms.
+	 * Hint categories include controls for rendering quality and overall
+	 * time/quality trade-off in the rendering process.  Refer to the
+	 * {@code RenderingHints} class for definitions of some common
+	 * keys and values.
+	 * @param hintKey the key corresponding to the hint to get.
+	 * @return an object representing the value for the specified hint key.
+	 * Some of the keys and their associated values are defined in the
+	 * {@code RenderingHints} class.
+	 * @see RenderingHints
+	 * @see #setRenderingHint(RenderingHints.Key, Object)
+	 */
+	public Object getRenderingHint(final Key hintKey) {
+		if (mRenderHints == null)
+			return null;
+		return mRenderHints.get(hintKey);
+	}
+
+
+	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	//							Statistics
+	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+	public DoubleSummaryStatistics getPaintDurationStatistic() { return mOverallStatitic;}
+	public WindowStat getMovingWindowDurationStatistic() { return mWindowStatistic;}
+
+
+	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	//							Utils
+	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	private <T> void ifNotNull(final T obj, final Consumer<T> func){
+		if (obj != null)
+			func.accept(obj);
+	}
+
+	private void markViewAsDirty() {
+		//		synchronized (mRequestCounter) {
+		mRequestCounter.incrementAndGet();
+
+		if (mScheduledFuture == null) {
+			mScheduledFuture = mScheduler.schedule(() -> {
+				mScheduledFuture = null;
+				triggerRTRepaint();
+				return 0;
+			}, mRepaintDelay, TimeUnit.MILLISECONDS);
+		}
+		//		}
 	}
 
 }

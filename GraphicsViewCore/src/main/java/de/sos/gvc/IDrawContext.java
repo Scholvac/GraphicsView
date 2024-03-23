@@ -1,6 +1,7 @@
 package de.sos.gvc;
 
 import java.awt.geom.AffineTransform;
+import java.awt.geom.Rectangle2D;
 
 /**
  *
@@ -19,4 +20,6 @@ public interface IDrawContext {
 	default double getScaleX() { return getView().getScaleX();}
 	default double getScaleY() { return getView().getScaleY();}
 	default double getScale() { return Math.max(getView().getScaleX(), getView().getScaleY()); }
+
+	Rectangle2D getVisibleSceneRect();
 }

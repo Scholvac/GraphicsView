@@ -22,9 +22,9 @@ import de.sos.gv.geo.tiles.TileHandler;
 import de.sos.gvc.GraphicsItem;
 import de.sos.gvc.GraphicsScene;
 import de.sos.gvc.GraphicsView;
+import de.sos.gvc.Utils;
 import de.sos.gvc.handler.DefaultViewDragHandler;
 import de.sos.gvc.handler.MouseDelegateHandler;
-import de.sos.gvc.param.ParameterContext;
 import de.sos.gvc.styles.DrawableStyle;
 
 
@@ -36,7 +36,7 @@ public class ManualGeoGraphicsTest {
 
 		// Create a new Scene and a new View
 		final GraphicsScene scene = new GraphicsScene();
-		final GraphicsView view = new GraphicsView(scene, new ParameterContext());
+		final GraphicsView view = new GraphicsView(scene);
 
 		// Standard Handler
 		view.addHandler(new MouseDelegateHandler());
@@ -62,7 +62,7 @@ public class ManualGeoGraphicsTest {
 		frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
 		frame.setSize(800, 800);
 		frame.setLayout(new BorderLayout());
-		frame.add(view, BorderLayout.CENTER);
+		frame.add(view.getComponent(), BorderLayout.CENTER);
 
 		final JPanel rotPanel = new JPanel();
 		rotPanel.setLayout(new BorderLayout());
@@ -116,7 +116,7 @@ public class ManualGeoGraphicsTest {
 		style.setLinePaint(Color.BLACK);
 
 		//build also a mixed item to show how it works on item hierarchies
-		final GraphicsItem mixedItem = new GraphicsItem(ExampleUtils.wkt2Shape(wkt));
+		final GraphicsItem mixedItem = new GraphicsItem(Utils.wkt2Shape(wkt));
 		mixedItem.setScale(1, 1);
 		mixedItem.setStyle(style);
 		mixedItem.setCenter(pos);

@@ -163,7 +163,7 @@ public class GeometryItem extends GraphicsItem implements PropertyChangeListener
 		if (allowsManipulation() && SwingUtilities.isRightMouseButton(e)) {
 			final JPopupMenu pm = new JPopupMenu();
 			mMenuManager.fillGeometryItemMenu(this, getScene(), pm);
-			pm.show(getView(), e.getX(), e.getY());
+			pm.show(getView().getComponent(), e.getX(), e.getY());
 			e.consume();
 		}
 	}

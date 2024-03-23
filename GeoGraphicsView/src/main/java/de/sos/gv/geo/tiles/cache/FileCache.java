@@ -3,22 +3,12 @@ package de.sos.gv.geo.tiles.cache;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
+import java.util.Map;
+import java.util.TreeSet;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
 
 import javax.imageio.ImageIO;
-
-import org.checkerframework.checker.index.qual.NonNegative;
-import org.checkerframework.checker.nullness.qual.Nullable;
-
-import com.github.benmanes.caffeine.cache.Caffeine;
-import com.github.benmanes.caffeine.cache.LoadingCache;
-import com.github.benmanes.caffeine.cache.RemovalCause;
-import com.github.benmanes.caffeine.cache.RemovalListener;
-import com.github.benmanes.caffeine.cache.Weigher;
 
 import de.sos.gv.geo.tiles.ITileImageProvider;
 import de.sos.gv.geo.tiles.SizeUnit;
@@ -26,10 +16,24 @@ import de.sos.gv.geo.tiles.TileInfo;
 
 public class FileCache implements ITileImageProvider {
 
-	private LoadingCache<TileInfo, File>					mCache;
+	static class CacheEntry implements Comparable<CacheEntry> {
+		final TileInfo 	tile;
+		final File 		file;
+		public CacheEntry(final TileInfo t, final File f) { tile = t; file = f;}
+		@Override
+		public int compareTo(final CacheEntry o) {
+			return Long.compare(file.lastModified(), o.file.lastModified());
+		}
+	}
+	private final Map<TileInfo, CacheEntry>			mCache = new ConcurrentHashMap<>();
+	private TreeSet<CacheEntry>						mOrder = new TreeSet<>();
+
 	private ITileImageProvider 						mProvider;
 	private Executor 								mExecutor;
 	private File 									mDirectory;
+
+	private long 									mCurrentSize;
+	private long mMaxSize;
 
 	public FileCache(final ITileImageProvider provider, final File directory, final long size, final SizeUnit unit) {
 		this(provider, directory, size, unit, null);
@@ -39,62 +43,67 @@ public class FileCache implements ITileImageProvider {
 		mDirectory = directory;
 		mExecutor = executor;
 		setMaxmimumSize(size, unit);
+
+		asyncPopulateCache();
 	}
 
-	public void setMaxmimumSize(final long size, final SizeUnit unit) {
-		final long maxWeight = unit.toBytes(size);
-		Caffeine<TileInfo, File> builder = Caffeine.newBuilder()
-				.maximumWeight(maxWeight)
-				.weigher(new Weigher<TileInfo, File>() {
-					@Override
-					public @NonNegative int weigh(final TileInfo key, final File value) {
-						return (@NonNegative int) value.length();
-					}
-				})
-				.removalListener(new RemovalListener<TileInfo, File>() {
-					@Override
-					public void onRemoval(@Nullable final TileInfo key, @Nullable final File value, final RemovalCause cause) {
-						remove(key, value, cause);
-					}
-				});
+	private void asyncPopulateCache() {
 		if (mExecutor != null)
-			builder = builder.executor(mExecutor);
-
-		final LoadingCache<TileInfo, File> cache = builder.build(k -> {
-			final File file = getFile(k);
-			if (file.exists())
-				return file;
-			try {
-				return mProvider.load(k).thenApply(img -> {
-					if (img != null)
-						return saveToFile(file, img);
-					return (File)null;
-				}).get();
-			} catch (final InterruptedException | ExecutionException e) {
-				e.printStackTrace();
-				return null;
-			}
-		});
-
-		if (mCache != null) { //it this is a rebuild with other size
-			//			cache.asMap().putAll(mCache.asMap());
-		}
+			mExecutor.execute(this::populateCache);
+		else
+			populateCache();
+	}
+	private void populateCache() {
 		if (mDirectory.exists()) {
 			//fill the cache with existing files, to get the size calculation correct.
 			final File[] files = mDirectory.listFiles();
-			Arrays.sort(files, Comparator.comparingLong(File::lastModified).reversed());
 			for (final File f : mDirectory.listFiles()) {
-				final String fn = f.getName();
-				final TileInfo ti = TileInfo.fromHash(fn.substring(0, fn.lastIndexOf('.')));
-				final CompletableFuture<File> cff = new CompletableFuture<>();
-				cff.complete(f);
-				cache.put(ti, f);
+				addFile(f, false);
+			}
+			enforceMaximumSize();
+		}
+	}
+	private CacheEntry addFile(final File f, final boolean enforceSize) {
+		final String fn = f.getName();
+		final TileInfo ti = TileInfo.fromHash(fn.substring(0, fn.lastIndexOf('.')));
+		return add(ti, f, enforceSize);
+	}
+	private synchronized CacheEntry add(final TileInfo ti, final File file, final boolean enforceSize) {
+		final CacheEntry ce = new CacheEntry(ti, file);
+		synchronized (mOrder) {
+			mCache.put(ti, ce);
+			mOrder.add(ce);
+		}
+		mCurrentSize += file.length();
+		if (enforceSize)
+			enforceMaximumSize();
+		return ce;
+	}
+	private void enforceMaximumSize() {
+		synchronized (mOrder) {
+			while(mCurrentSize > mMaxSize && mCurrentSize > 0 && mOrder.isEmpty()==false) {
+				//remove the oldest entry. The oldest entry is the first element of the treeset
+				final CacheEntry first = mOrder.first();
+				if (first != null)
+					remove(first.tile);
 			}
 		}
-		mCache = cache;
+	}
+	private void remove(final TileInfo ti) {
+		final CacheEntry ce = mCache.remove(ti);
+		if (ce != null) {
+			mOrder.remove(ce);
+			mCurrentSize -= ce.file.length();
+			ce.file.delete();//we do not check, as we can not change it anyways.
+		}
 	}
 
-	private @Nullable BufferedImage loadFromFile(final File file) {
+	public void setMaxmimumSize(final long size, final SizeUnit unit) {
+		mMaxSize = unit.toBytes(size);
+		enforceMaximumSize();
+	}
+
+	private BufferedImage loadFromFile(final File file) {
 		try {
 			return ImageIO.read(file);
 		} catch (final IOException e) {
@@ -102,7 +111,7 @@ public class FileCache implements ITileImageProvider {
 		}
 		return null;
 	}
-	private @Nullable File saveToFile(final File file, final BufferedImage bufferedImage) {
+	private File saveToFile(final File file, final BufferedImage bufferedImage) {
 		try {
 			if (file.getParentFile().exists() == false)
 				file.getParentFile().mkdirs();
@@ -115,18 +124,35 @@ public class FileCache implements ITileImageProvider {
 	private File getFile(final TileInfo info) {
 		return new File(mDirectory, info.getHash() + ".png");
 	}
-	protected void remove(@Nullable final TileInfo key, final @Nullable File value, final RemovalCause cause) {
+	protected void remove(final TileInfo key, final File value) {
 		if (value != null && value.exists()) {
 			value.delete();
 		}
 	}
 	@Override
-	public CompletableFuture<BufferedImage> load(final TileInfo info) {
-		final CompletableFuture<File> file = new CompletableFuture<>();
-		file.complete(mCache.get(info));
-		return file.thenApply(this::loadFromFile);
+	public BufferedImage load(final TileInfo info) {
+		CacheEntry ce = mCache.get(info);
+		if (ce == null) {
+			ce = saveToFile(info);
+			if (ce != null) //concurrent hash map does not allow null....
+				mCache.put(info, ce);
+		}
+		final BufferedImage image = loadFromFile(ce.file);
+		enforceMaximumSize();
+		return image;
 	}
 
+	private CacheEntry saveToFile(final TileInfo ti) {
+		final BufferedImage img = mProvider.load(ti);
+		if (img != null) {
+			if (img != null) {
+				final File file = getFile(ti);
+				saveToFile(file, img);
+				return addFile(file, false);
+			}
+		}
+		return null;
+	}
 	@Override
 	public void free(final TileInfo info, final BufferedImage img) {
 	}

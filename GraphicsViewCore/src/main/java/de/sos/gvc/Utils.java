@@ -8,9 +8,12 @@ import java.awt.geom.GeneralPath;
 import java.awt.geom.NoninvertibleTransformException;
 import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.stream.DoubleStream;
 
 import de.sos.gvc.GraphicsScene.IItemFilter;
 import de.sos.gvc.GraphicsScene.ShapeSelectionFilter;
@@ -101,6 +104,22 @@ public class Utils {
 				new Point2D.Double(max, miy),
 				new Point2D.Double(mix, miy)
 		};
+	}
+
+	public static Point2D[] getVertices(final Rectangle2D rect, final Point2D[] dest) {
+		if (dest == null || dest.length < 4)
+			return getVertices(rect);
+
+		final double mix = rect.getMinX();
+		final double max = rect.getMaxX();
+		final double miy = rect.getMinY();
+		final double may = rect.getMaxY();
+
+		dest[0].setLocation(mix, may);
+		dest[1].setLocation(max, may);
+		dest[2].setLocation(max, miy);
+		dest[3].setLocation(mix, miy);
+		return dest;
 	}
 
 	public static List<Rectangle2D> verticesToRectangle(final List<Point2D[]> verticesList) {
@@ -296,5 +315,94 @@ public class Utils {
 		return new Arc2D.Double(-radius, -radius, 2*radius, 2*radius, 0, 360, Arc2D.CHORD);
 	}
 
+	public static enum WKTGeometryType {
+		POLYGON, POINT, LINESTRING
+	}
+	public static class WKTGeom {
+		public Shape shape;
+		public WKTGeometryType type;
+	}
+	public static class WKTCollection {
+		public WKTGeom[] geometries;
+	}
 
+	public static WKTCollection parseWKTGeometryCollection(final InputStream stream) throws IOException {
+		final byte[] buffer = new byte[stream.available()];
+		stream.read(buffer);
+		final String str = new String(buffer);
+		return parseWKTGeometryCollection(str);
+	}
+	public static WKTCollection parseWKTGeometryCollection(final String content) {
+		final String firstWord = content.substring(0, content.indexOf(' '));
+		WKTGeom[] geoms;
+		if ("geometrycollection".equalsIgnoreCase(firstWord)) {
+			geoms = parseCollection(content.substring(content.indexOf('(')+1, content.lastIndexOf(')')));
+		}else {
+			geoms = new WKTGeom[] {parseGeometry(content)};
+		}
+		final WKTCollection coll = new WKTCollection();
+		coll.geometries = geoms;
+		return coll;
+	}
+
+	private static WKTGeom[] parseCollection(final String content) {
+		final String[] geometries = content.split("\\),");
+		final WKTGeom[] out = new WKTGeom[geometries.length];
+		for (int i = 0; i < geometries.length; i++) {
+			out[i] = parseGeometry(geometries[i]);
+		}
+		return out;
+	}
+
+	public static WKTGeom parseGeometry(final String wkt) {
+		final int i1 = wkt.indexOf('(');
+		final String firstWord = wkt.substring(0, i1).trim();
+		final WKTGeom out = new WKTGeom();
+		out.type = WKTGeometryType.valueOf(firstWord.toUpperCase());
+		if (out.type == WKTGeometryType.POLYGON)
+			out.shape = wkt2Shape(wkt);
+		return out;
+	}
+
+
+
+	///////////////////////////////////////////////////////////////////////////////////////////
+	//					Statistic
+	///////////////////////////////////////////////////////////////////////////////////////////
+
+	public static class WindowStat {
+		final double[] 		mBuffer;
+		int					mIndex = 0;
+		double				mSum = 0;
+		int					mCount = 0;
+
+		public WindowStat(final int windowSize) {
+			mBuffer = new double[windowSize];
+		}
+
+		public void accept(final double v) {
+			mSum -= mBuffer[mIndex];
+			mSum += v;
+			mBuffer[mIndex] = v;
+			mCount++;
+			if (mIndex++ >= mBuffer.length-1)
+				mIndex = 0;
+		}
+		public double avg() {
+			final double c = mCount > mBuffer.length ? mBuffer.length : mCount;
+			return mSum / c;
+		}
+		public double sum() { return mSum;}
+		public double min() {return DoubleStream.of(mBuffer).min().getAsDouble();}
+		public double max() {return DoubleStream.of(mBuffer).max().getAsDouble();}
+		public int windowSize() { return mBuffer.length;}
+		public int count() { return mCount;}
+
+		@Override
+		public String toString() {
+			return String.format(
+					"%s{count=%d, sum=%f, min=%f, average=%f, max=%f}",
+					this.getClass().getSimpleName(), count(), sum(), min(), avg(), max());
+		}
+	}
 }

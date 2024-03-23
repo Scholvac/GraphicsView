@@ -1,7 +1,6 @@
 package de.sos.gv.geo.tiles.cache;
 
 import java.awt.image.BufferedImage;
-import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
 
 import de.sos.gv.geo.tiles.ITileImageProvider;
@@ -27,7 +26,7 @@ public class ThreadedTileProvider implements ITileImageProvider {
 		return downloader;
 	}
 	@Override
-	public CompletableFuture<BufferedImage> load(final TileInfo info) {
+	public BufferedImage load(final TileInfo info) {
 		return getLocalProvider().load(info);
 	}
 

@@ -111,7 +111,7 @@ public class ContourPointItem extends GraphicsItem implements MouseMotionListene
 		if (allowsManipulation() && SwingUtilities.isRightMouseButton(e)) {
 			final JPopupMenu pm = new JPopupMenu();
 			mMenuManager.fillContourItemMenu(this, mGeometry, pm);
-			pm.show(getView(), e.getX(), e.getY());
+			pm.show(getView().getComponent(), e.getX(), e.getY());
 			e.consume();
 		}
 	}

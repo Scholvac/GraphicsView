@@ -1,18 +1,22 @@
 package de.sos.gv.geo.tiles;
 
-import java.awt.Rectangle;
-
 import de.sos.gv.geo.GeoUtils;
 import de.sos.gv.geo.LatLonBox;
 import de.sos.gv.geo.LatLonPoint;
-import net.jafama.FastMath;
 
 public class OSMTileCalculator implements ITileCalculator {
 
+	private int mMaximumZoom = 18;
 
+	public void setMaximumZoom(final int maxZoom) {
+		mMaximumZoom = maxZoom;
+	}
+	public int getMaximumZoom() {
+		return mMaximumZoom;
+	}
 	@Override
-	public int[][] calculateTileCoordinates(final LatLonBox area, final Rectangle viewBounds) {
-		int zoom = calculateZoom(area, viewBounds.getWidth());
+	public int[][] calculateTileCoordinates(final LatLonBox area, final int imgWidth) {
+		int zoom = calculateZoom(area, imgWidth);
 		if (zoom < 0){
 			return null;
 		}
@@ -38,16 +42,20 @@ public class OSMTileCalculator implements ITileCalculator {
 
 	private final LatLonPoint			_ul = new LatLonPoint();
 	private final LatLonPoint			_ur = new LatLonPoint();
+
 	private int calculateZoom(final LatLonBox area, final double imgWidth) {
 		final double distanceMeter = GeoUtils.distance(area.getUpperLeft(_ul), area.getUpperRight(_ur));
 		final double reqMeterPerPixel = distanceMeter / imgWidth;
 		final double llRadLat = area.getLowerLeft().getLatitude() * GeoUtils.TO_RAD;
-		final double cos_llRadLat = FastMath.cos(llRadLat);
+		final double cos_llRadLat = Math.cos(llRadLat);
+		double zoomMeterPerPixel = 0;
 		for (int i = 0; i < 20; i++) {
-			final double zoomMeterPerPixel = 156543.03 * cos_llRadLat / FastMath.pow(2, i);//Exact length of the equator (according to wikipedia) is 40075.016686 km in WGS-84. At zoom 0, one pixel would equal 156543.03 meters (assuming a tile size of 256 px):
+			zoomMeterPerPixel = 156543.03 * cos_llRadLat / Math.pow(2, i);//Exact length of the equator (according to wikipedia) is 40075.016686 km in WGS-84. At zoom 0, one pixel would equal 156543.03 meters (assuming a tile size of 256 px):
 			if (zoomMeterPerPixel <= reqMeterPerPixel)
 				return i-2;
 		}
+		if (zoomMeterPerPixel > reqMeterPerPixel)
+			return mMaximumZoom;
 		return -1;
 	}
 
