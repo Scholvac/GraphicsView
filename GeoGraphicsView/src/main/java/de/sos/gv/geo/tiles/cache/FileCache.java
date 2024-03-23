@@ -70,17 +70,23 @@ public class FileCache implements ITileImageProvider {
 	}
 	private synchronized CacheEntry add(final TileInfo ti, final File file, final boolean enforceSize) {
 		final CacheEntry ce = new CacheEntry(ti, file);
-		mCache.put(ti, ce);
-		mOrder.add(ce);
+		synchronized (mOrder) {
+			mCache.put(ti, ce);
+			mOrder.add(ce);
+		}
 		mCurrentSize += file.length();
 		if (enforceSize)
 			enforceMaximumSize();
 		return ce;
 	}
 	private void enforceMaximumSize() {
-		while(mCurrentSize > mMaxSize && mCurrentSize > 0) {
-			//remove the oldest entry. The oldest entry is the first element of the treeset
-			remove(mOrder.first().tile);
+		synchronized (mOrder) {
+			while(mCurrentSize > mMaxSize && mCurrentSize > 0 && mOrder.isEmpty()==false) {
+				//remove the oldest entry. The oldest entry is the first element of the treeset
+				final CacheEntry first = mOrder.first();
+				if (first != null)
+					remove(first.tile);
+			}
 		}
 	}
 	private void remove(final TileInfo ti) {
@@ -128,7 +134,8 @@ public class FileCache implements ITileImageProvider {
 		CacheEntry ce = mCache.get(info);
 		if (ce == null) {
 			ce = saveToFile(info);
-			mCache.put(info, ce);
+			if (ce != null) //concurrent hash map does not allow null....
+				mCache.put(info, ce);
 		}
 		final BufferedImage image = loadFromFile(ce.file);
 		enforceMaximumSize();

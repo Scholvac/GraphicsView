@@ -43,6 +43,19 @@ public class TileFactory implements ITileFactory {
 		mScheduler = new PriorityJobScheduler(threadName, threadCount, queueSize);
 	}
 
+	public void setMaximumZoom(final int maxZoom) {
+		mCalculator.setMaximumZoom(maxZoom);
+	}
+	public int getMaximumZoom() {
+		return mCalculator.getMaximumZoom();
+	}
+	public void setTileCalculator(final ITileCalculator tileCalc) {
+		mCalculator = tileCalc;
+	}
+	public ITileCalculator getTileCalculator() {
+		return mCalculator;
+	}
+
 	@Override
 	public int[][] getRequiredTileInfos(final LatLonBox area, final int imgWidth, final int imgHeight) {
 		return mCalculator.calculateTileCoordinates(area, imgWidth);
