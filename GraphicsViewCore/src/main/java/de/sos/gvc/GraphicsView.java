@@ -12,7 +12,6 @@ import java.awt.event.MouseWheelListener;
 import java.awt.geom.AffineTransform;
 import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
-import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -90,22 +89,12 @@ public class GraphicsView {
 	/**
 	 * Invalidates the view transform and will be registered to all properties that have an effect to the view transform
 	 */
-	private PropertyChangeListener			mTransformListener = new PropertyChangeListener() {
-		@Override
-		public void propertyChange(final PropertyChangeEvent evt) {
-			mViewTransform = null;
-		}
-	};
+	private PropertyChangeListener			mTransformListener = evt -> mViewTransform = null;
 
 	/**
 	 * Listen to all properties that require a repaint (which are basically all :) )
 	 */
-	private PropertyChangeListener			mRepaintListener = new PropertyChangeListener() {
-		@Override
-		public void propertyChange(final PropertyChangeEvent evt) {
-			markViewAsDirty();
-		}
-	};
+	private PropertyChangeListener			mRepaintListener = evt -> markViewAsDirty();
 	private List<IGraphicsViewHandler>		mHandler = new ArrayList<>();
 
 	private DirtyListener					mDirtySceneListener = new DirtyListener() {
