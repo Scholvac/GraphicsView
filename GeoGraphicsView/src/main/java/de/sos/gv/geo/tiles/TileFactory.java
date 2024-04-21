@@ -16,6 +16,11 @@ public class TileFactory implements ITileFactory {
 
 	private static final Logger					LOG = GVLog.getLogger(TileInfo.class);
 
+	@FunctionalInterface
+	public interface IZOrderProvider {
+		/** Provide the ZOrder for the given tile. No need to set the value, just return it, the factory will apply the value */
+		public float provideZOrder(final TileItem item);
+	}
 
 	private ITileCalculator						mCalculator = new OSMTileCalculator();
 
@@ -24,6 +29,7 @@ public class TileFactory implements ITileFactory {
 	private final PriorityJobScheduler			mScheduler;
 
 	private ITileImageProvider					mImageProvider;
+	private IZOrderProvider						mZOrderProvider;
 
 	public TileFactory(final ITileImageProvider imgProvider) {
 		this(imgProvider, Runtime.getRuntime().availableProcessors());
@@ -43,6 +49,12 @@ public class TileFactory implements ITileFactory {
 		mScheduler = new PriorityJobScheduler(threadName, threadCount, queueSize);
 	}
 
+	public void setZOrder(final float fixOrder) {
+		setZOrder(ti -> fixOrder);
+	}
+	public void setZOrder(final IZOrderProvider order) {
+		mZOrderProvider = order;
+	}
 	public void setMaximumZoom(final int maxZoom) {
 		mCalculator.setMaximumZoom(maxZoom);
 	}
@@ -75,6 +87,8 @@ public class TileFactory implements ITileFactory {
 
 	protected TileJob createTileJob(final int[] tileInfo) {
 		final TileItem tile = createTile(tileInfo);
+		if (mZOrderProvider != null)
+			tile.setZOrder(mZOrderProvider.provideZOrder(tile));
 		return new TileJob(tile);
 	}
 
@@ -113,6 +127,5 @@ public class TileFactory implements ITileFactory {
 		public TileItem getTile() { return mItem; }
 		@Override
 		public String getHash() { return getTile().getHash(); }
-
 	}
 }

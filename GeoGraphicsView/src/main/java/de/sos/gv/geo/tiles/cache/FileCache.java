@@ -26,11 +26,11 @@ public class FileCache implements ITileImageProvider {
 		}
 	}
 	private final Map<TileInfo, CacheEntry>			mCache = new ConcurrentHashMap<>();
-	private TreeSet<CacheEntry>						mOrder = new TreeSet<>();
+	private final TreeSet<CacheEntry>						mOrder = new TreeSet<>();
 
-	private ITileImageProvider 						mProvider;
-	private Executor 								mExecutor;
-	private File 									mDirectory;
+	private final ITileImageProvider 						mProvider;
+	private final Executor 								mExecutor;
+	private final File 									mDirectory;
 
 	private long 									mCurrentSize;
 	private long mMaxSize;
@@ -70,23 +70,17 @@ public class FileCache implements ITileImageProvider {
 	}
 	private synchronized CacheEntry add(final TileInfo ti, final File file, final boolean enforceSize) {
 		final CacheEntry ce = new CacheEntry(ti, file);
-		synchronized (mOrder) {
-			mCache.put(ti, ce);
-			mOrder.add(ce);
-		}
+		mCache.put(ti, ce);
+		mOrder.add(ce);
 		mCurrentSize += file.length();
 		if (enforceSize)
 			enforceMaximumSize();
 		return ce;
 	}
 	private void enforceMaximumSize() {
-		synchronized (mOrder) {
-			while(mCurrentSize > mMaxSize && mCurrentSize > 0 && mOrder.isEmpty()==false) {
-				//remove the oldest entry. The oldest entry is the first element of the treeset
-				final CacheEntry first = mOrder.first();
-				if (first != null)
-					remove(first.tile);
-			}
+		while(mCurrentSize > mMaxSize && mCurrentSize > 0) {
+			//remove the oldest entry. The oldest entry is the first element of the treeset
+			remove(mOrder.first().tile);
 		}
 	}
 	private void remove(final TileInfo ti) {
@@ -129,19 +123,23 @@ public class FileCache implements ITileImageProvider {
 			value.delete();
 		}
 	}
+	public boolean isPresent(final TileInfo ti) {
+		return getFile(ti).exists();
+	}
 	@Override
 	public BufferedImage load(final TileInfo info) {
 		CacheEntry ce = mCache.get(info);
 		if (ce == null) {
 			ce = saveToFile(info);
-			if (ce != null) //concurrent hash map does not allow null....
+			if (ce != null)
 				mCache.put(info, ce);
+			else
+				return null;
 		}
 		final BufferedImage image = loadFromFile(ce.file);
 		enforceMaximumSize();
 		return image;
 	}
-
 	private CacheEntry saveToFile(final TileInfo ti) {
 		final BufferedImage img = mProvider.load(ti);
 		if (img != null) {
@@ -156,5 +154,6 @@ public class FileCache implements ITileImageProvider {
 	@Override
 	public void free(final TileInfo info, final BufferedImage img) {
 	}
+
 
 }
