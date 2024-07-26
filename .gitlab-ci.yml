@@ -38,9 +38,6 @@ cache:
   stage: test
   script:
     - 'mvn $MAVEN_CLI_OPTS clean org.jacoco:jacoco-maven-plugin:prepare-agent test jacoco:report'
-  except:
-    - $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
-    - tags
   artifacts:
     when: always
     reports:
@@ -68,6 +65,7 @@ verify:jdk8:
 # For `master` branch run `mvn deploy` automatically.
 deploy:jdk8.gitlab:
   stage: deploy
+  needs: ["verify:jdk8"]
   script:
     - if [ ! -f ci_settings.xml ];
         then echo "CI settings missing\! If deploying to GitLab Maven Repository, please see https://docs.gitlab.com/ee/user/packages/maven_repository/index.html#create-maven-packages-with-gitlab-cicd for instructions.";
@@ -81,6 +79,7 @@ deploy:jdk8.gitlab:
 # Deploy to 'Repository' Project
 deploy:jdk8.gitlab.repository:
   stage: deploy
+  needs: ["verify:jdk8"]
   script:
     - if [ ! -f ci_settings.xml ];
         then echo "CI settings missing\! If deploying to GitLab Maven Repository, please see https://docs.gitlab.com/ee/user/packages/maven_repository/index.html#create-maven-packages-with-gitlab-cicd for instructions.";
@@ -101,8 +100,7 @@ coverage:
   script:
     # convert report from jacoco to cobertura, using relative project path
     - python /opt/cover2cover.py GraphicsViewCore/target/site/jacoco/jacoco.xml $CI_PROJECT_DIR/GraphicsViewCore/src/main/java/ > GraphicsViewCore/target/site/cobertura.xml
-  dependencies:
-    - "verify:jdk8"
+  needs: ["verify:jdk8"]
   artifacts:
     reports:
       coverage_report:
