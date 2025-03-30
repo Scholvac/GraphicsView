@@ -80,6 +80,7 @@ sonarcloud-check:
   script:
     - export SONAR_USER_HOME="/tmp/.sonar"
     - mkdir -p "$SONAR_USER_HOME"
+    - ls && pwd
     - sonar-scanner
     - |
       # Konvertiere den SonarQube-Bericht in das codeclimate-Format
