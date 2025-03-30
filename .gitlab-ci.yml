@@ -71,7 +71,7 @@ deploy:jdk21.gitlab:
 
 sonarcloud-check:
   stage: test
-   image:
+  image:
     name: sonarsource/sonar-scanner-cli:latest
     entrypoint: [""]
 #  needs: ["verify:jdk21"]
