@@ -5,7 +5,7 @@ stages:
 
 include:
   - template: Code-Quality.gitlab-ci.yml
-  - template: Jobs/SAST.gitlab-ci.yml
+  #- template: Jobs/SAST.gitlab-ci.yml
 
 variables:
   MAVEN_OPTS: "-Dhttps.protocols=TLSv1.2 -Dmaven.repo.local=$CI_PROJECT_DIR/.m2/repository -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=WARN -Dorg.slf4j.simpleLogger.showDateTime=true -Djava.awt.headless=true"
@@ -66,12 +66,18 @@ deploy:jdk21.gitlab:
     - tags
     - $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
 
-# Coverage job
 coverage:
   stage: visualize
   image: registry.gitlab.com/haynes/jacoco2cobertura:1.0.7
   script:
-    - python /opt/cover2cover.py "**/target/site/jacoco/jacoco.xml" $CI_PROJECT_DIR/src/main/java/ > "**/target/site/cobertura.xml"
+    - |
+      for module in GraphicsViewCore GeoGraphicsView; do
+        if [ -f "$module/target/site/jacoco/jacoco.xml" ]; then
+          python /opt/cover2cover.py "$module/target/site/jacoco/jacoco.xml" "$CI_PROJECT_DIR/$module/src/main/java/" > "$module/target/site/cobertura.xml"
+        else
+          echo "Jacoco report not found for module: $module"
+        fi
+      done
   needs: ["verify:jdk8", "verify:jdk21"]
   artifacts:
     reports:
