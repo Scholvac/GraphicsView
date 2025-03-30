@@ -35,9 +35,9 @@ cache:
       - "**/target/"
 
 # Verify with JDK 8
-#verify:jdk8:
-#  image: $MAVEN_IMAGE_JDK8
-#  <<: *verify
+verify:jdk8:
+  image: $MAVEN_IMAGE_JDK8
+  <<: *verify
 
 # Verify with JDK 21
 verify:jdk21:
@@ -45,16 +45,16 @@ verify:jdk21:
   <<: *verify
 
 # Deploy with JDK 8
-# deploy:jdk8.gitlab:
-#   image: $MAVEN_IMAGE_JDK8
-#   stage: deploy
-#   needs: ["verify:jdk8"]
-#   script:
-#     - if [ ! -f ci_settings.xml ]; then echo "CI settings missing! If deploying to GitLab Maven Repository, please see https://docs.gitlab.com/ee/user/packages/maven_repository/index.html#create-maven-packages-with-gitlab-cicd for instructions."; exit 1; fi
-#     - 'mvn $MAVEN_CLI_OPTS -Pgitlab deploy -s ci_settings.xml'
-#   only:
-#     - tags
-#     - $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+ deploy:jdk8.gitlab:
+   image: $MAVEN_IMAGE_JDK8
+   stage: deploy
+   needs: ["verify:jdk8"]
+   script:
+     - if [ ! -f ci_settings.xml ]; then echo "CI settings missing! If deploying to GitLab Maven Repository, please see https://docs.gitlab.com/ee/user/packages/maven_repository/index.html#create-maven-packages-with-gitlab-cicd for instructions."; exit 1; fi
+     - 'mvn $MAVEN_CLI_OPTS -Pgitlab deploy -s ci_settings.xml'
+   only:
+     - tags
+     - $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
 
 # Deploy with JDK 21
 deploy:jdk21.gitlab:
@@ -79,6 +79,7 @@ sonarcloud-check:
     key: "${CI_JOB_NAME}"
     paths:
       - .sonar/cache
+
   script:
     - export SONAR_USER_HOME="/tmp/.sonar"
     - mkdir -p "$SONAR_USER_HOME"
