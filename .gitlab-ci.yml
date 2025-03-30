@@ -64,9 +64,7 @@ deploy-snapshot:
     - mvn versions:commit
     - 'mvn $MAVEN_CLI_OPTS deploy -s ci_settings.xml'
   only:
-    - branches
-  except:
-    - $CI_COMMIT_BRANCH != develop$VERSION
+    - develop-$VERSION
 
 
 sonarcloud-check:
