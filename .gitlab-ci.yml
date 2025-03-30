@@ -72,9 +72,7 @@ deploy:jdk21.gitlab:
 sonarcloud-check:
   stage: test
   needs: ["verify:jdk21"]       
-  image:
-    name: sonarsource/sonar-scanner-cli:latest
-    entrypoint: [""]
+  image: maven:3-openjdk-17
   cache:
     key: "${CI_JOB_NAME}"
     paths:
