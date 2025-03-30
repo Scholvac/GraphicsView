@@ -32,7 +32,7 @@ cache:
         - "**/target/surefire-reports/TEST-*.xml"
         - "**/target/failsafe-reports/TEST-*.xml"
     paths:
-      - "**/target/site/jacoco/jacoco.xml"
+      - "**/target/"
 
 # Verify with JDK 8
 verify:jdk8:
