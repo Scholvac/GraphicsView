@@ -84,6 +84,8 @@ sonarcloud-check:
     - mvn verify sonar:sonar -Dsonar.projectKey=scholvac_GraphicsView -Dsonar.project.settings=sonar-project.properties
     - ls -la .sonar/
     - ls -la .sonar/report/
+    - ls -la .sonar/_tmp/
+    - ls -la .sonar/cache/
     - |
       # Konvertiere den SonarQube-Bericht in das codeclimate-Format
       echo '[' > gl-code-quality-report.json
@@ -93,7 +95,7 @@ sonarcloud-check:
     reports:
       codequality: gl-code-quality-report.json  # GitLab erkennt dies als Code-Quality-Bericht
     paths:
-      - .sonar/report/*  # Optional: Weitere Artefakte, die du speichern möchtest
+      - .sonar/*  # Optional: Weitere Artefakte, die du speichern möchtest
     when: always
 
 
