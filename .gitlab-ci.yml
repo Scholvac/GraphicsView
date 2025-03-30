@@ -80,6 +80,7 @@ sonarcloud-check:
     paths:
       - .sonar/cache
   script:
+    - mkdir ${CI_PROJECT_DIR}/.sonar
     - sonar-scanner
     - |
       # Konvertiere den SonarQube-Bericht in das codeclimate-Format
