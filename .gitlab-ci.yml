@@ -78,10 +78,12 @@ sonarcloud-check:
       - .sonar/cache
   needs: ["verify:jdk21"]
   script:
-    - export SONAR_USER_HOME="/tmp/.sonar"
-    - mkdir -p "$SONAR_USER_HOME"
+#    - export SONAR_USER_HOME="/tmp/.sonar"
+#    - mkdir -p "$SONAR_USER_HOME"
     - apk update && apk add jq
-    - mvn verify sonar:sonar -Dsonar.projectKey=scholvac_GraphicsView
+    - mvn verify sonar:sonar -Dsonar.projectKey=scholvac_GraphicsView -Dsonar.project.settings=sonar-project.properties
+    - ls -la .sonar/
+    - ls -la .sonar/report/
     - |
       # Konvertiere den SonarQube-Bericht in das codeclimate-Format
       echo '[' > gl-code-quality-report.json
