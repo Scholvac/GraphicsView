@@ -71,14 +71,16 @@ deploy:jdk21.gitlab:
 
 sonarcloud-check:
   stage: test
-  image: sonarsource/sonar-scanner-cli:latest
+  needs: ["verify:jdk21"]       
+  image:
+    name: sonarsource/sonar-scanner-cli:latest
+    entrypoint: [""]
   cache:
     key: "${CI_JOB_NAME}"
     paths:
       - .sonar/cache
-  needs: ["verify:jdk21"]        
   script:
-    - sonar-scanner -Dsonar.projectKey=scholvac_GraphicsView
+    - sonar-scanner
     - |
       # Konvertiere den SonarQube-Bericht in das codeclimate-Format
       echo '[' > gl-code-quality-report.json
