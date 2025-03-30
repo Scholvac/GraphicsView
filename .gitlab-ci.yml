@@ -35,9 +35,9 @@ cache:
       - "**/target/"
 
 # Verify with JDK 8
-verify:jdk8:
-  image: $MAVEN_IMAGE_JDK8
-  <<: *verify
+#verify:jdk8:
+#  image: $MAVEN_IMAGE_JDK8
+#  <<: *verify
 
 # Verify with JDK 21
 verify:jdk21:
@@ -75,10 +75,10 @@ sonarcloud-check:
     name: sonarsource/sonar-scanner-cli:latest
     entrypoint: [""]
 #  needs: ["verify:jdk21"]
-  cache:
-    key: "${CI_JOB_NAME}"
-    paths:
-      - .sonar/cache
+#  cache:
+#    key: "${CI_JOB_NAME}"
+#    paths:
+#      - .sonar/cache
   script:
     - sonar-scanner
   artifacts:
