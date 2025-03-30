@@ -44,6 +44,7 @@ verify:jdk21:
   image: $MAVEN_IMAGE_JDK21
   <<: *verify
 
+
 # Deploy with JDK 8
  deploy:jdk8.gitlab:
    image: $MAVEN_IMAGE_JDK8
