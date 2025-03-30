@@ -66,8 +66,7 @@ deploy-snapshot:
   only:
     - branches
   except:
-    variables:
-      - $CI_COMMIT_BRANCH != develop$VERSION
+    - $CI_COMMIT_BRANCH != develop$VERSION
 
 
 sonarcloud-check:
