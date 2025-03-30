@@ -4,7 +4,7 @@ stages:
   - visualize
 
 include:
-  - template: Code-Quality.gitlab-ci.yml
+  #- template: Code-Quality.gitlab-ci.yml
   #- template: Jobs/SAST.gitlab-ci.yml
 
 variables:
@@ -90,10 +90,6 @@ sonarcloud-check:
     paths:
       - .sonar/report/*  # Optional: Weitere Artefakte, die du speichern möchtest
     when: always
-  only:
-    - merge_requests
-    - master
-    - develop
 
 
 # coverage:
