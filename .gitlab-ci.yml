@@ -79,6 +79,7 @@ sonarcloud-check:
       - .sonar/cache
   script:
     - mvn verify sonar:sonar -Dsonar.projectKey=scholvac_GraphicsView
+    - apt-get update && apt-get install -y jq
     - |
       # Konvertiere den SonarQube-Bericht in das codeclimate-Format
       echo '[' > gl-code-quality-report.json
