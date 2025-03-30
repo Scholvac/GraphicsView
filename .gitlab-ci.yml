@@ -80,10 +80,12 @@ sonarcloud-check:
 #    paths:
 #      - .sonar/cache
   script:
+    - export SONAR_USER_HOME="/tmp/.sonar"
+    - mkdir -p "$SONAR_USER_HOME"
     - sonar-scanner
   artifacts:
     paths:
-      - .sonar/*  # Optional: Weitere Artefakte, die du speichern möchtest
+      - /tmp/.sonar/*  # Optional: Weitere Artefakte, die du speichern möchtest
     when: always
 
 
