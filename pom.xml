@@ -50,14 +50,14 @@
 	</dependencies>
 	<build>
 		<resources>
-			<resource>
+			<!--<resource>
 				<directory>${basedir}/../</directory>
 				<targetPath>./</targetPath>
 				<includes>
 					<include>LICENCE.txt</include>
 					<include>LGPL.md</include>
 				</includes>
-			</resource>
+			</resource>-->
 		</resources>
 		<pluginManagement>
 			<plugins>
@@ -264,5 +264,6 @@
 		<module>GeoGraphicsView</module>
 		<module>GeometryEditor</module>
 		<module>GeotoolsAdapter</module>
+		<module>SVGAdapter</module>
 	</modules>
 </project>
