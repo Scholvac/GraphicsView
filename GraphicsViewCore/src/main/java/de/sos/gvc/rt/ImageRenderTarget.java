@@ -40,9 +40,9 @@ public abstract class ImageRenderTarget<ImageType extends Image> implements IRen
 	}
 
 	public interface IImageRenderListener {
-		public void imageCreated(final Image renderTarget);
-		public void preRender(final Image renderTarget);
-		public void postRender(final Image renderTarget);
+		void imageCreated(final Image renderTarget);
+		void preRender(final Image renderTarget);
+		void postRender(final Image renderTarget);
 	}
 	public static abstract class ImageRenderAdapter implements IImageRenderListener{
 		@Override
@@ -93,9 +93,9 @@ public abstract class ImageRenderTarget<ImageType extends Image> implements IRen
 	protected abstract ImageType createNewImage(final int width, final int height, final int type);
 
 	public void setAllowResize(final boolean allow) {
-		if (allow && mComponent != null) {
+		if (allow && mComponent != null)
 			mComponent.addComponentListener(mResizeListener);
-		}else if (!allow && mComponent != null)
+		else if (!allow && mComponent != null)
 			mComponent.removeComponentListener(mResizeListener);
 	}
 	public void setClearColor(final Color color) {
@@ -115,39 +115,37 @@ public abstract class ImageRenderTarget<ImageType extends Image> implements IRen
 		}
 	}
 	public void removeRenderListener(final IImageRenderListener listener) {
-		if (listener != null){
-			if (mRenderListener != null && mRenderListener.remove(listener)) {
+		if (listener != null)
+			if (mRenderListener != null && mRenderListener.remove(listener))
 				if (mRenderListener.isEmpty())
 					mRenderListener = null;
-			}
-		}
 	}
 
 	@Override
 	public void requestRepaint() {
-		synchronized (mSyncObject) {
-			final ImageType imgTarget = getImage();
-			final Graphics2D g2d = getGraphics2D(imgTarget);
+		if (getWidth() > 1 && getHeight() > 1)
+			synchronized (mSyncObject) {
+				final ImageType imgTarget = getImage();
+				final Graphics2D g2d = getGraphics2D(imgTarget);
 
-			if ( mClearColor != null) {
-				g2d.setColor(mClearColor);
-				g2d.fillRect(0, 0, mWidth, mHeight);
+				if ( mClearColor != null) {
+					g2d.setColor(mClearColor);
+					g2d.fillRect(0, 0, mWidth, mHeight);
+				}
+
+				if (mRenderListener != null)
+					mRenderListener.forEach(it -> it.preRender(imgTarget));
+
+				mView.doPaint(g2d);
+
+				if (mRenderListener != null)
+					mRenderListener.forEach(it -> it.postRender(imgTarget));
+
+				g2d.dispose();
+
+				if (mComponent != null)
+					mComponent.repaint();
 			}
-
-			if (mRenderListener != null) {
-				mRenderListener.forEach(it -> it.preRender(imgTarget));
-			}
-
-			mView.doPaint(g2d);
-
-			if (mRenderListener != null)
-				mRenderListener.forEach(it -> it.postRender(imgTarget));
-
-			g2d.dispose();
-
-			if (mComponent != null)
-				mComponent.repaint();
-		}
 	}
 
 	protected Graphics2D getGraphics2D(final Image imgTarget) {
@@ -226,7 +224,9 @@ public abstract class ImageRenderTarget<ImageType extends Image> implements IRen
 
 		@Override
 		protected BufferedImage createNewImage(final int width, final int height, final int type) {
-			final BufferedImage img = type > 0 ? new BufferedImage(width, height, type) : new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
+			final int w = Math.max(1, width), h = Math.max(1, height); //ensure that we have a valid image size
+			final int t = type > 0 ? type : BufferedImage.TYPE_INT_RGB;
+			final BufferedImage img = new BufferedImage(w, h, t); 
 			img.setAccelerationPriority(1);
 			return img;
 		}
@@ -243,7 +243,9 @@ public abstract class ImageRenderTarget<ImageType extends Image> implements IRen
 
 		@Override
 		protected VolatileImage createNewImage(final int width, final int height, final int type) {
-			final VolatileImage img = type > 0 ? getGraphicsConfiguration().createCompatibleVolatileImage(width, height, type) : getGraphicsConfiguration().createCompatibleVolatileImage(width, height);
+			final int w = Math.max(1, width), h = Math.max(1, height); //ensure that we have a valid image size
+			final int t = type > 0 ? type : BufferedImage.TYPE_INT_RGB;
+			final VolatileImage img = getGraphicsConfiguration().createCompatibleVolatileImage(w, h, t);
 			img.setAccelerationPriority(1);
 			return img;
 		}

@@ -16,18 +16,22 @@ import java.beans.PropertyChangeListener;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.DoubleSummaryStatistics;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 
 import org.slf4j.Logger;
 
 import de.sos.gvc.GraphicsScene.DirtyListener;
 import de.sos.gvc.GraphicsScene.IItemFilter;
+import de.sos.gvc.GraphicsScene.PredicateWrapper;
 import de.sos.gvc.Utils.WindowStat;
 import de.sos.gvc.log.GVLog;
 import de.sos.gvc.param.IParameter;
@@ -54,50 +58,57 @@ public class GraphicsView {
 	private static Logger LOG = GVLog.getLogger(GraphicsView.class);
 
 
-	private GraphicsScene 					mScene;
-	private ParameterContext				mPropertyContext = null;
-	protected IParameter<Double> 			mCenterX;
-	protected IParameter<Double> 			mCenterY;
-	protected IParameter<Double> 			mScaleX;
-	protected IParameter<Double> 			mScaleY;
-	protected IParameter<Double> 			mRotation;
-	protected IParameter<Integer>			mRTWidth;
-	protected IParameter<Integer>			mRTHeight;
+	private GraphicsScene 						mScene;
+	
+	private ParameterContext					mPropertyContext = null;
+	protected IParameter<Double> 				mCenterX;
+	protected IParameter<Double> 				mCenterY;
+	protected IParameter<Double> 				mScaleX;
+	protected IParameter<Double> 				mScaleY;
+	protected IParameter<Double> 				mRotation;
+	protected IParameter<Integer>				mRTWidth;
+	protected IParameter<Integer>				mRTHeight;
 
-	private AffineTransform					mViewTransform = null;
+	private AffineTransform						mViewTransform = null;
 
 	/** maximum repaints (triggered by dirty scene) per second */
-	private int								mRepaintDelay = 1000/30; //default: maximum of 30 repaints per second, triggered by dirty scene
+	private int									mRepaintDelay = 1000/30; //default: maximum of 30 repaints per second, triggered by dirty scene
 
-	private DoubleSummaryStatistics			mOverallStatitic = new DoubleSummaryStatistics();
-	private WindowStat						mWindowStatistic = new WindowStat(20);
+	private DoubleSummaryStatistics				mOverallStatitic = new DoubleSummaryStatistics();
+	private WindowStat							mWindowStatistic = new WindowStat(20);
 
-	private final IRenderTarget				mRenderTarget;
+	private final IRenderTarget					mRenderTarget;
 	/** Whether the GraphicsView shall trigger repaints, if a change in the scene or the view has been detected.
 	 */
-	private boolean							mTriggersRepaint = true;
-	private AtomicInteger 					mUpdateCounter = new AtomicInteger(0);
-	private AtomicInteger 					mRequestCounter = new AtomicInteger(0);
-	private ScheduledExecutorService 		mScheduler = Executors.newScheduledThreadPool(1);
-	private ScheduledFuture<Integer> 		mScheduledFuture;
+	private boolean								mTriggersRepaint = true;
+	private AtomicInteger 						mUpdateCounter = new AtomicInteger(0);
+	private AtomicInteger 						mRequestCounter = new AtomicInteger(0);
+	private ScheduledExecutorService 			mScheduler = Executors.newScheduledThreadPool(1);
+	private ScheduledFuture<Integer> 			mScheduledFuture;
 
-	private RenderingHints					mRenderHints = null;
+	private RenderingHints						mRenderHints = null;
 	/**
 	 * List of listener that will be notified before and after the painting has been done, for example to prepare a paint or clean up after painting
 	 */
-	private ArrayList<IPaintListener>		mPaintListener = new ArrayList<>();
+	private ArrayList<IPaintListener>			mPaintListener = new ArrayList<>();
 	/**
 	 * Invalidates the view transform and will be registered to all properties that have an effect to the view transform
 	 */
-	private PropertyChangeListener			mTransformListener = evt -> mViewTransform = null;
+	private PropertyChangeListener				mTransformListener = evt -> mViewTransform = null;
 
 	/**
 	 * Listen to all properties that require a repaint (which are basically all :) )
 	 */
-	private PropertyChangeListener			mRepaintListener = evt -> markViewAsDirty();
-	private List<IGraphicsViewHandler>		mHandler = new ArrayList<>();
+	private PropertyChangeListener				mRepaintListener = evt -> markViewAsDirty();
+	private List<IGraphicsViewHandler>			mHandler = new ArrayList<>();
+	private final Set<Consumer<IDrawContext>>	mViewTransformListener = new HashSet<>();
+	/**
+	 * Optional set of filters that are applied to all items before they are drawn
+	 */
+	private final Set<Predicate<GraphicsItem>>	mViewItemFilters = new HashSet<>();
+	private transient PredicateWrapper 			mItemFilter; //build from the list of predicates  
 
-	private DirtyListener					mDirtySceneListener = new DirtyListener() {
+	private DirtyListener						mDirtySceneListener = new DirtyListener() {
 		@Override
 		public void notifyDirty() {
 			markViewAsDirty();
@@ -106,7 +117,7 @@ public class GraphicsView {
 		public void notifyClean() {}
 	};
 
-	IDrawContext							mDrawContext = new IDrawContext() {
+	IDrawContext								mDrawContext = new IDrawContext() {
 		@Override
 		public GraphicsView getView() {
 			return GraphicsView.this;
@@ -120,6 +131,7 @@ public class GraphicsView {
 			return GraphicsView.this.getVisibleSceneRect();
 		}
 	};
+	
 
 
 	public GraphicsView(final GraphicsScene scene) {
@@ -156,8 +168,50 @@ public class GraphicsView {
 		mPropertyContext.registerListener(mRepaintListener);
 		mScene.registerDirtyListener(mDirtySceneListener);
 	}
+	
+	/**
+	 * Adds an view depended item filter, e.g. a filter that filters out items that shall not be rendered within this view (but may other views observing the same scene) 
+	 * @param filter The filter to add
+	 * @return <code>true</code> if the filter has been added, <code>false</code> otherwise (may already addded?)
+	 */
+	public boolean addItemFilter(final Predicate<GraphicsItem> filter) { 
+		if (mViewItemFilters.add(filter)) {
+			mItemFilter = new PredicateWrapper(mViewItemFilters);
+			return true;
+		}
+		return false;
+	}
+	/**
+	 * Remove a previous added ( {@link #addItemFilter(Predicate)} ) filter.
+	 * @param filter The filter to remove
+	 * @return <code>true</code> if the filter has been removed, <code>false</code> otherwise
+	 */
+	public boolean removeItemFilter(final Predicate<GraphicsItem> filter) { 
+		if (mViewItemFilters.remove(filter)){
+			if (mViewItemFilters.isEmpty())
+				mItemFilter = null;
+			else
+				mItemFilter = new PredicateWrapper(mViewItemFilters);
+			return true;
+		}
+		return false; 
+	}
 
 
+
+	/**
+	 * Registers a listener that is informed, whenever the View-Transform-Matrix has changed ({@link #getViewTransform()})
+	 * @param listener The listener
+	 * @return True if the listener has been registered, false otherwise (may already registered?)
+	 */
+	public boolean addViewTransformListener(final Consumer<IDrawContext> listener) {
+		return mViewTransformListener.add(listener);		
+	}
+	
+	public boolean removeViewTransformListener(final Consumer<IDrawContext> listener) {
+		return mViewTransformListener.remove(listener);
+	}
+	
 	/** Whether the GraphicsView shall trigger repaints, if a change in the scene or the view has been detected.
 	 *
 	 * Disable repaint trigger may be usefull if rendered within another render loop
@@ -238,15 +292,16 @@ public class GraphicsView {
 		mUpdateCounter.set(mRequestCounter.get());
 		//check for changes
 		validateView();
+		if (mViewTransformListener.isEmpty() == false)
+			mViewTransformListener.forEach(it -> it.accept(mDrawContext));
 
-		for (final IPaintListener pl : mPaintListener) {
+		for (final IPaintListener pl : mPaintListener)
 			try {
 				pl.prePaint(g2d, mDrawContext);
 			}catch(Exception | Error e) {
 				LOG.error("Failed to call PaintListener.prePaint on : " + pl + " Error: " + e.getMessage());
 				e.printStackTrace();
 			}
-		}
 
 		RenderingHints oldHints = null;
 		if (mRenderHints != null) {
@@ -260,12 +315,12 @@ public class GraphicsView {
 
 		//get all visible items, depending on the visible rect
 		final Rectangle2D rect = getVisibleSceneRect();
-		final List<GraphicsItem> itemList = mScene.getItems(rect);
+		final List<GraphicsItem> itemList = mScene.getItems(rect, mItemFilter);
 
 		//sort to overdraw the correct items, for example background items
 		itemList.sort(Comparator.comparing(GraphicsItem::getZOrder));
 
-		for (final GraphicsItem item : itemList) {
+		for (final GraphicsItem item : itemList)
 			try {
 				item.draw(g2d, mDrawContext);
 			}catch(Exception | Error e) {
@@ -274,7 +329,6 @@ public class GraphicsView {
 				LOG.error("Failed to paint an Item with error {}", e);
 				e.printStackTrace();
 			}
-		}
 
 		//reset the old transform & hints
 		g2d.setTransform(oldTransform);
@@ -282,16 +336,13 @@ public class GraphicsView {
 		if (mRenderHints != null && oldHints != null) //otherwise we did not change them...
 			g2d.setRenderingHints(oldHints);
 
-		for (final IPaintListener pl : mPaintListener) {
+		for (final IPaintListener pl : mPaintListener)
 			try {
 				pl.postPaint(g2d, mDrawContext);
 			}catch(Exception | Error e) {
 				LOG.error("Failed to call PaintListener.postPaint on : " + pl + " Error: " + e.getMessage());
 				e.printStackTrace();
 			}
-		}
-
-		//		System.out.println("Finish:"  + mUpdateCounter.get());
 	}
 
 	/** checks some properties and may invalidate the view matrix */
@@ -479,12 +530,11 @@ public class GraphicsView {
 			LOG.debug("Detected invalid scale parameter: X = {}, Y = {}", scaleX, scaleY);
 			return ;
 		}
-		if (!scaleXandY) {
+		if (!scaleXandY)
 			if (scaleX > scaleY)
 				scaleY = scaleX;
 			else
 				scaleX = scaleY;
-		}
 		setCenter(cx, -cy);
 		setScale(scaleX, scaleY);
 	}
@@ -585,14 +635,12 @@ public class GraphicsView {
 		//		synchronized (mRequestCounter) {
 		mRequestCounter.incrementAndGet();
 
-		if (mScheduledFuture == null) {
+		if (mScheduledFuture == null)
 			mScheduledFuture = mScheduler.schedule(() -> {
 				mScheduledFuture = null;
 				triggerRTRepaint();
 				return 0;
 			}, mRepaintDelay, TimeUnit.MILLISECONDS);
-		}
-		//		}
 	}
 
 }

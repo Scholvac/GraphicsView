@@ -11,6 +11,7 @@ import java.awt.geom.NoninvertibleTransformException;
 import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;
+import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeSupport;
 import java.util.ArrayList;
@@ -27,6 +28,7 @@ import de.sos.gvc.drawables.ImageDrawable;
 import de.sos.gvc.drawables.ShapeDrawable;
 import de.sos.gvc.drawables.ShapeDrawable.IShapeProvider;
 import de.sos.gvc.drawables.TextDrawable;
+import de.sos.gvc.handler.MouseDelegateHandler;
 import de.sos.gvc.param.Parameter;
 import de.sos.gvc.param.ParameterContext;
 import de.sos.gvc.styles.DrawableStyle;
@@ -38,50 +40,50 @@ import de.sos.gvc.styles.DrawableStyle;
  * <p>
  *
  * <h2> State State</h2>
- * the state of the item is represented through its mPropertyContext variable, which is a store for a number of properties.
- * Some of the properties are also available as member variables (for faster / easier access).
- * Each of this properties may be observed with an PropertyChangeListener.
+ * The status of the item is defined by variables, which trigger a PropertyChangeEvent when a change is made. The Java Beans property support is used to trigger the properties ( {@link PropertyChangeSupport} ). 
  * <h3> ChildStates Child States</h3>
  * to observe states of children, there is an delegate listener, that registers itself for all events of the own PropertyContext and also for
- * all events of all children. See addPropertyChangeListener(...)
+ * all events of all children. Therefore it's required to check the {@link PropertyChangeEvent#getSource()} to check whether it's the object itself or one of its children.
  *
  * <h2>Shape Shape</h2>
  * Each Item contains at least one shape. This shape is used for collision checks (for example if it is inside a view).
- * If no special Drawable has been registered, this shape will also be used for rendering
+ * If no special {@link IDrawable} has been registered, this shape will also be used for rendering, using the {@link ShapeDrawable}. 
+ * 
+ * <h2>Style Style</h2>
+ * Each Item can have a style, that is used for rendering.
  *
  * <h2>Properties Properties</h2>
  * As pointed out, each GraphicsItem is represented through at least the following Properties
  * <ul>
- * <li> <b>PROP_VISIBLE ("VISIBLE") :</b> shall the Item be rendered
- * <li> <b>PROP_SELECTED ("SELECTED") :</b> if the item is currently selected
- * <li> <b>PROP_SELECTABLE ("SELECTABLE") :</b> if the item can be selected
- * <li> <b>PROP_HOVERED ("HOVERED") :</b> if the mouse is over this item and remains for a certain time there
- * <li> <b>PROP_SHAPE ("SHAPE") :</b> The shape of the item, see \ref Shape
- * <li> <b>PROP_CENTER_X ("CENTER_X") :</b> X - Center of the shape in local coordinates (either the scene or its parent)
- * <li> <b>PROP_CENTER_Y ("CENTER_Y") :</b> Y - Center of the shape in local coordinates (either the scene or its parent)
- * <li> <b>PROP_ROTATION ("ROTATION") :</b> Rotation of the shape (Radians) in local coordinates (either the scene or its parent)
- * <li> <b>PROP_STYLE ("STYLE") :</b> Drawing style for this item (e.g. filled, or border or both, colors)
- * <li> <b>PROP_DRAWABLE ("DRAWABLE") :</b> Drawable that does the actual painting (see IDrawable)
- * <li> <b>PROP_PARENT ("PARENT") :</b> Pointer to the parent item, if this item is a sub item
- * <li> <b>PROP_Z_ORDER ("Z_ORDER") :</b> defines the order in which the items shall be painted by a view (the lower the z-value, the earlier the item is painted)
+ * <li> <b>{@link #PROP_VISIBLE}):</b> shall the Item be rendered
+ * <li> <b>{@link #PROP_SELECTED}) :</b> if the item is currently selected
+ * <li> <b>{@link #PROP_SELECTABLE}) :</b> if the item can be selected
+ * <li> <b>{@link #PROP_SHAPE}) :</b> The shape of the item, see \ref Shape
+ * <li> <b>{@link #PROP_CENTER_X}) :</b> X - Center of the shape in local coordinates (either the scene or its parent)
+ * <li> <b>{@link #PROP_CENTER_Y}) :</b> Y - Center of the shape in local coordinates (either the scene or its parent)
+ * <li> <b>{@link #PROP_ROTATION}) :</b> Rotation of the shape (Radians) in local coordinates (either the scene or its parent)
+ * <li> <b>{@link #PROP_STYLE}) :</b> Drawing style for this item (e.g. filled, or border or both, colors)
+ * <li> <b>{@link #PROP_DRAWABLE}) :</b> Drawable that does the actual painting (see IDrawable)
+ * <li> <b>{@link #PROP_PARENT}) :</b> Pointer to the parent item, if this item is a sub item
+ * <li> <b>{@link #PROP_Z_ORDER}) :</b> defines the order in which the items shall be painted by a view (the lower the z-value, the earlier the item is painted)
  *</ul>
  * The following properties are used to handle the mouse input for this item and are used in combination with \ref MouseInput
  *<ul>
- *  <li> <b>PROP_MOUSE_WEEL_SUPPORT ("MOUSE_WHEEL_SUPPORT") :</b> Pointer to the MouseWheelListener that shall be notified if the mouse wheel is used while the mouse is in the boundary of this item
- * 	<li> <b>PROP_MOUSE_MOTION_SUPPORT ("MOUSE_MOTION_SUPPORT") :</b> Pointer to the MouseMotionListener that shall be notified if the mouse wheel is used while the mouse is in the boundary of this item
- * 	<li> <b>PROP_MOUSE_SUPPORT ("MOUSE_SUPPORT") :</b> Pointer to the MouseListener that shall be notified if the mouse wheel is used while the mouse is in the boundary of this item
+ *  <li> <b>{@link #PROP_MOUSE_WHEEL_SUPPORT}) :</b> Pointer to the MouseWheelListener that shall be notified if the mouse wheel is used while the mouse is in the boundary of this item
+ * 	<li> <b>{@link #PROP_MOUSE_MOTION_SUPPORT}) :</b> Pointer to the MouseMotionListener that shall be notified if the mouse wheel is used while the mouse is in the boundary of this item
+ * 	<li> <b>{@link #PROP_MOUSE_SUPPORT}) :</b> Pointer to the MouseListener that shall be notified if the mouse wheel is used while the mouse is in the boundary of this item
  *</ul>
  *
  * The following properties are mainly used to cache some often used values.
  * <ul>
- * 	<li> <b>PROP_LOCAL_BOUNDS</b> ("LOCAL_BOUNDS"):
- *	<li> <b>PROP_SCENE_BOUNDS</b> ("SCENE_BOUNDS")
+ * 	<li> <b>{@link #PROP_LOCAL_BOUNDS}</b> ("LOCAL_BOUNDS"):
+ *	<li> <b>{@link #PROP_SCENE_BOUNDS}</b> ("SCENE_BOUNDS")
  * </ul>
  *
  * <h2>MouseInput Mouse Input</h2>
- * Each GraphicsItem can have its own Mouse listener (MouseListener, MouseMotionListener and MouseWheelListener) which are available through
- * the relevant properties.
- * <b>note: </b> this feature is only available if the MouseDelegateHandler has been installed within the displaying GraphicsView.
+ * Each GraphicsItem can have its own Mouse listener (MouseListener, {@link MouseMotionListener} and {@link MouseWheelListener}) which are available through
+ * the setter ({@link #setMouseSupport(MouseListener)}, {@link #setMouseMotionSupport(MouseMotionListener)} and {@link #setMouseWheelSupport(MouseWheelListener)} ).
+ * <b>Note: </b> this feature is only available if the {@link MouseDelegateHandler} has been installed within the displaying {@link GraphicsView}.
  *
  * <p>
  *
@@ -345,9 +347,8 @@ public class GraphicsItem implements IShapeProvider  {
 				final double old = mCenterX;
 				mCenterX = x;
 				mAllEventDelegate.firePropertyChange(PROP_CENTER_X, old, mCenterX);
-			}else {
+			} else
 				mCenterX = x;
-			}
 			markDirtyTransform();
 			markDirtyWorldBound();
 		}
@@ -358,9 +359,8 @@ public class GraphicsItem implements IShapeProvider  {
 				final double old = mCenterY;
 				mCenterY = y;
 				mAllEventDelegate.firePropertyChange(PROP_CENTER_Y, old, mCenterY);
-			}else {
+			} else
 				mCenterY = y;
-			}
 			markDirtyTransform();
 			markDirtyWorldBound();
 		}
@@ -382,9 +382,8 @@ public class GraphicsItem implements IShapeProvider  {
 				final double old = mRotation;
 				mRotation = rot_deg;
 				mAllEventDelegate.firePropertyChange(PROP_ROTATION, old, mRotation);
-			}else {
+			} else
 				mRotation = rot_deg;
-			}
 			markDirtyLocalBound();
 			markDirtyTransform();
 		}
@@ -396,10 +395,9 @@ public class GraphicsItem implements IShapeProvider  {
 
 	public double getSceneRotation() {
 		final GraphicsItem p = getParent();
-		if (p != null) {
+		if (p != null)
 			//@note the world transform does not allow to calculate the rotation out of the transformation matrix, thus we use this recursive call
 			return p.getSceneRotation() + getLocalRotation();
-		}
 		return getRotation();
 	}
 	public double getSceneRotationDeg() { return getSceneRotation();}
@@ -432,9 +430,8 @@ public class GraphicsItem implements IShapeProvider  {
 				final double old = mScaleX;
 				mScaleX = scaleX;
 				mAllEventDelegate.firePropertyChange(PROP_SCALE_X, old, mScaleX);
-			}else {
+			} else
 				mScaleX = scaleX;
-			}
 			markDirtyTransform();
 			markDirtyLocalBound();
 		}
@@ -445,9 +442,8 @@ public class GraphicsItem implements IShapeProvider  {
 				final double old = mScaleY;
 				mScaleY = scaleY;
 				mAllEventDelegate.firePropertyChange(PROP_SCALE_Y, old, mScaleY);
-			}else {
+			} else
 				mScaleY = scaleY;
-			}
 			markDirtyTransform();
 			markDirtyLocalBound();
 		}
@@ -465,9 +461,9 @@ public class GraphicsItem implements IShapeProvider  {
 	}
 
 	public void setSceneScaleX(final double scaleX) {
-		if (getParent() != null) {
+		if (getParent() != null)
 			setScaleX(scaleX / getParent().getSceneScaleX());
-		}else
+		else
 			setScaleX(scaleX);
 	}
 	public void setSceneScaleY(final double scaleY) {
@@ -498,14 +494,13 @@ public class GraphicsItem implements IShapeProvider  {
 	public void setSceneLocation(final Point2D sceneLoc) {
 		if (getParent() == null)
 			setLocalLocation(sceneLoc);
-		else {
+		else
 			try {
 				final Point2D loc = getParent().getWorldTransform().inverseTransform(sceneLoc, null);
 				setLocalLocation(loc);
 			}catch(final Exception e) {
 				e.printStackTrace();
 			}
-		}
 	}
 	public void setSceneLocation(final double centerX, final double centerY) {
 		setSceneLocation(new Point2D.Double(centerX, centerY));
@@ -516,9 +511,8 @@ public class GraphicsItem implements IShapeProvider  {
 		mInvalidWorldTransform = mInvalidLocalTransform = true;
 	}
 	public AffineTransform getLocalTransform() {
-		if (mInvalidLocalTransform) {
+		if (mInvalidLocalTransform)
 			updateLocalTransform();
-		}
 		return mLocalTransform;
 	}
 
@@ -547,9 +541,9 @@ public class GraphicsItem implements IShapeProvider  {
 	private void doCheckUpdateWorldTransform() {
 		if (!mInvalidWorldTransform && !mInvalidLocalTransform)
 			return ;
-		if (mParent == null) {
+		if (mParent == null)
 			updateWorldTransform();
-		}else {
+		else {
 			final TmpVars vars = Utils.TmpVars.get();
 			final GraphicsItem[] stack = vars.itemStack;
 			GraphicsItem rootNode = this;
@@ -580,18 +574,17 @@ public class GraphicsItem implements IShapeProvider  {
 	 */
 	protected void updateWorldTransform() {
 		final GraphicsItem parent = getParent();
-		if (parent == null) {
+		if (parent == null)
 			synchronized (mWorldTransform) {
 				mWorldTransform.setTransform(getLocalTransform());
 				mInvalidWorldTransform = false;
 			}
-		}else {
+		else
 			synchronized (mWorldTransform) {
 				mWorldTransform.setTransform(parent.mWorldTransform);
 				mWorldTransform.concatenate(getLocalTransform());
 				mInvalidWorldTransform = false;
 			}
-		}
 
 		if (!mChildren.isEmpty())
 			for (final GraphicsItem child : mChildren)
@@ -662,7 +655,7 @@ public class GraphicsItem implements IShapeProvider  {
 
 			Utils.transform(lb, getWorldTransform(), mWorldBounds);
 
-			if (mChildren != null && !mChildren.isEmpty()) {
+			if (mChildren != null && !mChildren.isEmpty())
 				//				synchronized (mChildren) {
 				for (final GraphicsItem child : mChildren) {
 					final Rectangle2D cb = child.getSceneBounds();
@@ -670,7 +663,6 @@ public class GraphicsItem implements IShapeProvider  {
 						Rectangle2D.union(mWorldBounds, cb, mWorldBounds);
 				}
 				//				}
-			}
 			mInvalidWorldBound = false;
 		}
 		return mWorldBounds;
@@ -689,16 +681,15 @@ public class GraphicsItem implements IShapeProvider  {
 	}
 
 	public void markDirtyDrawable() {
-		if (mInvalidDrawable == false) {
+		if (mInvalidDrawable == false)
 			//just trigger the parent, to be dirty as well
-			if (mParent != null) {
+			if (mParent != null)
 				mParent.markDirtyDrawable();
-			}else if (mScene != null) {
+			else if (mScene != null)
 				mScene.markDirty();
-			}else {
+			else {
 				//				throw new RuntimeException("No one to notify");
 			}
-		}
 	}
 
 	/**
@@ -711,19 +702,17 @@ public class GraphicsItem implements IShapeProvider  {
 	}
 
 	private void markDirtyLocalBound() {
-		if (!mInvalidLocalBound) {
+		if (!mInvalidLocalBound)
 			mInvalidLocalBound = true;
-		}
 		markDirtyWorldBound();
 	}
 	private void markDirtyWorldBound() {
 		mInvalidWorldBound = true;
 		mInvalidLocalBound = true;
-		if (mParent != null && !mParent.mInvalidWorldBound) {
+		if (mParent != null && !mParent.mInvalidWorldBound)
 			mParent.markDirtyWorldBound(); //recursive mark all parents dirty, until we found one that is already dirty
-		}else if (mScene != null) {
+		else if (mScene != null)
 			mScene.markDirty();
-		}
 	}
 
 	/**
@@ -805,10 +794,9 @@ public class GraphicsItem implements IShapeProvider  {
 			final List<GraphicsItem> children = new ArrayList<>(getChildren());
 			Collections.sort(children, Comparator.comparing(GraphicsItem::getZOrder));
 			synchronized (children) {
-				for (final GraphicsItem child : children) {
+				for (final GraphicsItem child : children)
 					if (child.isVisible())
 						child.draw(g, ctx);
-				}
 			}
 		}
 	}
@@ -856,9 +844,8 @@ public class GraphicsItem implements IShapeProvider  {
 				final DrawableStyle old = mStyle;
 				mStyle = style;
 				mAllEventDelegate.firePropertyChange(PROP_STYLE, old, mStyle);
-			}else {
+			} else
 				mStyle = style;
-			}
 			markDirtyDrawable();
 		}
 	}
@@ -871,16 +858,14 @@ public class GraphicsItem implements IShapeProvider  {
 				final IDrawable old = mDrawable;
 				mDrawable = drawable;
 				mAllEventDelegate.firePropertyChange(PROP_DRAWABLE, old, mDrawable);
-			}else {
+			} else
 				mDrawable = drawable;
-			}
 			markDirtyDrawable();
 		}
 	}
 	public IDrawable getDrawable() {
-		if (mDrawable == null) {
+		if (mDrawable == null)
 			setDrawable(new ShapeDrawable(this));
-		}
 		return mDrawable;
 	}
 	public GraphicsItem getParent() {
@@ -892,9 +877,8 @@ public class GraphicsItem implements IShapeProvider  {
 				final GraphicsItem old = mParent;
 				mParent = parent;
 				mAllEventDelegate.firePropertyChange(PROP_PARENT, old, mParent);
-			}else {
+			} else
 				mParent = parent;
-			}
 			mInvalidWorldTransform = true;
 			markDirtyLocalBound();
 		}
@@ -956,10 +940,9 @@ public class GraphicsItem implements IShapeProvider  {
 			if (mAllEventDelegate != null)
 				mAllEventDelegate.firePropertyChange(PROP_SELECTABLE, !selectable, selectable);
 		}
-		if (applyToChildren && mChildren != null && !mChildren.isEmpty()) {
+		if (applyToChildren && mChildren != null && !mChildren.isEmpty())
 			for (final GraphicsItem c : mChildren)
 				c.setSelectable(selectable, applyToChildren);
-		}
 	}
 
 	public boolean isSelectable() { return mSelectable;}
@@ -977,9 +960,8 @@ public class GraphicsItem implements IShapeProvider  {
 				final float old = mZOrder;
 				mZOrder = z;
 				mAllEventDelegate.firePropertyChange(PROP_Z_ORDER, old, z);
-			}else {
+			} else
 				mZOrder = z;
-			}
 			markDirtyDrawable();
 		}
 	}
@@ -1036,9 +1018,8 @@ public class GraphicsItem implements IShapeProvider  {
 	/////////////////////////////////////////////////////////////////////////////////
 
 	private PropertyChangeListener getChildListener() {
-		if (mChildListener == null) {
+		if (mChildListener == null)
 			mChildListener = pcl -> mAllEventDelegate.firePropertyChange(pcl); //listen to events of child items and delegates them
-		}
 		return mChildListener;
 	}
 }
