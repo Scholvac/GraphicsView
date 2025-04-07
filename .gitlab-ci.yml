@@ -1,69 +1,108 @@
-# Build JAVA applications using Apache Maven (http://maven.apache.org)
-# For docker image tags see https://hub.docker.com/_/maven/
-#
-# This template will build and test your projects
-# * Caches downloaded dependencies and plugins between invocation.
-# * Verify but don't deploy merge requests.
-# * Deploy built artifacts from master branch only.
+stages:
+  - test
+  - deploy
+  - visualize
+
+include:
+  #- template: Code-Quality.gitlab-ci.yml
+  #- template: Jobs/SAST.gitlab-ci.yml
 
 variables:
-  # This will suppress any download for dependencies and plugins or upload messages which would clutter the console log.
-  # `showDateTime` will show the passed time in milliseconds. You need to specify `--batch-mode` to make this work.
+  VERSION: "2.0"
   MAVEN_OPTS: "-Dhttps.protocols=TLSv1.2 -Dmaven.repo.local=$CI_PROJECT_DIR/.m2/repository -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=WARN -Dorg.slf4j.simpleLogger.showDateTime=true -Djava.awt.headless=true"
-  # As of Maven 3.3.0 instead of this you may define these options in `.mvn/maven.config` so the same config is used
-  # when running from the command line.
-  # `installAtEnd` and `deployAtEnd` are only effective with recent version of the corresponding plugins.
   MAVEN_CLI_OPTS: "--batch-mode --errors --fail-at-end --show-version -DinstallAtEnd=true -DdeployAtEnd=true"
+  MAVEN_IMAGE_JDK8: "maven:3.9.0-eclipse-temurin-8"
+  MAVEN_IMAGE_JDK21: "maven:3.9.9-eclipse-temurin-21-alpine"
+  SONAR_USER_HOME: "${CI_PROJECT_DIR}/.sonar"  # Defines the location of the analysis task cache
+  GIT_DEPTH: "0"  # Tells git to fetch all the branches of the project, required by the analysis task
 
-# This template uses jdk8 for verifying and deploying images
-image: maven:3.3.9-jdk-8
-
-# Cache downloaded dependencies and plugins between builds.
-# To keep cache across branches add 'key: "$CI_JOB_NAME"'
 cache:
+  key: "$CI_JOB_NAME"
   paths:
     - .m2/repository
 
-# For merge requests do not `deploy` but only run `verify`.
-# See https://maven.apache.org/guides/introduction/introduction-to-the-lifecycle.html
+# Template for verification jobs
 .verify: &verify
   stage: test
   script:
-    - 'mvn $MAVEN_CLI_OPTS verify'
-  except:
-    - $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
-    - tags
+    - 'mvn $MAVEN_CLI_OPTS clean org.jacoco:jacoco-maven-plugin:prepare-agent test jacoco:report'
+  artifacts:
+    when: always
+    reports:
+      junit:
+        - "**/target/surefire-reports/TEST-*.xml"
+        - "**/target/failsafe-reports/TEST-*.xml"
+    paths:
+      - "**/target/"
 
-# Verify merge requests using JDK8
+# Verify with JDK 8
 verify:jdk8:
+  image: $MAVEN_IMAGE_JDK8
   <<: *verify
 
-# To deploy packages from CI, create a ci_settings.xml file
-# For deploying packages to GitLab's Maven Repository: See https://docs.gitlab.com/ee/user/packages/maven_repository/index.html#create-maven-packages-with-gitlab-cicd for more details.
-# Please note: The GitLab Maven Repository is currently only available in GitLab Premium / Ultimate.
-# For `master` branch run `mvn deploy` automatically.
-deploy:jdk8.gitlab:
-  stage: deploy
-  script:
-    - if [ ! -f ci_settings.xml ];
-        then echo "CI settings missing\! If deploying to GitLab Maven Repository, please see https://docs.gitlab.com/ee/user/packages/maven_repository/index.html#create-maven-packages-with-gitlab-cicd for instructions.";
-      fi
-    - 'mvn $MAVEN_CLI_OPTS -Pgitlab deploy -s ci_settings.xml'
-  only: 
-    - tags
-    - $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
 
-    
-# Deploy to 'Repository' Project
-deploy:jdk8.gitlab.repository:
+# Deploy with JDK 8
+deploy:jdk8.tag:
+   image: $MAVEN_IMAGE_JDK8
+   stage: deploy
+   needs: ["verify:jdk8"]
+   script:
+     - export TAG_VERSION=$(echo $CI_COMMIT_TAG | sed 's/^v//')
+     - mvn versions:set -DnewVersion=$TAG_VERSION
+     - mvn versions:commit
+     - if [ ! -f ci_settings.xml ]; then echo "CI settings missing!"; exit 1; fi
+     - 'mvn $MAVEN_CLI_OPTS -Pgitlab deploy -s ci_settings.xml'
+   only:
+     - tags
+
+deploy-snapshot:
+  image: $MAVEN_IMAGE_JDK8
   stage: deploy
+  needs: ["verify:jdk8"]
   script:
-    - if [ ! -f ci_settings.xml ];
-        then echo "CI settings missing\! If deploying to GitLab Maven Repository, please see https://docs.gitlab.com/ee/user/packages/maven_repository/index.html#create-maven-packages-with-gitlab-cicd for instructions.";
-      fi
-    - 'mvn $MAVEN_CLI_OPTS -Pgitlab-snapshot deploy -s ci_settings.xml'
-  except:
-    - tags  
- # only: 
- #   - tags
- #   - $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+    - mvn versions:set -DnewVersion="$VERSION-SNAPSHOT"
+    - mvn versions:commit
+    - 'mvn $MAVEN_CLI_OPTS deploy -s ci_settings.xml'
+  only:
+    - develop-$VERSION
+
+
+sonarcloud-check:
+  stage: test
+  image:
+    name: sonarsource/sonar-scanner-cli:latest
+    entrypoint: [""]
+  needs: ["verify:jdk8"]
+  cache:
+    key: "${CI_JOB_NAME}"
+    paths:
+      - .sonar/cache
+
+  script:
+    - export SONAR_USER_HOME="/tmp/.sonar"
+    - mkdir -p "$SONAR_USER_HOME"
+    - sonar-scanner
+  artifacts:
+    paths:
+      - /tmp/.sonar/*  # Optional: Weitere Artefakte, die du speichern möchtest
+    when: always
+
+
+# coverage:
+#   stage: visualize
+#   image: registry.gitlab.com/haynes/jacoco2cobertura:1.0.7
+#   script:
+#     - |
+#       for module in GraphicsViewCore GeoGraphicsView; do
+#         if [ -f "$module/target/site/jacoco/jacoco.xml" ]; then
+#           python /opt/cover2cover.py "$module/target/site/jacoco/jacoco.xml" "$CI_PROJECT_DIR/$module/src/main/java/" > "$module/target/site/cobertura.xml"
+#         else
+#           echo "Jacoco report not found for module: $module"
+#         fi
+#       done
+#   needs: ["verify:jdk8", "verify:jdk21"]
+#   artifacts:
+#     reports:
+#       coverage_report:
+#         coverage_format: cobertura
+#         path: "**/target/site/cobertura.xml"

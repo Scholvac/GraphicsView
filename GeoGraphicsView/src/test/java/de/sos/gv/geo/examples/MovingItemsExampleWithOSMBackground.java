@@ -22,7 +22,6 @@ import de.sos.gvc.GraphicsScene;
 import de.sos.gvc.GraphicsView;
 import de.sos.gvc.handler.DefaultViewDragHandler;
 import de.sos.gvc.handler.MouseDelegateHandler;
-import de.sos.gvc.param.ParameterContext;
 import de.sos.gvc.storage.ListStorage;
 import de.sos.gvc.styles.DrawableStyle;
 
@@ -114,7 +113,7 @@ public class MovingItemsExampleWithOSMBackground {
 		// Advanced: Try out different Storage strategies (QuadTree or List Storage)
 		// GraphicsScene scene = new GraphicsScene(new QuadTreeStorage());
 		final GraphicsScene scene = new GraphicsScene(new ListStorage());
-		final GraphicsView view = new GraphicsView(scene, new ParameterContext());
+		final GraphicsView view = new GraphicsView(scene);
 
 		// Standard Handler
 		view.addHandler(new MouseDelegateHandler());
@@ -177,7 +176,7 @@ public class MovingItemsExampleWithOSMBackground {
 		frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
 		frame.setSize(800, 800);
 		frame.setLayout(new BorderLayout());
-		frame.add(view, BorderLayout.CENTER);
+		frame.add(view.getComponent(), BorderLayout.CENTER);
 		frame.setVisible(true);
 
 		// Used for profiling

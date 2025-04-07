@@ -13,6 +13,9 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Predicate;
 
 import de.sos.gvc.storage.ListStorage;
 import de.sos.gvc.storage.QuadTreeStorage;
@@ -31,14 +34,15 @@ public class GraphicsScene {
 		void notifyDirty();
 	}
 
+	@FunctionalInterface
 	public interface IItemFilter {
-		public boolean accept(GraphicsItem item);
+		boolean accept(GraphicsItem item);
 
-		public static IItemFilter combound(final IItemFilter first, final IItemFilter[] filter) {
+		static IItemFilter combound(final IItemFilter first, final IItemFilter[] filter) {
 			return combound(first, Arrays.asList(filter));
 		}
 
-		public static IItemFilter combound(final IItemFilter first, final Collection<IItemFilter> additional) {
+		static IItemFilter combound(final IItemFilter first, final Collection<IItemFilter> additional) {
 			if (additional == null || additional.isEmpty())
 				return first;
 			final LinkedList<IItemFilter> filter = new LinkedList<>();
@@ -52,6 +56,18 @@ public class GraphicsScene {
 			return new ComboundItemFilter(filter);
 		}
 	}
+	
+	public static final class PredicateWrapper implements IItemFilter	{
+		private Predicate<GraphicsItem> mPredicate;
+		public PredicateWrapper(final Predicate<GraphicsItem> p) { mPredicate = p;}
+		public PredicateWrapper(final Set<Predicate<GraphicsItem>> filters) {
+			for (final Predicate<GraphicsItem> p : filters)
+			 if (mPredicate == null) mPredicate = p;
+				else mPredicate = mPredicate.and(p);
+		}
+		@Override
+		public boolean accept(final GraphicsItem item) { return mPredicate.test(item);}		
+	}
 
 
 	public static class ComboundItemFilter implements IItemFilter {
@@ -62,13 +78,13 @@ public class GraphicsScene {
 		public ComboundItemFilter(final Collection<IItemFilter> filters) {
 			mFilter = filters;
 		}
+
 		@Override
 		public boolean accept(final GraphicsItem item) {
 			try {
-				for (final IItemFilter f : mFilter){
+				for (final IItemFilter f : mFilter)
 					if (!f.accept(item))
 						return false;
-				}
 				return true;
 			}catch(final Exception e) {
 				e.printStackTrace();
@@ -98,14 +114,12 @@ public class GraphicsScene {
 			if (mSceneCoordinates) {
 				//first check the bounding box, if that fit, we also check the shape, otherwise we can skip the expensive test
 				final Rectangle2D sb = item.getSceneBounds();
-				if (sb.contains(mQuery) || sb.intersects(mQuery)) {
+				if (sb.contains(mQuery) || sb.intersects(mQuery))
 					return true;
-				}
 			}else {
 				final Rectangle2D sb = item.getLocalBounds();
-				if (sb.contains(mQuery) || sb.intersects(mQuery)) {
+				if (sb.contains(mQuery) || sb.intersects(mQuery))
 					return true;
-				}
 			}
 			return false;
 		}
@@ -152,9 +166,7 @@ public class GraphicsScene {
 		//		public ItemListener(IParameter<Boolean> dp) { mDP = dp;}
 		@Override
 		public void propertyChange(final PropertyChangeEvent evt) {
-			if (!mDirty) {
-				markDirty();
-			}
+			markDirty();
 		}
 	}
 
@@ -166,7 +178,7 @@ public class GraphicsScene {
 
 	private List<GraphicsView> 						mViews = new ArrayList<>();
 
-	private boolean									mDirty = true;
+	private final AtomicBoolean						mDirty = new AtomicBoolean(true);
 	private ArrayList<DirtyListener>				mDirtyListener = new ArrayList<>();
 
 	private transient PropertyChangeSupport 		mPropertySupport = new PropertyChangeSupport(this);
@@ -259,7 +271,7 @@ public class GraphicsScene {
 			return true;//alread inside but no notification
 		if (mItemStore.addItem(item)) {
 			item._setScene(this);
-			item.addPropertyChangeListener(mItemListener);
+			//			item.addPropertyChangeListener(mItemListener);
 			markDirty();
 
 			mPropertySupport.firePropertyChange(ITEM_LIST_PROPERTY, null, item);
@@ -268,24 +280,19 @@ public class GraphicsScene {
 		return false;
 	}
 	public void markDirty() {
-		if (!mDirty) {
-			mDirty = true;
-			//notify listener
+		if (!mDirty.getAndSet(true))
 			for (final DirtyListener element : mDirtyListener)
 				element.notifyDirty();
-		}
 	}
 
 	/** Resets the dirty state.
 	 * @note this method shall only be called by the GraphicsView after drawing the current scene
 	 */
 	void markClean() {
-		if (mDirty) {
-			mDirty = false;
+		if (mDirty.getAndSet(false))
 			//notify listener
 			for (final DirtyListener element : mDirtyListener)
 				element.notifyClean();
-		}
 	}
 
 	/**
@@ -312,7 +319,7 @@ public class GraphicsScene {
 	 * @param items
 	 * @return true if all items has been removed, false otherwise.
 	 */
-	public boolean removeItems(final Collection<GraphicsItem> items) {
+	public boolean removeItems(final Collection<? extends GraphicsItem> items) {
 		if (items == null) return false;
 		boolean res = true;
 		for (final GraphicsItem item : items)
@@ -363,18 +370,16 @@ public class GraphicsScene {
 			if (filter == null || filter.accept(first))
 				out.add(first);
 			final List<GraphicsItem> childrenList = first.getChildren();
-			if (childrenList.isEmpty() == false) {
+			if (childrenList.isEmpty() == false)
 				for (int i = 0; i < childrenList.size(); i++) {
 					final GraphicsItem child = childrenList.get(i);
 					//we do not now if the child is part of the box, may another child that let the parent be inside the box
 					if (!child.isVisible())
 						continue;
 					final Rectangle2D wb = child.getSceneBounds();
-					if (rect.contains(wb) || rect.intersects(wb)) {
+					if (rect.contains(wb) || rect.intersects(wb))
 						openDeque.push(child);
-					}
 				}
-			}
 		}
 		Collections.reverse(out);
 		return out;
@@ -395,10 +400,9 @@ public class GraphicsScene {
 		for (final GraphicsItem item : items) {
 			if (!item.isVisible()) continue;
 			final Rectangle2D wb = item.getSceneBounds();
-			if (intersect(wb, rect)) {
+			if (intersect(wb, rect))
 				if (filter == null || filter.accept(item))
 					out.add(item);
-			}
 		}
 		return out;
 	}
@@ -407,9 +411,8 @@ public class GraphicsScene {
 	public static String rect2WKT(final Rectangle2D r) {
 		final Point2D[] v = getVertices(r);
 		final StringBuilder out = new StringBuilder("POLYGON((");
-		for (final Point2D p : v) {
+		for (final Point2D p : v)
 			out.append(p.getX()).append(" ").append(p.getY()).append(", ");
-		}
 		out.append(v[0].getX()).append(" ").append(v[0].getY());
 		out.append("))");
 		return out.toString();

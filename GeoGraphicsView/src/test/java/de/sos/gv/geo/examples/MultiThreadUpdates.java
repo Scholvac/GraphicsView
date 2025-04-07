@@ -38,7 +38,7 @@ public class MultiThreadUpdates extends JFrame {
 			@Override
 			public void run() {
 				try {
-					final MultiThreadUpdates frame = new MultiThreadUpdates("Example Template");
+					final MultiThreadUpdates frame = new MultiThreadUpdates("Multithreaded Update Example");
 					frame.setVisible(true);
 				} catch (final Exception e) {
 					e.printStackTrace();
@@ -74,19 +74,28 @@ public class MultiThreadUpdates extends JFrame {
 		contentPane.setLayout(new BorderLayout());
 
 		createScene();
-		contentPane.add(mView, BorderLayout.CENTER);
+		contentPane.add(mView.getComponent(), BorderLayout.CENTER);
 		configure();
+
+		new Thread() {
+			@Override
+			public void run() {
+				while(true) {
+					try{Thread.sleep(100);}catch(final Exception e) {}
+					System.out.println(mView.getPaintDurationStatistic().toString());
+					System.out.println(mView.getMovingWindowDurationStatistic().toString() + "\n");
+				}
+			}
+		}.start();
 	}
 
 	private static ExecutorService es = Executors.newFixedThreadPool(30);
 
 
-	// TODO: do the example specific part
 	public void configure() {
 		final LatLonPoint llp_brhv = new LatLonPoint(0,0);
 		GeoUtils.setViewCenter(mView, llp_brhv);
 		mView.setScale(20);
-
 
 		for (int i = 0; i < sMaxItemCount; i++) {
 			es.execute(new ItemThread());
@@ -117,7 +126,6 @@ public class MultiThreadUpdates extends JFrame {
 				y = rng.nextDouble();
 				item.setCenter(x, y);
 			}
-
 
 
 			final int tts = rng.nextInt(sBound_TTS);
@@ -157,7 +165,7 @@ public class MultiThreadUpdates extends JFrame {
 
 	private void createScene() {
 		mScene = new GraphicsScene();
-		mView = new GraphicsView(mScene);
+		mView = new GraphicsView(mScene);//, new ImageRenderTarget(true));
 
 		//Standard Handler
 		mView.addHandler(new MouseDelegateHandler());
