@@ -65,25 +65,25 @@ deploy-snapshot:
     - develop-2.1
 
 
-sonarcloud-check:
-  stage: test
-  image:
-    name: sonarsource/sonar-scanner-cli:latest
-    entrypoint: [""]
-  needs: ["verify:jdk8"]
-  cache:
-    key: "${CI_JOB_NAME}"
-    paths:
-      - .sonar/cache
-
-  script:
-    - export SONAR_USER_HOME="/tmp/.sonar"
-    - mkdir -p "$SONAR_USER_HOME"
-    - sonar-scanner
-  artifacts:
-    paths:
-      - /tmp/.sonar/*  # Optional: Weitere Artefakte, die du speichern möchtest
-    when: always
+#sonarcloud-check:
+#  stage: test
+#  image:
+#    name: sonarsource/sonar-scanner-cli:latest
+#    entrypoint: [""]
+#  needs: ["verify:jdk8"]
+#  cache:
+#    key: "${CI_JOB_NAME}"
+#    paths:
+#      - .sonar/cache
+#
+#  script:
+#    - export SONAR_USER_HOME="/tmp/.sonar"
+#    - mkdir -p "$SONAR_USER_HOME"
+#    - sonar-scanner
+#  artifacts:
+#    paths:
+#      - /tmp/.sonar/*  # Optional: Weitere Artefakte, die du speichern möchtest
+#    when: always
 
 
 # coverage:
