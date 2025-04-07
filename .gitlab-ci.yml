@@ -49,7 +49,6 @@ deploy:jdk8.tag:
      - export TAG_VERSION=$(echo $CI_COMMIT_TAG | sed 's/^v//')
      - mvn versions:set -DnewVersion=$TAG_VERSION
      - mvn versions:commit
-     - if [ ! -f ci_settings.xml ]; then echo "CI settings missing!"; exit 1; fi
      - 'mvn $MAVEN_CLI_OPTS -Pgitlab deploy -s ci_settings.xml'
    only:
      - tags
@@ -61,7 +60,7 @@ deploy-snapshot:
   script:
     - mvn versions:set -DnewVersion="2.1-SNAPSHOT"
     - mvn versions:commit
-    - 'mvn $MAVEN_CLI_OPTS deploy -s ci_settings.xml'
+    - 'mvn $MAVEN_CLI_OPTS -Pgitlab deploy -s ci_settings.xml'
   only:
     - develop-2.1
 
