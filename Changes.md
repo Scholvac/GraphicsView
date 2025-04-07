@@ -1,6 +1,16 @@
 Changes
 ===========================
 
+Version 2.0.0
+-------------------------
+* Support off screen rendering into image render targets and outside of the Event Dispatcher Thread. 
+* Support rendering hints 
+* Notify render target size
+* Add render filter for views, e.g. do not render specific items in a view
+* (GeoGraphicsView) Support maximum zoom level for tiles
+* (GeoGraphicsView) Support synchronous loading of tiles, e.g wait till all requested tiles are available
+* Minor bugfixes and CI/CD improvements
+
 Version 1.1.0
 -------------------------
 * let the TileHandler use an interface instead of an class, thus the (new) ITileFactory can be changed (see. CaffeineCacheExample.java)
