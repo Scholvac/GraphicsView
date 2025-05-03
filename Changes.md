@@ -1,6 +1,9 @@
 Changes
 ===========================
 
+Version 2.0.1
+------------------------
+* [#35] Consider RepaintTrigger flag in markDirty method
 Version 2.0.0
 -------------------------
 * Support off screen rendering into image render targets and outside of the Event Dispatcher Thread. 
