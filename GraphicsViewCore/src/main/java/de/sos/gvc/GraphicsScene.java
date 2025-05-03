@@ -56,17 +56,17 @@ public class GraphicsScene {
 			return new ComboundItemFilter(filter);
 		}
 	}
-	
+
 	public static final class PredicateWrapper implements IItemFilter	{
 		private Predicate<GraphicsItem> mPredicate;
 		public PredicateWrapper(final Predicate<GraphicsItem> p) { mPredicate = p;}
 		public PredicateWrapper(final Set<Predicate<GraphicsItem>> filters) {
 			for (final Predicate<GraphicsItem> p : filters)
-			 if (mPredicate == null) mPredicate = p;
+				if (mPredicate == null) mPredicate = p;
 				else mPredicate = mPredicate.and(p);
 		}
 		@Override
-		public boolean accept(final GraphicsItem item) { return mPredicate.test(item);}		
+		public boolean accept(final GraphicsItem item) { return mPredicate.test(item);}
 	}
 
 
@@ -288,7 +288,7 @@ public class GraphicsScene {
 	/** Resets the dirty state.
 	 * @note this method shall only be called by the GraphicsView after drawing the current scene
 	 */
-	void markClean() {
+	protected void markClean() {
 		if (mDirty.getAndSet(false))
 			//notify listener
 			for (final DirtyListener element : mDirtyListener)
