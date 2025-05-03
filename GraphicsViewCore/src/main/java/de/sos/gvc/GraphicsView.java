@@ -56,10 +56,11 @@ public class GraphicsView {
 
 
 	private static Logger LOG = GVLog.getLogger(GraphicsView.class);
+	private static ScheduledExecutorService		DEFAULT_REPAINT_SCHEDULER = null;
 
 
 	private GraphicsScene 						mScene;
-	
+
 	private ParameterContext					mPropertyContext = null;
 	protected IParameter<Double> 				mCenterX;
 	protected IParameter<Double> 				mCenterY;
@@ -83,7 +84,7 @@ public class GraphicsView {
 	private boolean								mTriggersRepaint = true;
 	private AtomicInteger 						mUpdateCounter = new AtomicInteger(0);
 	private AtomicInteger 						mRequestCounter = new AtomicInteger(0);
-	private ScheduledExecutorService 			mScheduler = Executors.newScheduledThreadPool(1);
+	private ScheduledExecutorService 			mScheduler;
 	private ScheduledFuture<Integer> 			mScheduledFuture;
 
 	private RenderingHints						mRenderHints = null;
@@ -106,7 +107,7 @@ public class GraphicsView {
 	 * Optional set of filters that are applied to all items before they are drawn
 	 */
 	private final Set<Predicate<GraphicsItem>>	mViewItemFilters = new HashSet<>();
-	private transient PredicateWrapper 			mItemFilter; //build from the list of predicates  
+	private transient PredicateWrapper 			mItemFilter; //build from the list of predicates
 
 	private DirtyListener						mDirtySceneListener = new DirtyListener() {
 		@Override
@@ -131,7 +132,7 @@ public class GraphicsView {
 			return GraphicsView.this.getVisibleSceneRect();
 		}
 	};
-	
+
 
 
 	public GraphicsView(final GraphicsScene scene) {
@@ -168,13 +169,13 @@ public class GraphicsView {
 		mPropertyContext.registerListener(mRepaintListener);
 		mScene.registerDirtyListener(mDirtySceneListener);
 	}
-	
+
 	/**
-	 * Adds an view depended item filter, e.g. a filter that filters out items that shall not be rendered within this view (but may other views observing the same scene) 
+	 * Adds an view depended item filter, e.g. a filter that filters out items that shall not be rendered within this view (but may other views observing the same scene)
 	 * @param filter The filter to add
 	 * @return <code>true</code> if the filter has been added, <code>false</code> otherwise (may already addded?)
 	 */
-	public boolean addItemFilter(final Predicate<GraphicsItem> filter) { 
+	public boolean addItemFilter(final Predicate<GraphicsItem> filter) {
 		if (mViewItemFilters.add(filter)) {
 			mItemFilter = new PredicateWrapper(mViewItemFilters);
 			return true;
@@ -186,7 +187,7 @@ public class GraphicsView {
 	 * @param filter The filter to remove
 	 * @return <code>true</code> if the filter has been removed, <code>false</code> otherwise
 	 */
-	public boolean removeItemFilter(final Predicate<GraphicsItem> filter) { 
+	public boolean removeItemFilter(final Predicate<GraphicsItem> filter) {
 		if (mViewItemFilters.remove(filter)){
 			if (mViewItemFilters.isEmpty())
 				mItemFilter = null;
@@ -194,7 +195,7 @@ public class GraphicsView {
 				mItemFilter = new PredicateWrapper(mViewItemFilters);
 			return true;
 		}
-		return false; 
+		return false;
 	}
 
 
@@ -205,13 +206,13 @@ public class GraphicsView {
 	 * @return True if the listener has been registered, false otherwise (may already registered?)
 	 */
 	public boolean addViewTransformListener(final Consumer<IDrawContext> listener) {
-		return mViewTransformListener.add(listener);		
+		return mViewTransformListener.add(listener);
 	}
-	
+
 	public boolean removeViewTransformListener(final Consumer<IDrawContext> listener) {
 		return mViewTransformListener.remove(listener);
 	}
-	
+
 	/** Whether the GraphicsView shall trigger repaints, if a change in the scene or the view has been detected.
 	 *
 	 * Disable repaint trigger may be usefull if rendered within another render loop
@@ -289,7 +290,7 @@ public class GraphicsView {
 		mWindowStatistic.accept(profile_time_sec);
 	}
 	private synchronized void internalPaint(final Graphics2D g2d) {
-		mUpdateCounter.set(mRequestCounter.get());
+		markViewAsClean();
 		//check for changes
 		validateView();
 		if (mViewTransformListener.isEmpty() == false)
@@ -631,16 +632,72 @@ public class GraphicsView {
 			func.accept(obj);
 	}
 
-	private void markViewAsDirty() {
-		//		synchronized (mRequestCounter) {
+	/**
+	 * @return <code>true</code> if the view need to be repainted. If {@link #isRepaintTriggerEnabled()} the usually already has requested the render target for a async repaint.
+	 * To check this, use the {@link #isRepaintTriggered()} method.
+	 */
+	public boolean isViewDirty() {
+		return mRequestCounter.get() == mUpdateCounter.get();
+	}
+	/**
+	 * @return Whether a repaint request has been triggered or not.
+	 */
+	public boolean isRepaintTriggered() { return mScheduledFuture != null;}
+
+	/**
+	 * Mark the view as dirty. If the {@link #isRepaintTriggerEnabled()} is <code>true</code>, the view will schedule a trigger a request to the {@link #getRenderTarget()}
+	 * to repaint within the next #getRepaintDelay() milliseconds.
+	 */
+	protected void markViewAsDirty() {
 		mRequestCounter.incrementAndGet();
 
-		if (mScheduledFuture == null)
-			mScheduledFuture = mScheduler.schedule(() -> {
+		if (mTriggersRepaint && mScheduledFuture == null)
+			mScheduledFuture = getRepaintScheduler().schedule(() -> {
 				mScheduledFuture = null;
 				triggerRTRepaint();
 				return 0;
 			}, mRepaintDelay, TimeUnit.MILLISECONDS);
+	}
+
+	/**
+	 * Mark the view to be clean again
+	 */
+	protected void markViewAsClean() {
+		// Do not call this method outside of tests or the {@link #internalPaint(Graphics2D)} method unless you are sure to now what you're doing.
+		mUpdateCounter.set(mRequestCounter.get());
+	}
+
+	private ScheduledExecutorService getRepaintScheduler() {
+		if (mScheduler == null) {
+			mScheduler = createRepaintScheduler();
+			if (mScheduler == null) {
+				LOG.debug("No valid repaint scheduler provided, use default scheduler");
+				mScheduler = getOrCreateDefaultRepaintScheduler();
+			}
+		}
+		return mScheduler;
+	}
+	/**
+	 * Returns a {@link ScheduledExecutorService} used to schedule repaint triggers for views
+	 * that have been marked as dirty. This executor is only provided if the internal flag
+	 * {@code mTriggerRepaint} is set to {@code true}.
+	 * <p>
+	 * This method is typically used in UI systems where deferred rendering or view updates
+	 * are coordinated asynchronously to reduce CPU/GPU load and increase responsiveness.
+	 *
+	 * @return the scheduled executor for repaint tasks
+	 */
+	protected ScheduledExecutorService createRepaintScheduler() {
+		return getOrCreateDefaultRepaintScheduler();
+	}
+	private static ScheduledExecutorService getOrCreateDefaultRepaintScheduler() {
+		if (DEFAULT_REPAINT_SCHEDULER == null)
+			DEFAULT_REPAINT_SCHEDULER = Executors.newScheduledThreadPool(1, r -> {
+				final Thread t = new Thread(r, "GraphicsView-Scheduler");
+				t.setDaemon(true);
+				return t;
+			});
+		return DEFAULT_REPAINT_SCHEDULER;
 	}
 
 }
