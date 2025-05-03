@@ -109,9 +109,9 @@ public class TerrariumImageProvider extends AbstractTileDownloader {
 	}
 
 	@Override
-	public synchronized BufferedImage syncLoad(final TileInfo tile) {
+	public BufferedImage load(final TileInfo tile) {
 		if (mMode == DownloadMode.RAW)
-			return super.syncLoad(tile);
+			return super.load(tile);
 
 		if (LOG.isTraceEnabled()) LOG.trace("Start downloading of tile {}", tile.getHash());
 		final byte[] data = getCompressedTileImage(tile);

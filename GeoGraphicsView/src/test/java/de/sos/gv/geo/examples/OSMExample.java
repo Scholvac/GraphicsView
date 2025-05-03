@@ -18,7 +18,6 @@ import de.sos.gvc.GraphicsScene;
 import de.sos.gvc.GraphicsView;
 import de.sos.gvc.handler.DefaultViewDragHandler;
 import de.sos.gvc.handler.MouseDelegateHandler;
-import de.sos.gvc.param.ParameterContext;
 
 
 /**
@@ -32,7 +31,7 @@ public class OSMExample {
 
 		//Create a new Scene and a new View
 		final GraphicsScene scene = new GraphicsScene();
-		final GraphicsView view = new GraphicsView(scene, new ParameterContext());
+		final GraphicsView view = new GraphicsView(scene);
 
 
 		//Standard Handler
@@ -47,7 +46,7 @@ public class OSMExample {
 		 * is provided through a supplier and instanciiated for each TileFactory thread.
 		 */
 		final ITileImageProvider webCache = ITileImageProvider.OSM; //may be initiated multiple times through the TileFactory
-		final ITileImageProvider fileCache = new FileCache(webCache, new File("./.cache"), 100, SizeUnit.MegaByte); // store up to 100MB into the local directory ./.cache
+		final ITileImageProvider fileCache = new FileCache(webCache, new File("./.cache"), 1, SizeUnit.MegaByte); // store up to 100MB into the local directory ./.cache
 		final ITileImageProvider imageCache = new MemoryCache(fileCache, 10, SizeUnit.MegaByte); //hold up to 10MB images in RAM (may overlab with the images stored on disk)
 
 		/** A TileFactory is used to calculate the required tiles, to cover an area (defined through the GraphicsView)
@@ -71,7 +70,7 @@ public class OSMExample {
 		frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
 		frame.setSize(800, 800);
 		frame.setLayout(new BorderLayout());
-		frame.add(view, BorderLayout.CENTER);
+		frame.add(view.getComponent(), BorderLayout.CENTER);
 		frame.setVisible(true);
 	}
 

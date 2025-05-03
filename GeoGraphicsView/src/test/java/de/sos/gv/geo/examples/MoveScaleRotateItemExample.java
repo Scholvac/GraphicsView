@@ -13,6 +13,7 @@ import javax.swing.WindowConstants;
 import de.sos.gvc.GraphicsItem;
 import de.sos.gvc.GraphicsScene;
 import de.sos.gvc.GraphicsView;
+import de.sos.gvc.Utils;
 import de.sos.gvc.handler.DefaultViewDragHandler;
 import de.sos.gvc.handler.MouseDelegateHandler;
 import de.sos.gvc.handler.SelectionHandler;
@@ -22,7 +23,6 @@ import de.sos.gvc.handler.SelectionHandler.IScaleCallback;
 import de.sos.gvc.handler.SelectionHandler.ItemMoveEvent;
 import de.sos.gvc.handler.SelectionHandler.ItemRotateEvent;
 import de.sos.gvc.handler.SelectionHandler.ItemScaleEvent;
-import de.sos.gvc.param.ParameterContext;
 import de.sos.gvc.storage.ListStorage;
 import de.sos.gvc.styles.DrawableStyle;
 
@@ -39,7 +39,7 @@ public class MoveScaleRotateItemExample {
 	public static void main(final String[] args) {
 		//Create a new Scene and a new View
 		final GraphicsScene scene = new GraphicsScene(new ListStorage());
-		final GraphicsView view = new GraphicsView(scene, new ParameterContext());
+		final GraphicsView view = new GraphicsView(scene);
 
 
 		//Standard Handler
@@ -106,14 +106,14 @@ public class MoveScaleRotateItemExample {
 		final String arrowWKT = "POLYGON ((-100 0, 0 100, 100 0, 50 0, 50 -100, -50 -100, -50 0, -100 0))";
 		final String sinStarWKT = "POLYGON ((100 0, 61.193502094049606 22.993546861223116, 47.37629522998975 42.01130058032534, 37.5 86.02387002944835, 3.6399700797813024 56.22209406247465, -18.71674025585594 48.9579585314524, -63.62712429686843 53.16567552200251, -45.74727574170163 11.753618188079914, -45.74727574170165 -11.75361818807988, -63.627124296868445 -53.16567552200249, -18.71674025585592 -48.957958531452284, 3.6399700797812438 -56.222094062474724, 37.49999999999998 -86.02387002944836, 47.376295229989815 -42.01130058032546, 61.19350209404953 -22.993546861223134, 100 0))";
 
-		final GraphicsItem arrowItem = new GraphicsItem(ExampleUtils.wkt2Shape(arrowWKT));
+		final GraphicsItem arrowItem = new GraphicsItem(Utils.wkt2Shape(arrowWKT));
 		arrowItem.setCenter(0, 0);
 		arrowItem.setScale(1, 1);
 		arrowItem.setRotation(0.0);
 		arrowItem.setStyle(style);
 		scene.addItem(arrowItem);
 
-		final GraphicsItem starItem = new GraphicsItem(ExampleUtils.wkt2Shape(sinStarWKT));
+		final GraphicsItem starItem = new GraphicsItem(Utils.wkt2Shape(sinStarWKT));
 		starItem.setCenter(-300, 200);
 		starItem.setScale(.5, .5);
 		starItem.setRotation(0.0);
@@ -121,12 +121,12 @@ public class MoveScaleRotateItemExample {
 		scene.addItem(starItem);
 
 		//build also a mixed item to show how it works on item hierarchies
-		final GraphicsItem mixedItem = new GraphicsItem(ExampleUtils.wkt2Shape(arrowWKT));
+		final GraphicsItem mixedItem = new GraphicsItem(Utils.wkt2Shape(arrowWKT));
 		mixedItem.setCenter(300, -200);
 		mixedItem.setScale(1, 1);
 		mixedItem.setRotation(45.0);
 		mixedItem.setStyle(style);
-		final GraphicsItem subStar = new GraphicsItem(ExampleUtils.wkt2Shape(sinStarWKT));
+		final GraphicsItem subStar = new GraphicsItem(Utils.wkt2Shape(sinStarWKT));
 		subStar.setCenter(0, 100);
 		subStar.setStyle(style);
 		subStar.setScale(0.25, 0.25);
@@ -137,7 +137,7 @@ public class MoveScaleRotateItemExample {
 		frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
 		frame.setSize(800, 800);
 		frame.setLayout(new BorderLayout());
-		frame.add(view, BorderLayout.CENTER);
+		frame.add(view.getComponent(), BorderLayout.CENTER);
 		frame.setVisible(true);
 
 		frame.setLocation(200, 200);

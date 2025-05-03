@@ -15,10 +15,10 @@ import de.sos.gvc.GraphicsItem;
 import de.sos.gvc.GraphicsScene;
 import de.sos.gvc.GraphicsView;
 import de.sos.gvc.IDrawContext;
+import de.sos.gvc.Utils;
 import de.sos.gvc.handler.DefaultViewDragHandler;
 import de.sos.gvc.handler.MouseDelegateHandler;
 import de.sos.gvc.handler.SelectionHandler;
-import de.sos.gvc.param.ParameterContext;
 import de.sos.gvc.storage.QuadTreeStorage;
 import de.sos.gvc.styles.DrawableStyle;
 
@@ -35,7 +35,7 @@ public class SelectionExample {
 	public static void main(final String[] args) {
 		//Create a new Scene and a new View
 		final GraphicsScene scene = new GraphicsScene(new QuadTreeStorage());
-		final GraphicsView view = new GraphicsView(scene, new ParameterContext());
+		final GraphicsView view = new GraphicsView(scene);
 
 
 		//Standard Handler
@@ -61,7 +61,7 @@ public class SelectionExample {
 		};
 
 		for (int i = 0; i < wkts.length; i++) {
-			final Shape shape = ExampleUtils.wkt2Shape(wkts[i]);
+			final Shape shape = Utils.wkt2Shape(wkts[i]);
 			final GraphicsItem item = new GraphicsItem(shape) {
 				@Override
 				public void draw(final Graphics2D g, final IDrawContext ctx) {
@@ -88,11 +88,19 @@ public class SelectionExample {
 			scene.addItem(item);
 		}
 
+		final GraphicsItem parentItem = GraphicsItem.createFromWKT(wkts[0]);
+		parentItem.setStyle(new DrawableStyle(null, null, null, Color.blue));
+		final GraphicsItem childItem = GraphicsItem.createFromWKT(wkts[1]);
+		childItem.setStyle(new DrawableStyle(null, null, null, Color.orange));
+		childItem.setCenter(100, 100);
+		parentItem.addItem(childItem);
+		scene.addItem(parentItem);
+
 		final JFrame frame = new JFrame("OSMExample");
 		frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
 		frame.setSize(800, 800);
 		frame.setLayout(new BorderLayout());
-		frame.add(view, BorderLayout.CENTER);
+		frame.add(view.getComponent(), BorderLayout.CENTER);
 		frame.setVisible(true);
 
 		frame.setLocation(2400, 200);

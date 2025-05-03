@@ -8,7 +8,6 @@ import java.io.InputStream;
 import java.net.SocketTimeoutException;
 import java.net.URL;
 import java.net.URLConnection;
-import java.util.concurrent.CompletableFuture;
 
 import javax.imageio.ImageIO;
 
@@ -29,13 +28,7 @@ public abstract class AbstractTileDownloader implements ITileImageProvider {
 
 
 	@Override
-	public CompletableFuture<BufferedImage> load(final TileInfo info) {
-		final CompletableFuture<BufferedImage> res = new CompletableFuture<>();
-		res.complete(syncLoad(info));
-		return res;
-	}
-
-	public synchronized BufferedImage syncLoad(final TileInfo tile) {
+	public BufferedImage load(final TileInfo tile) {
 		if (LOG.isTraceEnabled()) LOG.trace("Start downloading of tile {}", tile.getHash());
 		final byte[] data = getCompressedTileImage(tile);
 		if (data != null) {

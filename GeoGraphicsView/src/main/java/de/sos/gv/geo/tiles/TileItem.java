@@ -3,10 +3,7 @@ package de.sos.gv.geo.tiles;
 import java.awt.Graphics2D;
 import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;
-import java.io.File;
-import java.io.IOException;
-
-import javax.imageio.ImageIO;
+import java.util.concurrent.CompletableFuture;
 
 import org.slf4j.Logger;
 
@@ -18,7 +15,7 @@ import de.sos.gvc.styles.DrawableStyle;
 
 public class TileItem extends GraphicsItem {
 
-	public static enum TileStatus {
+	public enum TileStatus {
 		LOADING,
 		FINISHED,
 		ERROR
@@ -48,9 +45,11 @@ public class TileItem extends GraphicsItem {
 	}
 
 
-	private final TileInfo				mInfo;
-	private final ImageDrawable			mImage;
-	private TileStatus					mStatus;
+	private final TileInfo							mInfo;
+	private final ImageDrawable						mImage;
+
+	private TileStatus								mStatus;
+	private CompletableFuture<BufferedImage> 		mImageFuture;
 
 	public TileItem(final TileInfo info, final BufferedImage img) {
 		super(info.getShape());
@@ -59,31 +58,24 @@ public class TileItem extends GraphicsItem {
 		mInfo = info;
 		setDrawable(mImage = new ImageDrawable((Rectangle2D) getShape(), img));
 		setCenter(info.getXYCenter());
+		mImageFuture = new CompletableFuture<>();
 	}
-	static int c;
-	public synchronized void setImage(final TileStatus status, final BufferedImage img) {
-		if (mStatus == TileStatus.FINISHED) {
-			System.out.println("Shall not happen");
-		}
+
+	public void setImage(final TileStatus status, final BufferedImage img) {
 		LOG.trace("Set status of tile {} to {} ", mInfo.getHash(), status);
 		if (img != mImage.mImage) {
 			mImage.mImage = img;
 			mStatus = status;
 		}else {
-			try {
-				c++;
-				ImageIO.write(img, "PNG", new File("error_"+c+".png"));
-			} catch (final IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
 			mStatus = TileStatus.ERROR;
 		}
-
 		markDirty();
+
+		mImageFuture.complete(img);
 	}
 	public TileStatus getStatus() { return mStatus;}
 	public BufferedImage getImage() { return mImage.mImage; }
 	public String getHash() { return mInfo.getHash(); }
 	public TileInfo getInfo() {return mInfo;}
+	public CompletableFuture<BufferedImage> getImageFuture() {return mImageFuture;}
 }

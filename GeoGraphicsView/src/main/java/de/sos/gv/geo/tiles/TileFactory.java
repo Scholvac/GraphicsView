@@ -1,8 +1,6 @@
 package de.sos.gv.geo.tiles;
 
-import java.awt.Rectangle;
 import java.awt.image.BufferedImage;
-import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
 
 import org.slf4j.Logger;
@@ -18,6 +16,11 @@ public class TileFactory implements ITileFactory {
 
 	private static final Logger					LOG = GVLog.getLogger(TileInfo.class);
 
+	@FunctionalInterface
+	public interface IZOrderProvider {
+		/** Provide the ZOrder for the given tile. No need to set the value, just return it, the factory will apply the value */
+		public float provideZOrder(final TileItem item);
+	}
 
 	private ITileCalculator						mCalculator = new OSMTileCalculator();
 
@@ -26,6 +29,7 @@ public class TileFactory implements ITileFactory {
 	private final PriorityJobScheduler			mScheduler;
 
 	private ITileImageProvider					mImageProvider;
+	private IZOrderProvider						mZOrderProvider;
 
 	public TileFactory(final ITileImageProvider imgProvider) {
 		this(imgProvider, Runtime.getRuntime().availableProcessors());
@@ -45,9 +49,28 @@ public class TileFactory implements ITileFactory {
 		mScheduler = new PriorityJobScheduler(threadName, threadCount, queueSize);
 	}
 
+	public void setZOrder(final float fixOrder) {
+		setZOrder(ti -> fixOrder);
+	}
+	public void setZOrder(final IZOrderProvider order) {
+		mZOrderProvider = order;
+	}
+	public void setMaximumZoom(final int maxZoom) {
+		mCalculator.setMaximumZoom(maxZoom);
+	}
+	public int getMaximumZoom() {
+		return mCalculator.getMaximumZoom();
+	}
+	public void setTileCalculator(final ITileCalculator tileCalc) {
+		mCalculator = tileCalc;
+	}
+	public ITileCalculator getTileCalculator() {
+		return mCalculator;
+	}
+
 	@Override
-	public int[][] getRequiredTileInfos(final LatLonBox area, final Rectangle viewBounds) {
-		return mCalculator.calculateTileCoordinates(area, viewBounds);
+	public int[][] getRequiredTileInfos(final LatLonBox area, final int imgWidth, final int imgHeight) {
+		return mCalculator.calculateTileCoordinates(area, imgWidth);
 	}
 
 	public void setProvider(final ITileImageProvider provider) {
@@ -64,11 +87,13 @@ public class TileFactory implements ITileFactory {
 
 	protected TileJob createTileJob(final int[] tileInfo) {
 		final TileItem tile = createTile(tileInfo);
+		if (mZOrderProvider != null)
+			tile.setZOrder(mZOrderProvider.provideZOrder(tile));
 		return new TileJob(tile);
 	}
 
 	protected TileItem createTile(final int[] tileInfo) {
-		return new TileItem(new TileInfo(tileInfo), mErrorImageSupplier.get());
+		return new TileItem(new TileInfo(tileInfo), mLoadingImageSupplier.get());
 	}
 	@Override
 	public void release(final TileItem item) {
@@ -79,37 +104,28 @@ public class TileFactory implements ITileFactory {
 
 	///////////////////////////////////////////////
 	class TileJob implements IJob {
+		private final TileItem 						mItem;
+		private final long							mCreationTime;//used for priority
 
-		private final TileItem 	mItem;
-		private final long		mCreationTime;
 
 		public TileJob(final TileItem item) {
 			mItem = item;
-			mCreationTime = System.currentTimeMillis(); //used for priority
+			mCreationTime = System.currentTimeMillis();
 		}
 
 		@Override
 		public void run() {
-			mItem.setImage(TileStatus.LOADING, mLoadingImageSupplier.get());
-
-			final CompletableFuture<BufferedImage> imgFuture = mImageProvider.load(mItem.getInfo());
-
-			imgFuture.whenComplete((img, ex) -> {
-				if (img != null)
-					mItem.setImage(TileStatus.FINISHED, img);
-				else {
-					mItem.setImage(TileStatus.ERROR, mErrorImageSupplier.get());
-					ex.printStackTrace();
-				}
-			});
-
-
+			final BufferedImage img = mImageProvider.load(mItem.getInfo());
+			if (img != null)
+				mItem.setImage(TileStatus.FINISHED, img);
+			else {
+				mItem.setImage(TileStatus.ERROR, mErrorImageSupplier.get());
+			}
 		}
 		@Override
 		public long getCreationTime() { return mCreationTime; }
 		public TileItem getTile() { return mItem; }
 		@Override
 		public String getHash() { return getTile().getHash(); }
-
 	}
 }

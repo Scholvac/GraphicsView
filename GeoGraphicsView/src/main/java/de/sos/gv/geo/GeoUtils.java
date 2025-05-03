@@ -4,7 +4,6 @@ import java.awt.geom.Point2D;
 
 import de.sos.gvc.GraphicsItem;
 import de.sos.gvc.GraphicsView;
-import net.jafama.FastMath;
 
 public class GeoUtils {
 	public static final double HALF_PI = Math.PI / 2.0;
@@ -27,13 +26,13 @@ public class GeoUtils {
 		final double lon = x / 20037508.34 * 180;
 		double lat = y / 20037508.34 * 180;
 
-		lat = 180/FastMath.PI * (2 * FastMath.atan(FastMath.exp(lat * FastMath.PI / 180)) - FastMath.PI / 2);
+		lat = 180/Math.PI * (2 * Math.atan(Math.exp(lat * Math.PI / 180)) - Math.PI / 2);
 		return store.set(lat, lon);
 	}
 	static Point2D.Double WGS84toGoogleBing(final double lat, final double lon, final Point2D.Double store) {
 		// https://alastaira.wordpress.com/2011/01/23/the-google-maps-bing-maps-spherical-mercator-projection/
 		store.x = lon * 20037508.34 / 180;
-		store.y = FastMath.log(FastMath.tan((90 + lat) * FastMath.PI / 360)) / (Math.PI / 180);
+		store.y = Math.log(Math.tan((90 + lat) * Math.PI / 360)) / (Math.PI / 180);
 		store.y = store.y * 20037508.34 / 180;
 		return store;
 	}
@@ -83,7 +82,7 @@ public class GeoUtils {
 		final double y = p2.y - p1.y;
 		final double cy = p1.y + y*0.5;
 		final double cf = getScaleCorrectionFromY(cy);
-		return FastMath.sqrt(x*x + y*y) / cf;
+		return Math.sqrt(x*x + y*y) / cf;
 	}
 
 	public static Point2D.Double getXY(final LatLonPoint llp) {
