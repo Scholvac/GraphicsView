@@ -11,6 +11,7 @@ import java.awt.geom.Rectangle2D;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.DoubleStream;
@@ -124,9 +125,8 @@ public class Utils {
 
 	public static List<Rectangle2D> verticesToRectangle(final List<Point2D[]> verticesList) {
 		final ArrayList<Rectangle2D> out = new ArrayList<>();
-		for (final Point2D[] vertices : verticesList) {
+		for (final Point2D[] vertices : verticesList)
 			out.add(verticesToRectangle(vertices));
-		}
 		return out;
 	}
 
@@ -201,23 +201,39 @@ public class Utils {
 		 * first otherwise an exception will be thrown.
 		 */
 		public void release() {
-			if (!isUsed) {
+			if (!isUsed)
 				throw new IllegalStateException("This instance of TempVars was already released!");
-			}
 			isUsed = false;
 			final TmpVarsStack stack = varsLocal.get();
 			// Return it to the stack
 			stack.index--;
 			// Check if it is actually there
-			if (stack.tempVars[stack.index] != this) {
+			if (stack.tempVars[stack.index] != this)
 				throw new IllegalStateException("An instance of TempVars has not been released in a called method!");
-			}
 		}
 
 		@Override
 		public void close() throws Exception {
 			release();
 		}
+	}
+
+	/**
+	 * Builds the bounding box of the {@link GraphicsItem}'s scene bounds.
+	 * @param items The list of items to be considered
+	 * @return A bounding box that contains the {@link GraphicsItem#getSceneBounds()} of all items.
+	 */
+	public static Rectangle2D getBoundingBox(final Collection<GraphicsItem> items) {
+		if (items == null || items.isEmpty()) return new Rectangle2D.Double();
+		Rectangle2D bb = null;
+		for (final GraphicsItem gi : items) {
+			final Rectangle2D sb = gi.getSceneBounds();
+			if (bb == null)
+				bb = new Rectangle2D.Double(sb.getX(), sb.getY(), sb.getWidth(), sb.getHeight());
+			else
+				bb.union(bb, sb, bb);
+		}
+		return bb;
 	}
 
 	public static GraphicsItem getBestFit(final GraphicsView view, final Point viewPoint, final double epsilon, final IItemFilter ...filter ) {
@@ -335,11 +351,10 @@ public class Utils {
 	public static WKTCollection parseWKTGeometryCollection(final String content) {
 		final String firstWord = content.substring(0, content.indexOf(' '));
 		WKTGeom[] geoms;
-		if ("geometrycollection".equalsIgnoreCase(firstWord)) {
+		if ("geometrycollection".equalsIgnoreCase(firstWord))
 			geoms = parseCollection(content.substring(content.indexOf('(')+1, content.lastIndexOf(')')));
-		}else {
+		else
 			geoms = new WKTGeom[] {parseGeometry(content)};
-		}
 		final WKTCollection coll = new WKTCollection();
 		coll.geometries = geoms;
 		return coll;
@@ -348,9 +363,8 @@ public class Utils {
 	private static WKTGeom[] parseCollection(final String content) {
 		final String[] geometries = content.split("\\),");
 		final WKTGeom[] out = new WKTGeom[geometries.length];
-		for (int i = 0; i < geometries.length; i++) {
+		for (int i = 0; i < geometries.length; i++)
 			out[i] = parseGeometry(geometries[i]);
-		}
 		return out;
 	}
 

@@ -509,6 +509,13 @@ public class GraphicsView {
 		setCenter(center.getX(), center.getY());
 	}
 
+	/**
+	 * Sets the view's center and zoom level to fit two points defining a rectangle.
+	 *
+	 * @param min The minimum point (top-left) of the rectangle
+	 * @param max The maximum point (bottom-right) of the rectangle
+	 * @param scaleXandY If true, scales both axes to maintain aspect ratio, otherwise scales independently
+	 */
 	public void setCenterAndZoom(final Point2D min, final Point2D max, final boolean scaleXandY) {
 		final double x = Math.min(min.getX(), max.getX());
 		final double y = Math.min(min.getY(), max.getY());
@@ -516,12 +523,31 @@ public class GraphicsView {
 		final double h = Math.abs(min.getY() - max.getY());
 		setCenterAndZoom(new Rectangle2D.Double(x, y, w, h), scaleXandY);
 	}
+
+	/**
+	 * Sets the view's center and zoom level to fit on a rectangle with a custom scale factor.
+	 *
+	 * @param bounds The rectangle defining the area to fit in the view
+	 * @param scaleXandY If true, scales both axes to maintain aspect ratio, otherwise scales independently
+	 * @see #setCenterAndZoom(Rectangle2D, boolean, double) with a scale factor of 1.1 for backwards compatibility
+	 */
 	public void setCenterAndZoom(final Rectangle2D bounds, final boolean scaleXandY) {
+		setCenterAndZoom(bounds, scaleXandY, 1.1); //1.1 for backwards compatibility
+	}
+
+	/**
+	 * Sets the view's center and zoom level to fit on a rectangle with a custom scale factor.
+	 *
+	 * @param bounds The rectangle defining the area to fit in the view
+	 * @param scaleXandY If true, scales both axes to maintain aspect ratio, otherwise scales independently
+	 * @param scaleFactor Additional scaling factor applied to the calculated scale. A scaleFactor above 1 will show a bigger area, whereas a factor < 1 show less. For backwards compatibility use 1.1.
+	 */
+	public void setCenterAndZoom(final Rectangle2D bounds, final boolean scaleXandY, final double scaleFactor) {
 		final Rectangle visRect = mRenderTarget.getVisibleRect();
 
 		//bounds.width * scaleX = visRect.getWidth()
-		double scaleX = 1.1 * bounds.getWidth() / visRect.getWidth();
-		double scaleY = 1.1 * bounds.getHeight() / visRect.getHeight();
+		double scaleX = scaleFactor * bounds.getWidth() / visRect.getWidth();
+		double scaleY = scaleFactor * bounds.getHeight() / visRect.getHeight();
 		final double cx = bounds.getCenterX(), cy = bounds.getCenterY();
 
 		if (scaleX <= 0 || !Double.isFinite(scaleX) ||
