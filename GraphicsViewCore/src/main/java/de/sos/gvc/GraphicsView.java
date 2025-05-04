@@ -108,6 +108,10 @@ public class GraphicsView {
 	 */
 	private final Set<Predicate<GraphicsItem>>	mViewItemFilters = new HashSet<>();
 	private transient PredicateWrapper 			mItemFilter; //build from the list of predicates
+	/**
+	 * Saves the exceptions that have been occurred during a rendering operation. This list is cleared before each new rendering attempt
+	 */
+	private final transient List<Throwable>		mRenderExceptions = new ArrayList<>();
 
 	private DirtyListener						mDirtySceneListener = new DirtyListener() {
 		@Override
@@ -275,6 +279,20 @@ public class GraphicsView {
 		mScaleY.set(scaleY);
 	}
 
+	/**
+	 * @return <code>true</code> if at least one exception occurred during the last call to {@link #doPaint(Graphics2D)}
+	 */
+	public boolean hadRenderExceptions() {
+		return mRenderExceptions.isEmpty() == false;
+	}
+
+	/**
+	 * @return A copy of the (ordered) list of exception that occurred during the last rendering
+	 */
+	public List<Throwable> getRenderExceptions(){
+		return new ArrayList<Throwable>(mRenderExceptions);
+	}
+
 	private void triggerRTRepaint() {
 		if (isRepaintTriggerEnabled())
 			mRenderTarget.requestRepaint();
@@ -291,18 +309,12 @@ public class GraphicsView {
 	}
 	private synchronized void internalPaint(final Graphics2D g2d) {
 		markViewAsClean();
+		mRenderExceptions.clear();
 		//check for changes
 		validateView();
-		if (mViewTransformListener.isEmpty() == false)
-			mViewTransformListener.forEach(it -> it.accept(mDrawContext));
 
-		for (final IPaintListener pl : mPaintListener)
-			try {
-				pl.prePaint(g2d, mDrawContext);
-			}catch(Exception | Error e) {
-				LOG.error("Failed to call PaintListener.prePaint on : " + pl + " Error: " + e.getMessage());
-				e.printStackTrace();
-			}
+		notifyViewTransformListener();
+		notifyPrePaintListener(g2d);
 
 		RenderingHints oldHints = null;
 		if (mRenderHints != null) {
@@ -324,11 +336,12 @@ public class GraphicsView {
 		for (final GraphicsItem item : itemList)
 			try {
 				item.draw(g2d, mDrawContext);
-			}catch(Exception | Error e) {
+			}catch(final Throwable e) {
+				mRenderExceptions.add(e);
 				//catch all exceptions (latest) here. Even if we do not handle them,
 				//it crashes the whole (drawing-) system if it is not catched
 				LOG.error("Failed to paint an Item with error {}", e);
-				e.printStackTrace();
+
 			}
 
 		//reset the old transform & hints
@@ -337,15 +350,39 @@ public class GraphicsView {
 		if (mRenderHints != null && oldHints != null) //otherwise we did not change them...
 			g2d.setRenderingHints(oldHints);
 
-		for (final IPaintListener pl : mPaintListener)
-			try {
-				pl.postPaint(g2d, mDrawContext);
-			}catch(Exception | Error e) {
-				LOG.error("Failed to call PaintListener.postPaint on : " + pl + " Error: " + e.getMessage());
-				e.printStackTrace();
-			}
+		notifyPostPaintListener(g2d);
 	}
 
+	private void notifyPostPaintListener(final Graphics2D g2d) {
+		if (mPaintListener.isEmpty() == false)
+			for (final IPaintListener pl : mPaintListener)
+				try {
+					pl.postPaint(g2d, mDrawContext);
+				}catch(final Throwable e) {
+					mRenderExceptions.add(e);
+					LOG.error("Failed to call PaintListener.postPaint on : " + pl + " Error: " + e.getMessage(), e);
+				}
+	}
+	private void notifyPrePaintListener(final Graphics2D g2d) {
+		if (mPaintListener.isEmpty() == false)
+			for (final IPaintListener pl : mPaintListener)
+				try {
+					pl.prePaint(g2d, mDrawContext);
+				}catch(final Throwable e) {
+					mRenderExceptions.add(e);
+					LOG.error("Failed to call PaintListener.prePaint on : " + pl + " Error: " + e.getMessage(), e);
+				}
+	}
+	private void notifyViewTransformListener() {
+		if (mViewTransformListener.isEmpty() == false)
+			for (final Consumer<IDrawContext> listener : mViewTransformListener)
+				try {
+					listener.accept(mDrawContext);
+				}catch(final Throwable e) {
+					mRenderExceptions.add(e);
+					LOG.error("Failed to call ViewTransformListener on : " + listener + " Error: " + e.getMessage(), e);
+				}
+	}
 	/** checks some properties and may invalidate the view matrix */
 	private void validateView() {
 		//just set the new value, if something has changed, the parameter will do the notification as well as the invalidation of the view matrix (e.g. TransformLIstener)
