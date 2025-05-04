@@ -1,23 +1,16 @@
 package test.de.sos.gvc;
 
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
 import java.awt.Color;
 import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;
-import java.io.File;
 import java.io.IOException;
-
-import javax.imageio.ImageIO;
 
 import org.junit.Test;
 
-import com.github.romankh3.image.comparison.ImageComparison;
-import com.github.romankh3.image.comparison.model.ImageComparisonResult;
-import com.github.romankh3.image.comparison.model.ImageComparisonState;
-
 import de.sos.gvc.GraphicsItem;
+import de.sos.gvc.ImageCompareUtil;
 import de.sos.gvc.TestGraphicsView;
 import de.sos.gvc.styles.DrawableStyle;
 
@@ -40,19 +33,7 @@ public class RepeatingRenderTargetTest {
 		final BufferedImage refImg = createView().getBufferedImage(true);
 		for (int i = 0; i < c; i++) {
 			final BufferedImage bimg = createView().getBufferedImage(true);
-			final ImageComparison ic = new ImageComparison(refImg, bimg);
-			ic.setAllowingPercentOfDifferentPixels(0);
-			ic.setDrawExcludedRectangles(false);
-
-			ic.setPixelToleranceLevel(0);
-			final ImageComparisonResult res = ic.compareImages();
-			if (res.getImageComparisonState() != ImageComparisonState.MATCH) {
-				res.writeResultTo(new File("a_error_" + i + ".png"));
-				ImageIO.write(res.getActual(), "PNG", new File("c_actual_" + i + ".png"));
-				ImageIO.write(res.getExpected(), "PNG", new File("b_expected_" + i + ".png"));
-			}
-			assertEquals(ImageComparisonState.MATCH, res.getImageComparisonState());
-
+			ImageCompareUtil.assertEquals("run_" + i, refImg, bimg);
 		}
 	}
 
