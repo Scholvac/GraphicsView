@@ -15,7 +15,7 @@ import de.sos.gvc.rt.ImageRenderTarget.BufferedImageRenderTarget;
 /**
  * Check that the ViewTransformListener is only called once if the view transform change and not every frame
  */
-public class Issue_36_ViewTransformListenerCallTest {
+public class Issue_36_ViewTransformListenerCallTests {
 
 	@Test
 	public void test_Issue_36_calledOnlyOnce() {
@@ -107,8 +107,4 @@ public class Issue_36_ViewTransformListenerCallTest {
 		view.getBufferedImage(true);
 		assertEquals(2, counter[0]);
 	}
-
-
-
-
 }
