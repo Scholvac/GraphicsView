@@ -215,7 +215,11 @@ public class GraphicsView {
 	 * @return True if the listener has been registered, false otherwise (may already registered?)
 	 */
 	public boolean addViewTransformListener(final Consumer<IDrawContext> listener) {
-		return mViewTransformListener.add(listener);
+		if (mViewTransformListener.add(listener)) {
+			mViewTransformDirty.set(true); //notify the consumer with next rendering request (additionally all other listener registered till now)
+			return true;
+		}
+		return false;
 	}
 
 	public boolean removeViewTransformListener(final Consumer<IDrawContext> listener) {
