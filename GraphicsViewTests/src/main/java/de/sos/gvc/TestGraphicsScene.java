@@ -1,5 +1,14 @@
 package de.sos.gvc;
 
-public class TestGraphicsScene {
-
+/**
+  * This class extends GraphicsScene and is used for testing purposes.
+ */
+public class TestGraphicsScene extends GraphicsScene {
+	/**
+	 * Provide public access to {@link GraphicsScene#markClean()}
+	 */
+	@Override
+	public void markClean() {
+		super.markClean();
+	}
 }
