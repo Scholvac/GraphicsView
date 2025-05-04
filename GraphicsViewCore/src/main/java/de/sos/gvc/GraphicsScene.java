@@ -285,7 +285,8 @@ public class GraphicsScene {
 				element.notifyDirty();
 	}
 
-	/** Resets the dirty state.
+	/** 
+	 * Resets the dirty state.
 	 * @note this method shall only be called by the GraphicsView after drawing the current scene
 	 */
 	protected void markClean() {
@@ -293,6 +294,13 @@ public class GraphicsScene {
 			//notify listener
 			for (final DirtyListener element : mDirtyListener)
 				element.notifyClean();
+	}
+
+	/**
+	 * @return Whether the scene needs to be repainted (is dirty) or not
+	 */
+	public boolean isDirty() {
+		return mDirty.get();
 	}
 
 	/**
