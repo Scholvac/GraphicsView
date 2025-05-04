@@ -137,6 +137,15 @@ public class TestGraphicsView extends GraphicsView {
 	}
 
 	/**
+	 * Scale the view to contain all test items by maintaining the aspect ratio
+	 *
+	 * @param scaleFactor Additional scaling factor applied to the calculated scale. A scaleFactor above 1 will show a bigger area, whereas a factor < 1 show less. For backwards compatibility use 1.1.
+	 */
+	public void viewAllTestItems(final double scaleFactor) {
+		viewAllTestItems(true, scaleFactor);
+	}
+
+	/**
 	 * Scale the view to contain all test items
 	 *
 	 * @param scaleXandY If true, scales both axes to maintain aspect ratio, otherwise scales independently
@@ -146,5 +155,7 @@ public class TestGraphicsView extends GraphicsView {
 		final Rectangle2D r = Utils.getBoundingBox(mTestItems);
 		this.setCenterAndZoom(r, scaleXandY, scaleFactor);
 	}
+
+
 
 }
