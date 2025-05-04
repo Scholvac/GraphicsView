@@ -23,6 +23,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
@@ -103,6 +104,10 @@ public class GraphicsView {
 	private PropertyChangeListener				mRepaintListener = evt -> markViewAsDirty();
 	private List<IGraphicsViewHandler>			mHandler = new ArrayList<>();
 	private final Set<Consumer<IDrawContext>>	mViewTransformListener = new HashSet<>();
+	/**
+	 * Remember if the view transform matrix has been changed since the last call to {@link #notifyViewTransformListener()}
+	 */
+	private AtomicBoolean						mViewTransformDirty = new AtomicBoolean(true);
 	/**
 	 * Optional set of filters that are applied to all items before they are drawn
 	 */
@@ -210,7 +215,11 @@ public class GraphicsView {
 	 * @return True if the listener has been registered, false otherwise (may already registered?)
 	 */
 	public boolean addViewTransformListener(final Consumer<IDrawContext> listener) {
-		return mViewTransformListener.add(listener);
+		if (mViewTransformListener.add(listener)) {
+			mViewTransformDirty.set(true); //notify the consumer with next rendering request (additionally all other listener registered till now)
+			return true;
+		}
+		return false;
 	}
 
 	public boolean removeViewTransformListener(final Consumer<IDrawContext> listener) {
@@ -313,7 +322,6 @@ public class GraphicsView {
 		//check for changes
 		validateView();
 
-		notifyViewTransformListener();
 		notifyPrePaintListener(g2d);
 
 		RenderingHints oldHints = null;
@@ -324,7 +332,9 @@ public class GraphicsView {
 
 		//transform the view but remember the old transform
 		final AffineTransform oldTransform = g2d.getTransform();
-		g2d.transform(getViewTransform());
+		final AffineTransform viewTransform = getViewTransform();
+		notifyViewTransformListener();
+		g2d.transform(viewTransform);
 
 		//get all visible items, depending on the visible rect
 		final Rectangle2D rect = getVisibleSceneRect();
@@ -374,14 +384,17 @@ public class GraphicsView {
 				}
 	}
 	private void notifyViewTransformListener() {
-		if (mViewTransformListener.isEmpty() == false)
-			for (final Consumer<IDrawContext> listener : mViewTransformListener)
-				try {
-					listener.accept(mDrawContext);
-				}catch(final Throwable e) {
-					mRenderExceptions.add(e);
-					LOG.error("Failed to call ViewTransformListener on : " + listener + " Error: " + e.getMessage(), e);
-				}
+		if ( mViewTransformDirty.get()) {
+			if (mViewTransformListener.isEmpty() == false)
+				for (final Consumer<IDrawContext> listener : mViewTransformListener)
+					try {
+						listener.accept(mDrawContext);
+					}catch(final Throwable e) {
+						mRenderExceptions.add(e);
+						LOG.error("Failed to call ViewTransformListener on : " + listener + " Error: " + e.getMessage(), e);
+					}
+			mViewTransformDirty.set(false);
+		}
 	}
 	/** checks some properties and may invalidate the view matrix */
 	private void validateView() {
@@ -424,6 +437,7 @@ public class GraphicsView {
 			} catch (final Exception e) {
 				e.printStackTrace();
 			}
+			mViewTransformDirty.set(true);
 		}
 		return mViewTransform;
 	}

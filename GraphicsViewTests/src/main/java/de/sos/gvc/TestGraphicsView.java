@@ -53,6 +53,8 @@ public class TestGraphicsView extends GraphicsView {
 		super(new GraphicsScene(new ListStorage(false)), rt );
 	}
 
+
+
 	/**
 	 * Adds a test item to the scene.
 	 *
