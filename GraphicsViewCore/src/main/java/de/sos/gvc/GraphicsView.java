@@ -322,8 +322,6 @@ public class GraphicsView {
 		//check for changes
 		validateView();
 
-		notifyPrePaintListener(g2d);
-
 		RenderingHints oldHints = null;
 		if (mRenderHints != null) {
 			oldHints = g2d.getRenderingHints();
@@ -335,6 +333,8 @@ public class GraphicsView {
 		final AffineTransform viewTransform = getViewTransform();
 		notifyViewTransformListener();
 		g2d.transform(viewTransform);
+
+		notifyPrePaintListener(g2d);
 
 		//get all visible items, depending on the visible rect
 		final Rectangle2D rect = getVisibleSceneRect();
