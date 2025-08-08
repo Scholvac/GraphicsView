@@ -9,6 +9,7 @@ import java.util.function.Consumer;
 
 import org.junit.Test;
 
+import de.sos.gvc.GraphicsView.IViewTransformListener;
 import de.sos.gvc.IDrawContext;
 import de.sos.gvc.ImageCompareUtil;
 import de.sos.gvc.TestGraphicsView;
@@ -52,7 +53,7 @@ public class Issue_33_RenderingSilentFailsTest {
 		final BufferedImage refImage = view.getBufferedImage(true);
 		assertFalse(view.hadRenderExceptions());
 
-		final Consumer<IDrawContext> listener = ctx -> {
+		final IViewTransformListener listener = ctx -> {
 			throw new NullPointerException("Just an excpetion");
 		};
 		view.addViewTransformListener(listener);

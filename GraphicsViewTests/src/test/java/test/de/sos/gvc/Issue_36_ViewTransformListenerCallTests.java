@@ -6,6 +6,7 @@ import java.util.function.Consumer;
 
 import org.junit.Test;
 
+import de.sos.gvc.GraphicsView.IViewTransformListener;
 import de.sos.gvc.IDrawContext;
 import de.sos.gvc.TestGraphicsView;
 import de.sos.gvc.TestItem;
@@ -23,7 +24,7 @@ public class Issue_36_ViewTransformListenerCallTests {
 		view.addTestItem(TestItem.createStar(0, 0, 50, FillColorStyles.BLUE));
 		view.viewAllTestItems(1.1);
 		final int[] counter = {0};
-		final Consumer<IDrawContext> listener = ctx -> {
+		final IViewTransformListener listener = ctx -> {
 			counter[0]++;
 		};
 		view.addViewTransformListener(listener);
@@ -40,7 +41,7 @@ public class Issue_36_ViewTransformListenerCallTests {
 		view.addTestItem(TestItem.createStar(0, 0, 50, FillColorStyles.BLUE));
 		view.viewAllTestItems(1.1);
 		final int[] counter = {0};
-		final Consumer<IDrawContext> listener = ctx -> {
+		final IViewTransformListener listener = ctx -> {
 			counter[0]++;
 		};
 		view.addViewTransformListener(listener);
@@ -58,7 +59,7 @@ public class Issue_36_ViewTransformListenerCallTests {
 		view.addTestItem(TestItem.createStar(0, 0, 50, FillColorStyles.BLUE));
 		view.viewAllTestItems(1.1);
 		final int[] counter = {0};
-		final Consumer<IDrawContext> listener = ctx -> {
+		final IViewTransformListener listener = ctx -> {
 			counter[0]++;
 		};
 		view.addViewTransformListener(listener);
@@ -76,7 +77,7 @@ public class Issue_36_ViewTransformListenerCallTests {
 		view.addTestItem(TestItem.createStar(0, 0, 50, FillColorStyles.BLUE));
 		view.viewAllTestItems(1.1);
 		final int[] counter = {0};
-		final Consumer<IDrawContext> listener = ctx -> {
+		final IViewTransformListener listener = ctx -> {
 			counter[0]++;
 		};
 		view.addViewTransformListener(listener);
@@ -94,7 +95,7 @@ public class Issue_36_ViewTransformListenerCallTests {
 		view.addTestItem(TestItem.createStar(0, 0, 50, FillColorStyles.BLUE));
 		view.viewAllTestItems(1.1);
 		final int[] counter = {0};
-		final Consumer<IDrawContext> listener = ctx -> {
+		final IViewTransformListener listener = ctx -> {
 			counter[0]++;
 		};
 		view.addViewTransformListener(listener);
