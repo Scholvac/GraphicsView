@@ -59,7 +59,15 @@ public class GraphicsView {
 	private static Logger LOG = GVLog.getLogger(GraphicsView.class);
 	private static ScheduledExecutorService		DEFAULT_REPAINT_SCHEDULER = null;
 
-
+	/**
+	 * Listener to get notified if a view transform changes. 
+	 */
+	@FunctionalInterface
+	public interface IViewTransformListener {
+		public void onViewTransformChanged(IDrawContext context);
+	}
+	
+	
 	private GraphicsScene 						mScene;
 
 	private ParameterContext					mPropertyContext = null;
@@ -103,7 +111,7 @@ public class GraphicsView {
 	 */
 	private PropertyChangeListener				mRepaintListener = evt -> markViewAsDirty();
 	private List<IGraphicsViewHandler>			mHandler = new ArrayList<>();
-	private final Set<Consumer<IDrawContext>>	mViewTransformListener = new HashSet<>();
+	private final Set<IViewTransformListener>	mViewTransformListener = new HashSet<>();
 	/**
 	 * Remember if the view transform matrix has been changed since the last call to {@link #notifyViewTransformListener()}
 	 */
@@ -214,7 +222,7 @@ public class GraphicsView {
 	 * @param listener The listener
 	 * @return True if the listener has been registered, false otherwise (may already registered?)
 	 */
-	public boolean addViewTransformListener(final Consumer<IDrawContext> listener) {
+	public boolean addViewTransformListener(final IViewTransformListener listener) {
 		if (mViewTransformListener.add(listener)) {
 			mViewTransformDirty.set(true); //notify the consumer with next rendering request (additionally all other listener registered till now)
 			return true;
@@ -222,7 +230,7 @@ public class GraphicsView {
 		return false;
 	}
 
-	public boolean removeViewTransformListener(final Consumer<IDrawContext> listener) {
+	public boolean removeViewTransformListener(final IViewTransformListener listener) {
 		return mViewTransformListener.remove(listener);
 	}
 
@@ -386,9 +394,9 @@ public class GraphicsView {
 	private void notifyViewTransformListener() {
 		if ( mViewTransformDirty.get()) {
 			if (mViewTransformListener.isEmpty() == false)
-				for (final Consumer<IDrawContext> listener : mViewTransformListener)
+				for (final IViewTransformListener listener : mViewTransformListener)
 					try {
-						listener.accept(mDrawContext);
+						listener.onViewTransformChanged(mDrawContext);
 					}catch(final Throwable e) {
 						mRenderExceptions.add(e);
 						LOG.error("Failed to call ViewTransformListener on : " + listener + " Error: " + e.getMessage(), e);
