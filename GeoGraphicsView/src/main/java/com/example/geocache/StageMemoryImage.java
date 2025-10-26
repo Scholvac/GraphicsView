@@ -1,0 +1,81 @@
+package com.example.geocache;
+
+import java.awt.image.BufferedImage;
+import java.util.EnumSet;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.CancellationException;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.locks.ReentrantLock;
+
+import com.example.geocache.Cancellation.CancellationToken;
+
+public class StageMemoryImage implements TileStage, SupportsEvictionListener {
+    private final long maxBytes;
+    private long curBytes = 0L;
+    private final ReentrantLock lock = new ReentrantLock();
+    private final LinkedHashMap<String, TilePayload.Image> lru = new LinkedHashMap<String, TilePayload.Image>(16,0.75f,true);
+    private volatile EvictionListener evictionListener;
+
+    public StageMemoryImage(long maxBytes){ this.maxBytes = maxBytes; }
+
+    @Override public EnumSet<TilePayload.Kind> provides(){ return EnumSet.of(TilePayload.Kind.IMAGE); }
+    @Override public EnumSet<TilePayload.Kind> accepts(){ return EnumSet.of(TilePayload.Kind.IMAGE); }
+
+    @Override public CompletableFuture<Optional<TilePayload>> get(final TileId id, final CancellationToken ct){
+        return CompletableFuture.supplyAsync(() -> {
+            if (ct!=null && ct.isCancelled()) throw new CancellationException();
+            lock.lock();
+            try {
+                TilePayload.Image img = lru.get(id.cacheKey());
+                return img != null ? Optional.<TilePayload>of(img) : Optional.<TilePayload>empty();
+            } finally { lock.unlock(); }
+        });
+    }
+
+    @Override public CompletableFuture<Void> put(final TileId id, final TilePayload payload, final CancellationToken ct){
+        if (payload.kind()!=TilePayload.Kind.IMAGE) return CompletableFuture.completedFuture(null);
+        return CompletableFuture.runAsync(() -> {
+            if (ct!=null && ct.isCancelled()) throw new CancellationException();
+            TilePayload.Image p = (TilePayload.Image) payload;
+            long est = ((long)p.value().getWidth()) * p.value().getHeight() * 4L;
+            lock.lock();
+            try {
+                TilePayload.Image prev = lru.remove(id.cacheKey());
+                if (prev != null) curBytes -= ((long)prev.value().getWidth()) * prev.value().getHeight() * 4L;
+                lru.put(id.cacheKey(), p);
+                curBytes += est;
+                while (curBytes > maxBytes && !lru.isEmpty()) {
+                    Map.Entry<String, TilePayload.Image> eldest = lru.entrySet().iterator().next();
+                    BufferedImage bi = eldest.getValue().value();
+                    curBytes -= ((long)bi.getWidth()) * bi.getHeight() * 4L;
+                    // Evict with degrade callback
+                    TilePayload.Image evicted = eldest.getValue();
+                    String key = eldest.getKey();
+                    lru.remove(key);
+                    if (evictionListener != null) {
+                        evictionListener.onEvict(key, evicted);
+                    }
+                }
+            } finally { lock.unlock(); }
+        });
+    }
+
+    @Override public CompletableFuture<Void> invalidate(final TileId id){
+        return CompletableFuture.runAsync(() -> {
+            lock.lock();
+            try {
+                TilePayload.Image prev = lru.remove(id.cacheKey());
+                if (prev != null) {
+                    curBytes -= ((long)prev.value().getWidth()) * prev.value().getHeight() * 4L;
+                }
+            } finally { lock.unlock(); }
+        });
+    }
+
+    @Override public long currentSizeBytes(){ return curBytes; }
+    @Override public long maxSizeBytes(){ return maxBytes; }
+
+    @Override public void setEvictionListener(EvictionListener l){ this.evictionListener = l; }
+}
