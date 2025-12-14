@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -14,12 +15,12 @@ import com.example.geocache.TilePayload.Encoded;
 import com.example.geocache.TilePayload.Image;
 
 public class TileChain {
-	private final List<TileStage> stages; // 0 = fastest, last = slowest
-	private final ImageIOTranscoder transcoder;
-	private final TileExecutors execs;
-	private final ConcurrentHashMap<String, Group> inFlight = new ConcurrentHashMap<String, Group>();
+	private final List<TileStage> 					mStages; // 0 = fastest, last = slowest
+	private final ImageIOTranscoder 				mTranscoder;
+	private final TileExecutors 					mExecs;
+	private final ConcurrentHashMap<String, Group> 	mInFlight = new ConcurrentHashMap<String, Group>();
 	// Tracks background move/encode operations triggered by evictions/promotions
-	private final java.util.Set<CompletableFuture<?>> backgroundOps = java.util.Collections.newSetFromMap(new java.util.concurrent.ConcurrentHashMap<CompletableFuture<?>, Boolean>());
+	private final Set<CompletableFuture<?>> 		mBackgroundOps = Collections.newSetFromMap(new ConcurrentHashMap<CompletableFuture<?>, Boolean>());
 
 
 	private static final class Group {
@@ -29,9 +30,9 @@ public class TileChain {
 	}
 
 	public TileChain(final List<TileStage> stages, final ImageIOTranscoder transcoder, final TileExecutors execs){
-		this.stages = Collections.unmodifiableList(new ArrayList<TileStage>(stages));
-		this.transcoder = transcoder;
-		this.execs = execs;
+		this.mStages = Collections.unmodifiableList(new ArrayList<TileStage>(stages));
+		this.mTranscoder = transcoder;
+		this.mExecs = execs;
 		wireEvictions();
 	}
 
@@ -45,16 +46,18 @@ public class TileChain {
 	public CompletableFuture<Void> whenIdle() {
 		// Take a snapshot of all active Group futures
 		final java.util.List<CompletableFuture<?>> list = new java.util.ArrayList<>();
-		for (final Group g : inFlight.values())
+		for (final Group g : mInFlight.values())
 			list.add(g.future);
 		if (list.isEmpty())
 			return CompletableFuture.completedFuture(null);
 		return CompletableFuture.allOf(list.toArray(new CompletableFuture<?>[0]));
 	}
 
-	/** Completes when all currently pending background operations (eviction demotions, etc.) are finished. */
+	/**
+	 * Completes when all currently pending background operations (eviction demotions, etc.) are finished.
+	 */
 	public CompletableFuture<Void> whenBackgroundIdle() {
-		final CompletableFuture<?>[] snap = backgroundOps.toArray(new CompletableFuture<?>[0]);
+		final CompletableFuture<?>[] snap = mBackgroundOps.toArray(new CompletableFuture<?>[0]);
 		return snap.length == 0 ? CompletableFuture.completedFuture(null) : CompletableFuture.allOf(snap);
 	}
 
@@ -67,20 +70,20 @@ public class TileChain {
 	 * this method may never complete.
 	 */
 	public CompletableFuture<Void> whenTrulyIdle() {
-		return whenIdle().thenCompose(v -> inFlight.isEmpty()
+		return whenIdle().thenCompose(v -> mInFlight.isEmpty()
 				? CompletableFuture.completedFuture(null)
 						: whenTrulyIdle());
 	}
 	// Wire eviction degradation: stage i -> first lower stage that accepts the payload
 	private void wireEvictions(){
-		for (int i=0;i<stages.size();i++){
+		for (int i=0;i<mStages.size();i++){
 			final int from = i;
-			final TileStage s = stages.get(i);
+			final TileStage s = mStages.get(i);
 			if (s instanceof SupportsEvictionListener)
 				((SupportsEvictionListener)s).setEvictionListener((key, payload) -> {
 					// find first lower stage that accepts payload.kind
-					for (int j=from+1;j<stages.size();j++){
-						final TileStage lower = stages.get(j);
+					for (int j=from+1;j<mStages.size();j++){
+						final TileStage lower = mStages.get(j);
 						if (lower.accepts().contains(payload.kind())) {
 							// Move down: put to lower
 							final TileId id = keyToId(key);
@@ -91,7 +94,7 @@ public class TileChain {
 							// Re-encode to bytes then store
 							final TileId id = keyToId(key);
 							if (id != null)
-								transcoder.encodePng((TilePayload.Image)payload, CancellationToken.none())
+								mTranscoder.encodePng((TilePayload.Image)payload, CancellationToken.none())
 								.thenCompose(enc -> trackBackground(lower.put(id, enc, CancellationToken.none())));
 							return;
 						}
@@ -102,8 +105,8 @@ public class TileChain {
 	}
 
 	private <T> CompletableFuture<T> trackBackground(final CompletableFuture<T> f) {
-		backgroundOps.add(f);
-		f.whenComplete((x, e) -> backgroundOps.remove(f));
+		mBackgroundOps.add(f);
+		f.whenComplete((x, e) -> mBackgroundOps.remove(f));
 		return f;
 	}
 
@@ -125,7 +128,7 @@ public class TileChain {
 	public CompletableFuture<TilePayload.Image> getImage(final TileId id, final CancellationToken ct){
 		final String key = id.cacheKey();
 
-		final Group g = inFlight.compute(key, (k, existing) -> {
+		final Group g = mInFlight.compute(key, (k, existing) -> {
 			if (existing != null) {
 				existing.subscribers.incrementAndGet();
 				return existing;
@@ -149,7 +152,7 @@ public class TileChain {
 			if (perCaller.isCancelled() && left <= 0)
 				g.future.cancel(true);
 			if (left <= 0)
-				inFlight.remove(key, g);
+				mInFlight.remove(key, g);
 		});
 
 		if (ct != null && ct.isCancelled())
@@ -162,9 +165,9 @@ public class TileChain {
 		// Step 1: search stages in order
 		CompletableFuture<LocatedPayload> cursor = CompletableFuture.completedFuture(new LocatedPayload(-1, null));
 
-		for (int i=0;i<stages.size();i++){
+		for (int i=0;i<mStages.size();i++){
 			final int idx = i;
-			final TileStage s = stages.get(i);
+			final TileStage s = mStages.get(i);
 			cursor = cursor.thenCompose((Function<LocatedPayload, CompletableFuture<LocatedPayload>>) prev -> {
 				if (ct!=null && ct.isCancelled())
 					return cancelledLocated();
@@ -191,27 +194,27 @@ public class TileChain {
 			if (loc.payload.kind()==TilePayload.Kind.IMAGE)
 				imgFuture = CompletableFuture.completedFuture((TilePayload.Image)loc.payload);
 			else
-				imgFuture = transcoder.decode((TilePayload.Encoded)loc.payload, ct);
+				imgFuture = mTranscoder.decode((TilePayload.Encoded)loc.payload, ct);
 
 			// After we have an image, move to target if it accepts IMAGE, else if target only accepts ENCODED, re-encode
 			return imgFuture.thenCompose((Function<Image, CompletableFuture<Image>>) img -> {
-				final TileStage targetStage = stages.get(target);
+				final TileStage targetStage = mStages.get(target);
 				CompletableFuture<Void> move;
 				if (targetStage.accepts().contains(TilePayload.Kind.IMAGE))
-					move = targetStage.put(id, img, ct).thenRun(() -> stages.get(loc.index).invalidate(id));
+					move = targetStage.put(id, img, ct).thenRun(() -> mStages.get(loc.index).invalidate(id));
 				else
 					// re-encode PNG and move bytes
-					move = transcoder.encodePng(img, ct).thenCompose((Function<Encoded, CompletableFuture<Void>>) enc -> stages.get(target).put(id, enc, ct).thenRun(() -> stages.get(loc.index).invalidate(id)));
+					move = mTranscoder.encodePng(img, ct).thenCompose((Function<Encoded, CompletableFuture<Void>>) enc -> mStages.get(target).put(id, enc, ct).thenRun(() -> mStages.get(loc.index).invalidate(id)));
 				return move.thenApply(v -> img);
 			});
 		});
 	}
 
 	private int highestAcceptingIndex(final TilePayload.Kind kind){
-		for (int i=0;i<stages.size();i++)
-			if (stages.get(i).accepts().contains(kind) || (kind==TilePayload.Kind.ENCODED && stages.get(i).accepts().contains(TilePayload.Kind.IMAGE)))
+		for (int i=0;i<mStages.size();i++)
+			if (mStages.get(i).accepts().contains(kind) || (kind==TilePayload.Kind.ENCODED && mStages.get(i).accepts().contains(TilePayload.Kind.IMAGE)))
 				return i;
-		return stages.size()-1; // fallback
+		return mStages.size()-1; // fallback
 	}
 
 	private static final class LocatedPayload {

@@ -24,7 +24,8 @@ public class StageDisk implements TileStage {
 	@Override public EnumSet<TilePayload.Kind> provides(){ return EnumSet.of(TilePayload.Kind.ENCODED); }
 	@Override public EnumSet<TilePayload.Kind> accepts(){ return EnumSet.of(TilePayload.Kind.ENCODED, TilePayload.Kind.IMAGE); }
 
-	@Override public CompletableFuture<Optional<TilePayload>> get(final TileId id, final CancellationToken ct){
+	@Override
+	public CompletableFuture<Optional<TilePayload>> get(final TileId id, final CancellationToken ct){
 		return CompletableFuture.supplyAsync(() -> {
 			if (ct!=null && ct.isCancelled()) throw new CancellationException();
 			final Path p = root.resolve(id.cacheKey());
@@ -37,7 +38,8 @@ public class StageDisk implements TileStage {
 		});
 	}
 
-	@Override public CompletableFuture<Optional<TilePayload>> take(final TileId id, final CancellationToken ct){
+	@Override
+	public CompletableFuture<Optional<TilePayload>> take(final TileId id, final CancellationToken ct){
 		return CompletableFuture.supplyAsync(() -> {
 			if (ct!=null && ct.isCancelled()) throw new CancellationException();
 			final Path p = root.resolve(id.cacheKey());
@@ -50,7 +52,8 @@ public class StageDisk implements TileStage {
 		});
 	}
 
-	@Override public CompletableFuture<Void> put(final TileId id, final TilePayload payload, final CancellationToken ct){
+	@Override
+	public CompletableFuture<Void> put(final TileId id, final TilePayload payload, final CancellationToken ct){
 		return CompletableFuture.runAsync(() -> {
 			if (ct!=null && ct.isCancelled())
 				throw new CancellationException();
@@ -71,7 +74,8 @@ public class StageDisk implements TileStage {
 		});
 	}
 
-	@Override public CompletableFuture<Void> invalidate(final TileId id){
+	@Override
+	public CompletableFuture<Void> invalidate(final TileId id){
 		return CompletableFuture.runAsync(() -> {
 			try { Files.deleteIfExists(root.resolve(id.cacheKey())); } catch (final IOException ignored) {}
 		});
