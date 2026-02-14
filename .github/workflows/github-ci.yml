@@ -66,6 +66,14 @@ jobs:
             **/target/failsafe-reports/TEST-*.xml
           if-no-files-found: warn
 
+      - name: Upload JaCoCo HTML report artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jacoco-report-jdk8
+          path: '**/target/site/jacoco/**'
+          if-no-files-found: warn
+
       - name: Publish unit test results
         if: always()
         uses: EnricoMi/publish-unit-test-result-action@v2
