@@ -49,16 +49,18 @@
 		</dependency>
 	</dependencies>
 	<build>
-		<!-- <resources>
+		<resources>
 			<resource>
 				<directory>${basedir}/../</directory>
 				<targetPath>./</targetPath>
 				<includes>
-					<include>LICENCE.txt</include>
+					<include>LICENSE.txt</include>
 					<include>LGPL.md</include>
+					<include>README.md</include>
+					<include>CHANGES.md</include>
 				</includes>
 			</resource>
-		</resources>-->
+		</resources>
 		<pluginManagement>
 			<plugins>
 				<plugin>
@@ -69,6 +71,15 @@
 		</pluginManagement>
 
 		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-jar-plugin</artifactId>
+				<configuration>
+					<archive>
+						<addMavenDescriptor>true</addMavenDescriptor>
+					</archive>
+				</configuration>
+			</plugin>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-source-plugin</artifactId>
