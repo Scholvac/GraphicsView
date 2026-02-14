@@ -86,21 +86,21 @@ deploy-snapshot:
 #    when: always
 
 
-# coverage:
-#   stage: visualize
-#   image: registry.gitlab.com/haynes/jacoco2cobertura:1.0.7
-#   script:
-#     - |
-#       for module in GraphicsViewCore GeoGraphicsView; do
-#         if [ -f "$module/target/site/jacoco/jacoco.xml" ]; then
-#           python /opt/cover2cover.py "$module/target/site/jacoco/jacoco.xml" "$CI_PROJECT_DIR/$module/src/main/java/" > "$module/target/site/cobertura.xml"
-#         else
-#           echo "Jacoco report not found for module: $module"
-#         fi
-#       done
-#   needs: ["verify:jdk8", "verify:jdk21"]
-#   artifacts:
-#     reports:
-#       coverage_report:
-#         coverage_format: cobertura
-#         path: "**/target/site/cobertura.xml"
+coverage:
+  stage: visualize
+  image: registry.gitlab.com/haynes/jacoco2cobertura:1.0.7
+  script:
+    - |
+      for module in GraphicsViewCore GeoGraphicsView; do
+        if [ -f "$module/target/site/jacoco/jacoco.xml" ]; then
+          python /opt/cover2cover.py "$module/target/site/jacoco/jacoco.xml" "$CI_PROJECT_DIR/$module/src/main/java/" > "$module/target/site/cobertura.xml"
+        else
+          echo "Jacoco report not found for module: $module"
+        fi
+      done
+  needs: ["verify:jdk8"]
+  artifacts:
+    reports:
+      coverage_report:
+        coverage_format: cobertura
+        path: "**/target/site/cobertura.xml"
