@@ -5,8 +5,13 @@ on:
     branches:
       - '**'
     tags:
-      - '*'
+      - '**'
   pull_request:
+
+permissions:
+  contents: read
+  checks: write
+  pull-requests: write
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -60,6 +65,24 @@ jobs:
             **/target/surefire-reports/TEST-*.xml
             **/target/failsafe-reports/TEST-*.xml
           if-no-files-found: warn
+
+      - name: Publish unit test results
+        if: always()
+        uses: EnricoMi/publish-unit-test-result-action@v2
+        with:
+          files: |
+            **/target/surefire-reports/TEST-*.xml
+            **/target/failsafe-reports/TEST-*.xml
+
+      - name: Publish JaCoCo coverage to PR
+        if: github.event_name == 'pull_request'
+        uses: madrapps/jacoco-report@v1.7.1
+        with:
+          paths: |
+            **/target/site/jacoco/jacoco.xml
+          token: ${{ secrets.GITHUB_TOKEN }}
+          min-coverage-overall: 0
+          min-coverage-changed-files: 0
 
   deploy-jdk8-tag:
     name: Deploy release on tag (JDK 8)
