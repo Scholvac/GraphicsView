@@ -70,6 +70,35 @@
 			</plugin>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-resources-plugin</artifactId>
+				<version>3.3.1</version>
+				<executions>
+					<execution>
+						<id>copy-root-docs-into-jar</id>
+						<phase>process-resources</phase>
+						<goals>
+							<goal>copy-resources</goal>
+						</goals>
+						<configuration>
+							<outputDirectory>${project.build.outputDirectory}</outputDirectory>
+							<resources>
+								<resource>
+									<directory>${maven.multiModuleProjectDirectory}</directory>
+									<includes>
+										<include>LICENSE.txt</include>
+										<include>LGPL.md</include>
+										<include>README.md</include>
+										<include>CHANGES.md</include>
+									</includes>
+									<filtering>false</filtering>
+								</resource>
+							</resources>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-source-plugin</artifactId>
 				<version>3.2.0</version>
 				<executions>
@@ -257,31 +286,6 @@
 			</distributionManagement>
 		</profile>
 
-		<profile>
-			<id>release-jar-resources</id>
-			<activation>
-				<property>
-					<name>!m2e.version</name>
-				</property>
-			</activation>
-			<build>
-				<resources>
-					<resource>
-						<directory>${basedir}/src/main/resources</directory>
-					</resource>
-					<resource>
-						<directory>${basedir}/../</directory>
-						<targetPath>./</targetPath>
-						<includes>
-							<include>LICENSE.txt</include>
-							<include>LGPL.md</include>
-							<include>README.md</include>
-							<include>CHANGES.md</include>
-						</includes>
-					</resource>
-				</resources>
-			</build>
-		</profile>
 	</profiles>
 
 	<modules>
