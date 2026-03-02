@@ -1,13 +1,15 @@
 package test.de.sos.gvc;
 
-import static org.junit.Assert.fail;
+
+
+import static org.junit.jupiter.api.Assertions.fail;
 
 import java.awt.Color;
 import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import de.sos.gvc.GraphicsItem;
 import de.sos.gvc.ImageCompareUtil;

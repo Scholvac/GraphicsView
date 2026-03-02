@@ -1,13 +1,12 @@
 package test.de.sos.gvc;
 
-import static org.junit.Assert.assertEquals;
 
-import java.util.function.Consumer;
 
-import org.junit.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+import org.junit.jupiter.api.Test;
 
 import de.sos.gvc.GraphicsView.IViewTransformListener;
-import de.sos.gvc.IDrawContext;
 import de.sos.gvc.TestGraphicsView;
 import de.sos.gvc.TestItem;
 import de.sos.gvc.TestItem.FillColorStyles;
