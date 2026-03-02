@@ -1,16 +1,14 @@
 package test.de.sos.gvc;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.awt.image.BufferedImage;
-import java.util.function.Consumer;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import de.sos.gvc.GraphicsView.IViewTransformListener;
-import de.sos.gvc.IDrawContext;
 import de.sos.gvc.ImageCompareUtil;
 import de.sos.gvc.TestGraphicsView;
 import de.sos.gvc.TestItem;

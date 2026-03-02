@@ -1,4 +1,6 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 
 	<groupId>io.gitlab.scholvac</groupId>
@@ -10,15 +12,16 @@
 	<description>Powerfull java based reproduction of QT's well known "Graphics View Framework"</description>
 	<url>https://gitlab.com/scholvac/GraphicsView</url>
 
-
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<maven.compiler.source>1.8</maven.compiler.source>
 		<maven.compiler.target>1.8</maven.compiler.target>
 		<sonar.organization>scholvac</sonar.organization>
 
-		<junit.version>4.13.1</junit.version>
+		<junit.version>5.9.1</junit.version>
+		<rootDir>${maven.multiModuleProjectDirectory}</rootDir>
 	</properties>
+
 	<licenses>
 		<license>
 			<name>GNU Lesser General Public License (LGPL), Version 3.0</name>
@@ -41,78 +44,113 @@
 	</scm>
 
 	<dependencies>
+		<!-- JUnit Jupiter API for writing tests -->
 		<dependency>
-			<groupId>junit</groupId>
-			<artifactId>junit</artifactId>
+			<groupId>org.junit.jupiter</groupId>
+			<artifactId>junit-jupiter-api</artifactId>
+			<version>${junit.version}</version>
+			<scope>test</scope>
+		</dependency>
+
+		<!-- JUnit Jupiter Engine for executing tests -->
+		<dependency>
+			<groupId>org.junit.jupiter</groupId>
+			<artifactId>junit-jupiter-engine</artifactId>
 			<version>${junit.version}</version>
 			<scope>test</scope>
 		</dependency>
 	</dependencies>
+
 	<build>
-		<!-- <resources>
-			<resource>
-				<directory>${basedir}/../</directory>
-				<targetPath>./</targetPath>
-				<includes>
-					<include>LICENCE.txt</include>
-					<include>LGPL.md</include>
-				</includes>
-			</resource>
-		</resources>-->
+		<!-- Keep plugin versions centralized -->
 		<pluginManagement>
 			<plugins>
 				<plugin>
 					<artifactId>maven-jar-plugin</artifactId>
 					<version>2.3.1</version>
 				</plugin>
+
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-compiler-plugin</artifactId>
+					<version>3.10.1</version>
+				</plugin>
+
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-resources-plugin</artifactId>
+					<version>3.3.1</version>
+				</plugin>
+
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-source-plugin</artifactId>
+					<version>3.2.0</version>
+				</plugin>
+
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-javadoc-plugin</artifactId>
+					<version>3.3.2</version>
+				</plugin>
+
+				<plugin>
+					<groupId>io.github.git-commit-id</groupId>
+					<artifactId>git-commit-id-maven-plugin</artifactId>
+					<version>4.9.9</version>
+				</plugin>
+
+				<plugin>
+					<groupId>org.jacoco</groupId>
+					<artifactId>jacoco-maven-plugin</artifactId>
+					<version>0.8.6</version>
+				</plugin>
 			</plugins>
 		</pluginManagement>
 
 		<plugins>
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-source-plugin</artifactId>
-				<version>3.2.0</version>
-				<executions>
-					<execution>
-						<id>attach-sources</id>
-						<goals>
-							<goal>jar</goal>
-						</goals>
-					</execution>
-				</executions>
-			</plugin>
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-javadoc-plugin</artifactId>
-				<version>3.3.2</version>
-				<configuration>
-					<failOnError>false</failOnError>
-					<failOnWarnings>false</failOnWarnings>
-				</configuration>
-				<executions>
-					<execution>
-						<id>attach-javadocs</id>
-						<goals>
-							<goal>jar</goal>
-						</goals>
-					</execution>
-				</executions>
-			</plugin>
+			<!-- Compile settings -->
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-compiler-plugin</artifactId>
-				<version>3.10.1</version>
 				<configuration>
 					<source>${maven.compiler.source}</source>
 					<target>${maven.compiler.target}</target>
 				</configuration>
 			</plugin>
 
+			<!-- Copy root-level meta files into each module output (and therefore into each artifact) -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-resources-plugin</artifactId>
+				<executions>
+					<execution>
+						<id>copy-root-meta</id>
+						<phase>generate-resources</phase>
+						<goals>
+							<goal>copy-resources</goal>
+						</goals>
+						<configuration>
+							<outputDirectory>${project.build.outputDirectory}/META-INF</outputDirectory>
+							<resources>
+								<resource>
+									<directory>${rootDir}</directory>
+									<filtering>false</filtering>
+									<includes>
+										<include>LICENCE.txt</include>
+										<include>*.md</include>
+									</includes>
+								</resource>
+							</resources>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+
+			<!-- Git metadata: reduced to the essentials -->
 			<plugin>
 				<groupId>io.github.git-commit-id</groupId>
 				<artifactId>git-commit-id-maven-plugin</artifactId>
-				<version>4.9.9</version>
 				<executions>
 					<execution>
 						<id>get-the-git-infos</id>
@@ -123,78 +161,21 @@
 					</execution>
 				</executions>
 				<configuration>
-					<verbose>true</verbose>
+					<verbose>false</verbose>
 					<generateGitPropertiesFile>true</generateGitPropertiesFile>
-					<generateGitPropertiesFilename>${project.build.outputDirectory}/${project.groupId}.${project.artifactId}-git.properties</generateGitPropertiesFilename>
+					<generateGitPropertiesFilename>
+						${project.build.outputDirectory}/${project.groupId}.${project.artifactId}-git.properties
+					</generateGitPropertiesFilename>
 					<includeOnlyProperties>
 						<includeOnlyProperty>git.branch</includeOnlyProperty>
-						<includeOnlyProperty>git.commit.id</includeOnlyProperty>
-						<includeOnlyProperty>git.commit.id.describe</includeOnlyProperty>
-						<includeOnlyProperty>git.commit.id.full</includeOnlyProperty>
 						<includeOnlyProperty>git.commit.id.abbrev</includeOnlyProperty>
 						<includeOnlyProperty>git.commit.time</includeOnlyProperty>
-						<includeOnlyProperty>git.local.branch.ahead</includeOnlyProperty>
-						<includeOnlyProperty>git.local.branch.behind</includeOnlyProperty>
-						<includeOnlyProperty>git.build.number</includeOnlyProperty>
-						<includeOnlyProperty>git.build.version</includeOnlyProperty>
-						<includeOnlyProperty>git.build.host</includeOnlyProperty>
 					</includeOnlyProperties>
 					<commitIdGenerationMode>full</commitIdGenerationMode>
 				</configuration>
 			</plugin>
-
-			<plugin>
-				<groupId>org.jacoco</groupId>
-				<artifactId>jacoco-maven-plugin</artifactId>
-				<version>0.8.6</version>
-
-				<executions>
-					<execution>
-						<id>jacoco-initialize</id>
-						<goals>
-							<goal>prepare-agent</goal>
-						</goals>
-					</execution>
-					<execution>
-						<id>jacoco-site</id>
-						<phase>package</phase>
-						<goals>
-							<goal>report</goal>
-						</goals>
-					</execution>
-					<execution>
-						<id>check</id>
-						<goals>
-							<goal>check</goal>
-						</goals>
-						<configuration>
-							<rules>
-								<rule>
-									<element>CLASS</element>
-									<limits>
-										<limit>
-											<counter>LINE</counter>
-											<value>COVEREDRATIO</value>
-											<minimum>0.0</minimum>
-										</limit>
-										<limit>
-											<counter>BRANCH</counter>
-											<value>COVEREDRATIO</value>
-											<minimum>0.0</minimum>
-										</limit>
-									</limits>
-									<excludes>
-										<exclude>com.abc.ClassName</exclude>
-									</excludes>
-								</rule>
-							</rules>
-						</configuration>
-					</execution>
-				</executions>
-			</plugin>
 		</plugins>
 	</build>
-
 
 	<profiles>
 		<profile>
@@ -215,12 +196,27 @@
 					<url>${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/maven</url>
 				</snapshotRepository>
 			</distributionManagement>
+
 			<build>
 				<plugins>
-					<!--<plugin>
+					<!-- Attach sources/javadocs only for deploy-related builds -->
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-source-plugin</artifactId>
+						<executions>
+							<execution>
+								<id>attach-sources</id>
+								<phase>deploy</phase>
+								<goals>
+									<goal>jar</goal>
+								</goals>
+							</execution>
+						</executions>
+					</plugin>
+
+					<plugin>
 						<groupId>org.apache.maven.plugins</groupId>
 						<artifactId>maven-javadoc-plugin</artifactId>
-						<version>3.3.2</version>
 						<configuration>
 							<failOnError>false</failOnError>
 							<failOnWarnings>false</failOnWarnings>
@@ -228,12 +224,13 @@
 						<executions>
 							<execution>
 								<id>attach-javadocs</id>
+								<phase>deploy</phase>
 								<goals>
 									<goal>jar</goal>
 								</goals>
 							</execution>
 						</executions>
-					</plugin> -->
+					</plugin>
 				</plugins>
 			</build>
 		</profile>
@@ -256,6 +253,43 @@
 					<url>${CI_API_V4_URL}/projects/34962583/packages/maven</url>
 				</snapshotRepository>
 			</distributionManagement>
+
+			<build>
+				<plugins>
+					<!-- Attach sources/javadocs only for deploy-related builds -->
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-source-plugin</artifactId>
+						<executions>
+							<execution>
+								<id>attach-sources</id>
+								<phase>deploy</phase>
+								<goals>
+									<goal>jar</goal>
+								</goals>
+							</execution>
+						</executions>
+					</plugin>
+
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-javadoc-plugin</artifactId>
+						<configuration>
+							<failOnError>false</failOnError>
+							<failOnWarnings>false</failOnWarnings>
+						</configuration>
+						<executions>
+							<execution>
+								<id>attach-javadocs</id>
+								<phase>deploy</phase>
+								<goals>
+									<goal>jar</goal>
+								</goals>
+							</execution>
+						</executions>
+					</plugin>
+				</plugins>
+			</build>
 		</profile>
 	</profiles>
 

@@ -1,12 +1,13 @@
 package test.de.sos.gvc;
 
+import static org.junit.jupiter.api.Assumptions.assumeFalse;
+
 import java.awt.Color;
 import java.awt.GraphicsEnvironment;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 
-import org.junit.Assume;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import de.sos.gvc.GraphicsItem;
 import de.sos.gvc.GraphicsScene;
@@ -72,7 +73,7 @@ public class ImageRenderTargetTest {
 
 	@Test
 	public void ImgRT_baseTest_VolatileImage() throws IOException {
-		Assume.assumeFalse("Will fail in Headless mode", GraphicsEnvironment.isHeadless());
+		assumeFalse(GraphicsEnvironment.isHeadless(), "Will fail in Headless mode");
 
 		final GraphicsScene scene = new GraphicsScene();
 		final String[] sideWkts = {
