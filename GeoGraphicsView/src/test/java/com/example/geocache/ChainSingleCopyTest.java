@@ -1,5 +1,9 @@
 package com.example.geocache;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
@@ -12,8 +16,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import com.example.geocache.Cancellation.CancellationToken;
 
@@ -56,13 +59,13 @@ public class ChainSingleCopyTest {
 
 		// Disk should be empty for this key afterwards
 		final Optional<TilePayload> after = disk.get(id, CancellationToken.none()).get(1, TimeUnit.SECONDS);
-		Assert.assertFalse("Disk must not keep a copy after promotion", after.isPresent());
+		assertFalse(after.isPresent(), "Disk must not keep a copy after promotion");
 
 		// Second call: must hit L1 directly (no disk read increment)
 		final int before = disk.reads.get();
 		chain.getImage(id, CancellationToken.none()).get(1, TimeUnit.SECONDS);
 		final int afterReads = disk.reads.get();
-		Assert.assertEquals(before, afterReads);
+		assertEquals(before, afterReads);
 	}
 
 	@Test
@@ -92,7 +95,7 @@ public class ChainSingleCopyTest {
 		}
 
 
-		Assert.assertTrue("At least one evicted image should be on disk", present >= 1);
+		assertTrue(present >= 1, "At least one evicted image should be on disk");
 	}
 
 	@Test

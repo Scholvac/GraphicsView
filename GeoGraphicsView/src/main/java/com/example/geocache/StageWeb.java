@@ -3,14 +3,14 @@ package com.example.geocache;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.HttpURLConnection;
+import java.net.SocketTimeoutException;
 import java.net.URL;
+import java.net.URLConnection;
 import java.util.EnumSet;
 import java.util.Optional;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
-import java.util.zip.GZIPInputStream;
 
 import com.example.geocache.Cancellation.CancellationToken;
 
@@ -23,12 +23,20 @@ public class StageWeb implements TileStage {
 	private final int connectTimeoutMs;
 	private final int readTimeoutMs;
 	private final Executor ioExecutor; // run blocking IO off the caller thread
+	private final int attempts;
+	private final String userAgent;
 
 	public StageWeb(String baseUrl, int connectTimeoutMs, int readTimeoutMs, Executor ioExecutor) {
+		this(baseUrl, connectTimeoutMs, readTimeoutMs, ioExecutor, 3, "GeoGraphView/1.0");
+	}
+
+	public StageWeb(final String baseUrl, final int connectTimeoutMs, final int readTimeoutMs, final Executor ioExecutor, final int attempts, final String userAgent) {
 		this.baseUrl = baseUrl;
 		this.connectTimeoutMs = connectTimeoutMs;
 		this.readTimeoutMs = readTimeoutMs;
 		this.ioExecutor = ioExecutor; // e.g. TileExecutors.diskIO or a dedicated small pool
+		this.attempts = attempts;
+		this.userAgent = userAgent;
 	}
 
 	@Override
@@ -42,51 +50,24 @@ public class StageWeb implements TileStage {
 		return CompletableFuture.supplyAsync(() -> {
 			if (ct != null && ct.isCancelled()) throw new CancellationException();
 
-			String urlStr = baseUrl
+			final String urlStr = baseUrl
 					.replace("{style}", id.getStyle())
 					.replace("{z}", Integer.toString(id.getZ()))
 					.replace("{x}", Integer.toString(id.getX()))
 					.replace("{y}", Integer.toString(id.getY()))
 					.replace("{ext}", id.getExt());
 
-			HttpURLConnection conn = null;
 			try {
-				URL url = new URL(urlStr);
-				conn = (HttpURLConnection) url.openConnection();
-				conn.setInstanceFollowRedirects(true);
-				conn.setConnectTimeout(connectTimeoutMs);
-				conn.setReadTimeout(readTimeoutMs);
-				conn.setRequestMethod("GET");
-				conn.setRequestProperty("Accept", "image/avif,image/webp,image/apng,image/*,*/*;q=0.8");
-				conn.setRequestProperty("Accept-Encoding", "gzip");
-				conn.connect();
-
-				int code = conn.getResponseCode();
-				if (code != HttpURLConnection.HTTP_OK) {
-					// Treat non-200 as miss (no retries here; keep it minimal)
-					safeClose(conn);
+				final URL url = new URL(urlStr);
+				final DownloadResult result = download(url, ct);
+				if (result == null)
 					return Optional.<TilePayload>empty();
-				}
-
-				String contentEncoding = nullSafe(conn.getContentEncoding());
-				String contentType = nullSafe(conn.getContentType());
-				InputStream in = conn.getInputStream();
-				if ("gzip".equalsIgnoreCase(contentEncoding))
-					in = new GZIPInputStream(in);
-
-				// Read fully with periodic cancellation checks
-				byte[] body = readAllBytesCancelable(in, ct);
-				safeClose(in);
-				safeClose(conn);
-
-				if (contentType == null || contentType.trim().isEmpty())
-					// best-effort guess from extension
-					contentType = "png".equalsIgnoreCase(id.getExt()) ? "image/png" : "image/jpeg";
-
+				final String contentType = isBlank(result.contentType)
+						? guessContentType(id)
+						: result.contentType;
+				final byte[] body = result.body;
 				return Optional.<TilePayload>of(new TilePayload.Encoded(body, contentType));
-
-			} catch (IOException e) {
-				safeClose(conn);
+			} catch (final IOException e) {
 				return Optional.<TilePayload>empty();
 			}
 		}, ioExecutor);
@@ -104,18 +85,44 @@ public class StageWeb implements TileStage {
 
 	// ---- helpers ----
 
-	private static String nullSafe(String s) { return s == null ? "" : s; }
-
-	private static void safeClose(HttpURLConnection c) {
-		if (c != null) c.disconnect();
+	private DownloadResult download(final URL url, final CancellationToken ct) throws IOException {
+		int remaining = attempts;
+		IOException last = null;
+		while (remaining >= 0) {
+			try {
+				return readOnce(url, ct);
+			} catch (final SocketTimeoutException e) {
+				last = e;
+			} catch (final IOException e) {
+				last = e;
+			}
+			remaining--;
+		}
+		if (last != null)
+			throw last;
+		return null;
 	}
-	private static void safeClose(InputStream in) {
+
+	private DownloadResult readOnce(final URL url, final CancellationToken ct) throws IOException {
+		final URLConnection connection = url.openConnection();
+		connection.setConnectTimeout(connectTimeoutMs);
+		connection.setReadTimeout(readTimeoutMs);
+		connection.setRequestProperty("User-Agent", userAgent);
+		final InputStream in = connection.getInputStream();
+		try {
+			return new DownloadResult(readAllBytesCancelable(in, ct), connection.getContentType());
+		} finally {
+			safeClose(in);
+		}
+	}
+
+	private static void safeClose(final InputStream in) {
 		if (in != null) try { in.close(); } catch (IOException ignore) {}
 	}
 
-	private static byte[] readAllBytesCancelable(InputStream in, CancellationToken ct) throws IOException {
-		byte[] buf = new byte[8192];
-		ByteArrayOutputStream out = new ByteArrayOutputStream(32 * 1024);
+	private static byte[] readAllBytesCancelable(final InputStream in, final CancellationToken ct) throws IOException {
+		final byte[] buf = new byte[8192];
+		final ByteArrayOutputStream out = new ByteArrayOutputStream(32 * 1024);
 		int n;
 		while ((n = in.read(buf)) != -1) {
 			if (ct != null && ct.isCancelled())
@@ -123,5 +130,23 @@ public class StageWeb implements TileStage {
 			out.write(buf, 0, n);
 		}
 		return out.toByteArray();
+	}
+
+	private static boolean isBlank(final String str) {
+		return str == null || str.trim().isEmpty();
+	}
+
+	private static String guessContentType(final TileId id) {
+		return "png".equalsIgnoreCase(id.getExt()) ? "image/png" : "image/jpeg";
+	}
+
+	private static final class DownloadResult {
+		private final byte[] body;
+		private final String contentType;
+
+		private DownloadResult(final byte[] body, final String contentType) {
+			this.body = body;
+			this.contentType = contentType;
+		}
 	}
 }

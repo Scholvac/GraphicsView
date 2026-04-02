@@ -201,10 +201,10 @@ public class TileChain {
 				final TileStage targetStage = mStages.get(target);
 				CompletableFuture<Void> move;
 				if (targetStage.accepts().contains(TilePayload.Kind.IMAGE))
-					move = targetStage.put(id, img, ct).thenRun(() -> mStages.get(loc.index).invalidate(id));
+					move = targetStage.put(id, img, ct).thenCompose(v -> mStages.get(loc.index).invalidate(id));
 				else
 					// re-encode PNG and move bytes
-					move = mTranscoder.encodePng(img, ct).thenCompose((Function<Encoded, CompletableFuture<Void>>) enc -> mStages.get(target).put(id, enc, ct).thenRun(() -> mStages.get(loc.index).invalidate(id)));
+					move = mTranscoder.encodePng(img, ct).thenCompose((Function<Encoded, CompletableFuture<Void>>) enc -> mStages.get(target).put(id, enc, ct).thenCompose(v -> mStages.get(loc.index).invalidate(id)));
 				return move.thenApply(v -> img);
 			});
 		});
