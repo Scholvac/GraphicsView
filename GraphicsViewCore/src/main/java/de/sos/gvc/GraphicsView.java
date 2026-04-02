@@ -325,6 +325,9 @@ public class GraphicsView {
 		mWindowStatistic.accept(profile_time_sec);
 	}
 	private synchronized void internalPaint(final Graphics2D g2d) {
+		// Reset dirty state before painting so updates occurring during the current
+		// render pass can mark scene and view dirty again.
+		mScene.markClean();
 		markViewAsClean();
 		mRenderExceptions.clear();
 		//check for changes
@@ -364,11 +367,15 @@ public class GraphicsView {
 
 		//reset the old transform & hints
 		g2d.setTransform(oldTransform);
-		mScene.markClean(); //remember that the scene is no longer dirty, at least not in terms of visualisation
 		if (mRenderHints != null && oldHints != null) //otherwise we did not change them...
 			g2d.setRenderingHints(oldHints);
 
 		notifyPostPaintListener(g2d);
+
+		// Safety net: if the scene became dirty during painting but the view did not
+		// observe a new dirty notification, schedule a follow-up repaint explicitly.
+		if (mScene.isDirty() && mRequestCounter.get() == mUpdateCounter.get())
+			markViewAsDirty();
 	}
 
 	private void notifyPostPaintListener(final Graphics2D g2d) {
