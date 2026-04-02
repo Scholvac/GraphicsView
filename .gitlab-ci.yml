@@ -62,7 +62,7 @@ deploy-snapshot:
     - mvn versions:commit
     - 'mvn $MAVEN_CLI_OPTS -Pgitlab deploy -s ci_settings.xml'
   only:
-    - develop-2.1
+    - develop-2.2
 
 
 #sonarcloud-check:
