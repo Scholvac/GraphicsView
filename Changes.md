@@ -1,6 +1,10 @@
 Changes
 ===========================
 
+Version 2.2.0
+------------------------
+- [new cache chain (package: `de.sos.gv.geo.tiles.chain`)](./doc/TileCache_HowTo.md)
+
 Version 2.1.0
 -------------------------
 
