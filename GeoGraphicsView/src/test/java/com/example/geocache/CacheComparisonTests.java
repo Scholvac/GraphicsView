@@ -18,13 +18,20 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.jupiter.api.Test;
 
-import com.example.geocache.Cancellation.CancellationToken;
-
 import de.sos.gv.geo.tiles.ITileImageProvider;
 import de.sos.gv.geo.tiles.SizeUnit;
 import de.sos.gv.geo.tiles.TileFactory;
 import de.sos.gv.geo.tiles.TileInfo;
 import de.sos.gv.geo.tiles.cache.MemoryCache;
+import de.sos.gv.geo.tiles.chain.ImageIOTranscoder;
+import de.sos.gv.geo.tiles.chain.StageMemoryImage;
+import de.sos.gv.geo.tiles.chain.TileChain;
+import de.sos.gv.geo.tiles.chain.TileChainImageProvider;
+import de.sos.gv.geo.tiles.chain.TileExecutors;
+import de.sos.gv.geo.tiles.chain.TileId;
+import de.sos.gv.geo.tiles.chain.TilePayload;
+import de.sos.gv.geo.tiles.chain.TileStage;
+import de.sos.gv.geo.tiles.chain.Cancellation.CancellationToken;
 
 public class CacheComparisonTests {
 

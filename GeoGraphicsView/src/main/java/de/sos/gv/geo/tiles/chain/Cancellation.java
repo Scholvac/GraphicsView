@@ -1,8 +1,8 @@
-package com.example.geocache;
+package de.sos.gv.geo.tiles.chain;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
-class Cancellation {
+public class Cancellation {
 
 	public static  final class CancellationToken {
 		private final AtomicBoolean cancelled = new AtomicBoolean(false);

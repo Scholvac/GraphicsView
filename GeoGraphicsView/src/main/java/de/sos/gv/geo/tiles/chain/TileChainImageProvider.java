@@ -1,4 +1,4 @@
-package com.example.geocache;
+package de.sos.gv.geo.tiles.chain;
 
 import java.awt.image.BufferedImage;
 import java.util.concurrent.CancellationException;
@@ -6,12 +6,11 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutionException;
 
-import com.example.geocache.Cancellation.CancellationSource;
-import com.example.geocache.Cancellation.CancellationToken;
-
 import de.sos.gv.geo.tiles.ICancellableTileImageProvider;
 import de.sos.gv.geo.tiles.ITileImageProvider;
 import de.sos.gv.geo.tiles.TileInfo;
+import de.sos.gv.geo.tiles.chain.Cancellation.CancellationSource;
+import de.sos.gv.geo.tiles.chain.Cancellation.CancellationToken;
 
 /**
  * Adapter between the generic {@link TileChain} and the synchronous

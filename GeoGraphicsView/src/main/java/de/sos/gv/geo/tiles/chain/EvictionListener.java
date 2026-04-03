@@ -1,4 +1,4 @@
-package com.example.geocache;
+package de.sos.gv.geo.tiles.chain;
 
 public interface EvictionListener {
     void onEvict(String key, TilePayload payload);

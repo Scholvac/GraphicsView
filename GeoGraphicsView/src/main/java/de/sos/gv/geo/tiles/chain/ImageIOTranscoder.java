@@ -1,4 +1,4 @@
-package com.example.geocache;
+package de.sos.gv.geo.tiles.chain;
 
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
@@ -10,7 +10,7 @@ import java.util.concurrent.Executor;
 
 import javax.imageio.ImageIO;
 
-import com.example.geocache.Cancellation.CancellationToken;
+import de.sos.gv.geo.tiles.chain.Cancellation.CancellationToken;
 
 public class ImageIOTranscoder {
 	private final Executor decodeExec;

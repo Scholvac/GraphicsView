@@ -1,4 +1,4 @@
-package com.example.geocache;
+package de.sos.gv.geo.tiles.chain;
 
 import java.util.Objects;
 

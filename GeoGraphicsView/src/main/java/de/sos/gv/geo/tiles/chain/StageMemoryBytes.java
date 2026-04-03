@@ -1,4 +1,4 @@
-package com.example.geocache;
+package de.sos.gv.geo.tiles.chain;
 
 import java.util.EnumSet;
 import java.util.LinkedHashMap;
@@ -8,7 +8,7 @@ import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.locks.ReentrantLock;
 
-import com.example.geocache.Cancellation.CancellationToken;
+import de.sos.gv.geo.tiles.chain.Cancellation.CancellationToken;
 
 public class StageMemoryBytes implements TileStage, SupportsEvictionListener {
 	private final long maxBytes;

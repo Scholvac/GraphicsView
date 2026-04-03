@@ -1,4 +1,4 @@
-package com.example.geocache;
+package de.sos.gv.geo.tiles.chain;
 
 import java.awt.image.BufferedImage;
 import java.io.IOException;
@@ -13,7 +13,7 @@ import java.util.concurrent.CompletableFuture;
 
 import javax.imageio.ImageIO;
 
-import com.example.geocache.Cancellation.CancellationToken;
+import de.sos.gv.geo.tiles.chain.Cancellation.CancellationToken;
 
 public class StageDisk implements TileStage {
 	private final Path root;

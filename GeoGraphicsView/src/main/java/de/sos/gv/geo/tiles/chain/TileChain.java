@@ -1,4 +1,4 @@
-package com.example.geocache;
+package de.sos.gv.geo.tiles.chain;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -10,9 +10,9 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 
-import com.example.geocache.Cancellation.CancellationToken;
-import com.example.geocache.TilePayload.Encoded;
-import com.example.geocache.TilePayload.Image;
+import de.sos.gv.geo.tiles.chain.Cancellation.CancellationToken;
+import de.sos.gv.geo.tiles.chain.TilePayload.Encoded;
+import de.sos.gv.geo.tiles.chain.TilePayload.Image;
 
 public class TileChain {
 	private final List<TileStage> 					mStages; // 0 = fastest, last = slowest

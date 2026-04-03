@@ -1,10 +1,10 @@
-package com.example.geocache;
+package de.sos.gv.geo.tiles.chain;
 
 import java.util.EnumSet;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
-import com.example.geocache.Cancellation.CancellationToken;
+import de.sos.gv.geo.tiles.chain.Cancellation.CancellationToken;
 
 public interface TileStage {
 

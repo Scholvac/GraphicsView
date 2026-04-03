@@ -1,4 +1,4 @@
-package com.example.geocache;
+package de.sos.gv.geo.tiles.chain;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -12,7 +12,7 @@ import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 
-import com.example.geocache.Cancellation.CancellationToken;
+import de.sos.gv.geo.tiles.chain.Cancellation.CancellationToken;
 
 /**
  * Source-only web stage using java.net.URL (Java 8).
