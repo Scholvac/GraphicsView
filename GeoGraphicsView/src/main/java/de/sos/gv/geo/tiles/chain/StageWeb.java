@@ -74,7 +74,7 @@ public class StageWeb implements TileStage {
 				if (result == null)
 					return Optional.<TilePayload>empty();
 				final String contentType = isBlank(result.contentType)
-						? guessContentType(id)
+						? id.contentType()
 						: result.contentType;
 				final byte[] body = result.body;
 				return Optional.<TilePayload>of(new TilePayload.Encoded(body, contentType));
@@ -145,10 +145,6 @@ public class StageWeb implements TileStage {
 
 	private static boolean isBlank(final String str) {
 		return str == null || str.trim().isEmpty();
-	}
-
-	private static String guessContentType(final TileId id) {
-		return "png".equalsIgnoreCase(id.getExt()) ? "image/png" : "image/jpeg";
 	}
 
 	private static final class DownloadResult {

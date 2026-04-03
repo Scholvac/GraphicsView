@@ -22,8 +22,9 @@ import de.sos.gv.geo.tiles.chain.Cancellation.CancellationToken;
  * </ol>
  *
  * <p>Implement this interface to add a custom backend (Redis, CDN, etc.).
- * Also implement {@link SupportsEvictionListener} so evicted tiles are demoted
- * to the next stage rather than dropped.
+ * Override {@link #setEvictionListener} to participate in the demotion chain:
+ * {@link TileChain} calls it once during construction so evicted tiles are pushed
+ * to the next stage rather than dropped. The default implementation is a no-op.
  */
 public interface TileStage {
 
@@ -60,4 +61,12 @@ public interface TileStage {
 
 	/** Configured storage budget in bytes, or {@code -1} if unlimited. */
 	default long maxSizeBytes(){ return -1L; }
+
+	/**
+	 * Registers the eviction callback set by {@link TileChain} during construction.
+	 * Override this and fire the listener when an entry is evicted due to budget pressure,
+	 * so {@link TileChain} can demote the payload to the next stage instead of dropping it.
+	 * The default implementation is a no-op (evicted entries are silently dropped).
+	 */
+	default void setEvictionListener(EvictionListener l) {}
 }

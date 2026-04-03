@@ -22,7 +22,7 @@ import de.sos.gv.geo.tiles.chain.Cancellation.CancellationToken;
  * Last-modified timestamps serve as the LRU ordering; the oldest files are deleted when the
  * budget is exceeded ({@code enforceBudget()} runs after every {@code put()}).
  *
- * <p>Unlike the memory stages, this stage does <em>not</em> implement {@link SupportsEvictionListener}:
+ * <p>Unlike the memory stages, this stage does not override {@link TileStage#setEvictionListener}:
  * tiles deleted during budget enforcement are simply dropped (no further demotion possible).
  *
  * <p>Known limitation: {@code enforceBudget()} walks the entire cache tree on every write (O(n)).
@@ -47,7 +47,7 @@ public class StageDisk implements TileStage {
 			try {
 				final byte[] b = Files.readAllBytes(p);
 				touch(p);
-				return Optional.<TilePayload>of(new TilePayload.Encoded(b, guessContentType(id)));
+				return Optional.<TilePayload>of(new TilePayload.Encoded(b, id.contentType()));
 			} catch (final IOException e){ return Optional.<TilePayload>empty(); }
 		});
 	}
@@ -61,7 +61,7 @@ public class StageDisk implements TileStage {
 			try {
 				final byte[] b = Files.readAllBytes(p);
 				Files.deleteIfExists(p);
-				return Optional.<TilePayload>of(new TilePayload.Encoded(b, guessContentType(id)));
+				return Optional.<TilePayload>of(new TilePayload.Encoded(b, id.contentType()));
 			} catch (final IOException e){ return Optional.<TilePayload>empty(); }
 		});
 	}
@@ -79,7 +79,7 @@ public class StageDisk implements TileStage {
 				else {
 					final BufferedImage bi = ((TilePayload.Image)payload).value();
 					try (OutputStream os = Files.newOutputStream(p, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING)) {
-						ImageIO.write(bi, extOf(id), os);
+						ImageIO.write(bi, id.getExt(), os);
 					}
 				}
 				touch(p);
@@ -98,8 +98,6 @@ public class StageDisk implements TileStage {
 	@Override public long maxSizeBytes(){ return maxBytes; }
 
 	private void touch(final Path p){ try { Files.setLastModifiedTime(p, java.nio.file.attribute.FileTime.fromMillis(System.currentTimeMillis())); } catch (final IOException ignored) {} }
-	private String guessContentType(final TileId id){ return "png".equalsIgnoreCase(id.getExt()) ? "image/png" : "image/jpeg"; }
-	private String extOf(final TileId id){ return id.getExt(); }
 
 	private void enforceBudget() throws IOException {
 		long size = 0L;

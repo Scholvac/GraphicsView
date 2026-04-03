@@ -107,28 +107,27 @@ public class TileChain {
 		for (int i=0;i<mStages.size();i++){
 			final int from = i;
 			final TileStage s = mStages.get(i);
-			if (s instanceof SupportsEvictionListener)
-				((SupportsEvictionListener)s).setEvictionListener((key, payload) -> {
-					// find first lower stage that accepts payload.kind
-					for (int j=from+1;j<mStages.size();j++){
-						final TileStage lower = mStages.get(j);
-						if (lower.accepts().contains(payload.kind())) {
-							// Move down: put to lower
-							final TileId id = keyToId(key);
-							if (id != null)
-								trackBackground(lower.put(id, payload, CancellationToken.none()));
-							return;
-						} else if (payload.kind()==TilePayload.Kind.IMAGE && lower.accepts().contains(TilePayload.Kind.ENCODED)) {
-							// Re-encode to bytes then store
-							final TileId id = keyToId(key);
-							if (id != null)
-								mTranscoder.encodePng((TilePayload.Image)payload, CancellationToken.none())
-								.thenCompose(enc -> trackBackground(lower.put(id, enc, CancellationToken.none())));
-							return;
-						}
+			s.setEvictionListener((key, payload) -> {
+				// find first lower stage that accepts payload.kind
+				for (int j=from+1;j<mStages.size();j++){
+					final TileStage lower = mStages.get(j);
+					if (lower.accepts().contains(payload.kind())) {
+						// Move down: put to lower
+						final TileId id = keyToId(key);
+						if (id != null)
+							trackBackground(lower.put(id, payload, CancellationToken.none()));
+						return;
+					} else if (payload.kind()==TilePayload.Kind.IMAGE && lower.accepts().contains(TilePayload.Kind.ENCODED)) {
+						// Re-encode to bytes then store
+						final TileId id = keyToId(key);
+						if (id != null)
+							mTranscoder.encodePng((TilePayload.Image)payload, CancellationToken.none())
+							.thenCompose(enc -> trackBackground(lower.put(id, enc, CancellationToken.none())));
+						return;
 					}
-					// else drop on floor (no lower stage)
-				});
+				}
+				// no lower stage accepts this payload — drop it
+			});
 		}
 	}
 

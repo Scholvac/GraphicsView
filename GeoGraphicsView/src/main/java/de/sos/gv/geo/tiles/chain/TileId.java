@@ -21,6 +21,12 @@ public final class TileId {
 	public String getExt(){ return ext; }
 	public String cacheKey(){ return style + "/" + z + "/" + x + "/" + y + "." + ext; }
 
+	/**
+	 * Returns the MIME content type inferred from the file extension.
+	 * Used by {@link StageDisk} and {@link StageWeb} when the server does not supply one.
+	 */
+	public String contentType(){ return "png".equalsIgnoreCase(ext) ? "image/png" : "image/jpeg"; }
+
 	@Override
 	public boolean equals(final Object o){
 		if(this==o) return true;
