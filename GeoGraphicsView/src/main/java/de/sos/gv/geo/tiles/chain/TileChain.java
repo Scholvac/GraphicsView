@@ -14,6 +14,34 @@ import de.sos.gv.geo.tiles.chain.Cancellation.CancellationToken;
 import de.sos.gv.geo.tiles.chain.TilePayload.Encoded;
 import de.sos.gv.geo.tiles.chain.TilePayload.Image;
 
+/**
+ * Orchestrates the multi-stage tile cache pipeline.
+ *
+ * <h2>How it works</h2>
+ * <ol>
+ *   <li><b>Request arrives</b> via {@link #getImage}. If the same tile is already being
+ *       fetched, the new caller joins that in-flight future (deduplication via {@code mInFlight}).
+ *       No duplicate network or disk operations are started.</li>
+ *   <li><b>Stages are searched</b> in order (fastest first). The first stage that returns
+ *       a non-empty result wins.</li>
+ *   <li><b>Single-copy promotion</b>: the found payload is moved to the highest stage that
+ *       accepts its format. The source stage entry is deleted. Format conversion
+ *       (ENCODED↔IMAGE) is handled by {@link ImageIOTranscoder} as needed.</li>
+ *   <li><b>Eviction-to-demotion</b>: when a stage evicts a tile due to budget pressure,
+ *       the {@link EvictionListener} wired in the constructor pushes it down to the next
+ *       compatible stage. These background writes are tracked in {@code mBackgroundOps}.</li>
+ * </ol>
+ *
+ * <h2>Synchronisation</h2>
+ * <ul>
+ *   <li>{@link #whenIdle()}           — all active tile requests done</li>
+ *   <li>{@link #whenBackgroundIdle()} — all eviction-demotion background writes done</li>
+ *   <li>{@link #whenTrulyIdle()}      — both, polling until no new work appears</li>
+ * </ul>
+ *
+ * <p>Touch this class if the promotion strategy, deduplication logic, or eviction-wiring
+ * needs to change. To add or reorder stages, change the list passed to the constructor.
+ */
 public class TileChain {
 	private final List<TileStage> 					mStages; // 0 = fastest, last = slowest
 	private final ImageIOTranscoder 				mTranscoder;

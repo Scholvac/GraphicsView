@@ -2,7 +2,7 @@ package de.sos.gv.geo.examples;
 
 import java.awt.BorderLayout;
 import java.awt.EventQueue;
-import java.nio.file.Path;
+import java.io.File;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
@@ -14,10 +14,9 @@ import javax.swing.border.EmptyBorder;
 
 import de.sos.gv.geo.GeoUtils;
 import de.sos.gv.geo.LatLonPoint;
-import de.sos.gv.geo.tiles.ITileImageProvider;
+import de.sos.gv.geo.tiles.SizeUnit;
 import de.sos.gv.geo.tiles.TileFactory;
 import de.sos.gv.geo.tiles.TileHandler;
-import de.sos.gv.geo.tiles.chain.Cancellation.CancellationToken;
 import de.sos.gv.geo.tiles.chain.ImageIOTranscoder;
 import de.sos.gv.geo.tiles.chain.StageDisk;
 import de.sos.gv.geo.tiles.chain.StageMemoryBytes;
@@ -41,7 +40,7 @@ import de.sos.gvc.handler.MouseDelegateHandler;
  *   │
  *   ├─▶ Stage[0] StageMemoryImage  50 MB  — decoded BufferedImage, LRU
  *   ├─▶ Stage[1] StageMemoryBytes  20 MB  — encoded byte[], LRU
- *   ├─▶ Stage[2] StageDisk        500 MB  — file system ~/.cache/tiles, LRU by mtime
+ *   ├─▶ Stage[2] StageDisk        500 MB  — file system ~/.cache/gvc-tiles, LRU by mtime
  *   └─▶ Stage[3] StageWeb                 — HTTP download from tile.openstreetmap.org
  * </pre>
  *
@@ -57,45 +56,18 @@ import de.sos.gvc.handler.MouseDelegateHandler;
  * </ul>
  *
  * <h2>Shutdown</h2>
- * The application must call {@link TileExecutors#shutdown()} to release the thread pools;
+ * Call {@link TileChainImageProvider#shutdown()} on exit to release the internal thread pools;
  * otherwise they will prevent JVM exit.
  */
 public class OSMWithChainCacheExample extends JFrame {
 
     // --------------------------------------------------------------------------------------------
-    // Configuration
-    // --------------------------------------------------------------------------------------------
-
-    /** OSM tile URL template. Placeholders: {z}, {x}, {y}, {ext} */
-    private static final String OSM_URL = "https://tile.openstreetmap.org/{z}/{x}/{y}.{ext}";
-
-    /** L1 memory budget for decoded images (estimated as width × height × 4 bytes, ARGB). */
-    private static final long L1_IMAGE_BYTES = 50L * 1024 * 1024;   // 50 MB
-
-    /** L2 memory budget for encoded raw bytes. */
-    private static final long L2_BYTES_BYTES = 20L * 1024 * 1024;   // 20 MB
-
-    /** L3 disk cache budget. */
-    private static final long L3_DISK_BYTES = 500L * 1024 * 1024;   // 500 MB
-
-    /** Root directory for the disk cache. */
-    private static final Path CACHE_DIR = Paths.get(System.getProperty("user.home"), ".cache", "gvc-tiles");
-
-    /** HTTP connection timeout in milliseconds. */
-    private static final int CONNECT_TIMEOUT_MS = 5_000;
-
-    /** HTTP read timeout in milliseconds. */
-    private static final int READ_TIMEOUT_MS = 10_000;
-
-    // --------------------------------------------------------------------------------------------
     // Fields
     // --------------------------------------------------------------------------------------------
 
-    private GraphicsScene mScene;
-    private GraphicsView  mView;
-
-    /** Shared thread pools — must be released via {@link TileExecutors#shutdown()} on exit. */
-    private TileExecutors mExecs;
+    private GraphicsScene          mScene;
+    private GraphicsView           mView;
+    private TileChainImageProvider mProvider;
 
     // --------------------------------------------------------------------------------------------
     // Entry point
@@ -140,7 +112,7 @@ public class OSMWithChainCacheExample extends JFrame {
         addWindowListener(new java.awt.event.WindowAdapter() {
             @Override
             public void windowClosing(final java.awt.event.WindowEvent e) {
-                mExecs.shutdown();
+                mProvider.shutdown();
             }
         });
     }
@@ -163,78 +135,44 @@ public class OSMWithChainCacheExample extends JFrame {
     // --------------------------------------------------------------------------------------------
 
     /**
-     * Builds the four-stage cache pipeline and registers it as a {@link TileHandler}.
+     * Builds the cache pipeline and registers it as a {@link TileHandler}.
      *
-     * <p>Stages must be ordered fastest (index 0) to slowest (last index).
-     * {@link TileChain} wires the eviction-to-demotion callbacks automatically in its constructor.
+     * <p><b>Default: builder API.</b> The builder appends the web source automatically —
+     * only the caching layers need to be configured.
+     *
+     * <p><b>Alternative: manual construction</b> — shown below in comments. Use this
+     * when you need to insert a custom stage or require full control over the pipeline.
+     * In that case you own the {@link TileExecutors} lifecycle and must call
+     * {@code execs.shutdown()} yourself ({@code provider.shutdown()} is a no-op).
+     *
+     * <p>{@link TileChainImageProvider#shutdown()} must be called on exit (builder path only).
      */
     private void setupChainCache() {
-        // Shared thread pools for blocking I/O and CPU-bound decode work
-        mExecs = new TileExecutors();
 
-        // Stage[0]: L1 — decoded BufferedImages in heap memory (fastest access)
-        final StageMemoryImage l1Image = new StageMemoryImage(L1_IMAGE_BYTES);
+        // ---- Option A: builder (recommended) ------------------------------------------------
+        mProvider = TileChainImageProvider.builder(TileChainImageProvider.OSM_URL)
+                .memoryImage(50, SizeUnit.MegaByte)   // L1: decoded images in heap
+                .memoryBytes(20, SizeUnit.MegaByte)   // L2: encoded bytes in heap
+                .disk(new File(System.getProperty("user.home"), ".cache/gvc-tiles"),
+                        500, SizeUnit.MegaByte)        // L3: persistent disk cache
+                .build();
 
-        // Stage[1]: L2 — encoded raw bytes in heap memory (cheaper than L1, fallback before disk)
-        final StageMemoryBytes l2Bytes = new StageMemoryBytes(L2_BYTES_BYTES);
+        // ---- Option B: manual construction (alternative) ------------------------------------
+        // Use when inserting custom stages or needing direct control over TileExecutors.
+        // Uncomment the block below and remove Option A to switch.
+        //
+        // TileExecutors execs = new TileExecutors();
+        // List<TileStage> stages = Arrays.asList(
+        //     new StageMemoryImage(50L * 1024 * 1024),
+        //     new StageMemoryBytes(20L * 1024 * 1024),
+        //     new StageDisk(Paths.get(System.getProperty("user.home"), ".cache/gvc-tiles"),
+        //                   500L * 1024 * 1024),
+        //     new StageWeb(TileChainImageProvider.OSM_URL, 5_000, 10_000, execs.diskIO)
+        // );
+        // TileChain chain = new TileChain(stages, new ImageIOTranscoder(execs.decodeCPU), execs);
+        // mProvider = new TileChainImageProvider(chain, "osm", "png");
+        // // shutdown: call execs.shutdown() in windowClosing, not mProvider.shutdown()
 
-        // Stage[2]: L3 — persistent disk cache (survives restarts)
-        final StageDisk l3Disk = new StageDisk(CACHE_DIR, L3_DISK_BYTES);
-
-        // Stage[3]: web source — read-only, no budget
-        // Use diskIO for all blocking network calls, not the decode pool
-        final StageWeb webSource = new StageWeb(
-                OSM_URL,
-                CONNECT_TIMEOUT_MS,
-                READ_TIMEOUT_MS,
-                mExecs.diskIO
-        );
-
-        // TileChain wires eviction callbacks automatically:
-        //   l1Image full → oldest IMAGE → transcoder encodes to PNG → l2Bytes
-        //   l2Bytes full → oldest ENCODED → l3Disk
-        final List<TileStage> stages = Arrays.asList(l1Image, l2Bytes, l3Disk, webSource);
-        final ImageIOTranscoder transcoder = new ImageIOTranscoder(mExecs.decodeCPU);
-        final TileChain chain = new TileChain(stages, transcoder, mExecs);
-
-        // Adapt TileChain to ITileImageProvider — drop-in replacement for the legacy cache
-        // "osm" = style prefix in the cache key, "png" = file extension
-        final ITileImageProvider provider = new TileChainImageProvider(chain, "osm", "png");
-
-        // Register with TileFactory using its default thread count
-        mView.addHandler(new TileHandler(new TileFactory(provider)));
-    }
-
-    // --------------------------------------------------------------------------------------------
-    // Advanced pattern: cancelling in-flight tile requests
-    // --------------------------------------------------------------------------------------------
-
-    /**
-     * Illustrates how to cancel in-flight tile requests manually.
-     *
-     * <p>In practice {@code cancel()} is called by {@link TileFactory} when a tile
-     * scrolls out of the viewport. This method shows the low-level pattern for custom use.
-     *
-     * <pre>
-     *   CancellationSource src = new CancellationSource();
-     *   CancellationToken  ct  = src.token();
-     *   chain.getImage(id, ct)
-     *        .whenComplete((img, ex) -> { ... });
-     *
-     *   // Later: cooperative cancellation
-     *   src.cancel();
-     * </pre>
-     *
-     * <p>When using {@link TileChainImageProvider}, {@code provider.cancel(TileInfo)}
-     * handles this automatically.
-     */
-    @SuppressWarnings("unused")
-    private static void cancellationPattern() {
-        // For illustration only — never called at runtime
-        final de.sos.gv.geo.tiles.chain.Cancellation.CancellationSource src =
-                new de.sos.gv.geo.tiles.chain.Cancellation.CancellationSource();
-        final CancellationToken ct = src.token();
-        // ... chain.getImage(id, ct) ...
-        src.cancel();
+        mView.addHandler(new TileHandler(new TileFactory(mProvider)));
     }
 }

@@ -10,6 +10,21 @@ import java.util.concurrent.locks.ReentrantLock;
 
 import de.sos.gv.geo.tiles.chain.Cancellation.CancellationToken;
 
+/**
+ * L2 cache stage — stores encoded {@link TilePayload.Encoded} bytes in heap memory.
+ *
+ * <p>Sits between the decoded-image cache ({@link StageMemoryImage}) and disk.
+ * Keeping compressed bytes in memory avoids repeated disk reads for tiles that were
+ * recently evicted from L1 but are still frequently accessed.
+ * Memory usage equals the exact compressed byte size, so the budget can be set much
+ * lower than for {@link StageMemoryImage} while still covering many tiles.
+ *
+ * <p>When the budget is exceeded the LRU entry is evicted and demoted to {@link StageDisk}
+ * via the {@link EvictionListener} set by {@link TileChain}.
+ *
+ * <p>This stage is optional. Skip it (omit from the builder or the stages list) if heap
+ * memory is scarce and disk access latency is acceptable.
+ */
 public class StageMemoryBytes implements TileStage, SupportsEvictionListener {
 	private final long maxBytes;
 	private long curBytes = 0L;

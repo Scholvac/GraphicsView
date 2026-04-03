@@ -12,6 +12,16 @@ import javax.imageio.ImageIO;
 
 import de.sos.gv.geo.tiles.chain.Cancellation.CancellationToken;
 
+/**
+ * Converts between the two {@link TilePayload} forms using {@link javax.imageio.ImageIO}.
+ *
+ * <p>Used internally by {@link TileChain} when a tile is found in a stage that provides
+ * {@link TilePayload.Kind#ENCODED} but the promotion target only accepts
+ * {@link TilePayload.Kind#IMAGE} (or vice versa). Not called directly in normal usage.
+ *
+ * <p>All work runs on the {@code decodeExec} executor — always pass {@link TileExecutors#decodeCPU}.
+ * Touch this class only if PNG needs to be replaced with a different codec (e.g. WebP).
+ */
 public class ImageIOTranscoder {
 	private final Executor decodeExec;
 

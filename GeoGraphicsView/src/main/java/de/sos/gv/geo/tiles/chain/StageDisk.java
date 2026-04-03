@@ -15,6 +15,20 @@ import javax.imageio.ImageIO;
 
 import de.sos.gv.geo.tiles.chain.Cancellation.CancellationToken;
 
+/**
+ * L3 cache stage — persists encoded tile bytes on disk.
+ *
+ * <p>Files are stored under {@code root/style/z/x/y.ext} (matching {@link TileId#cacheKey()}).
+ * Last-modified timestamps serve as the LRU ordering; the oldest files are deleted when the
+ * budget is exceeded ({@code enforceBudget()} runs after every {@code put()}).
+ *
+ * <p>Unlike the memory stages, this stage does <em>not</em> implement {@link SupportsEvictionListener}:
+ * tiles deleted during budget enforcement are simply dropped (no further demotion possible).
+ *
+ * <p>Known limitation: {@code enforceBudget()} walks the entire cache tree on every write (O(n)).
+ * For caches with millions of files this can be slow — consider reducing write frequency or
+ * adding an in-memory LRU index if it becomes a bottleneck.
+ */
 public class StageDisk implements TileStage {
 	private final Path root;
 	private final long maxBytes;

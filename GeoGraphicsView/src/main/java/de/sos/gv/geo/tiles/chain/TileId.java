@@ -2,6 +2,13 @@ package de.sos.gv.geo.tiles.chain;
 
 import java.util.Objects;
 
+/**
+ * Immutable key that uniquely identifies a single map tile.
+ * Used as the lookup key in every {@link TileStage} and as the basis for the
+ * file-system path in {@link StageDisk} ({@code style/z/x/y.ext}).
+ *
+ * <p>Touch this class if the cache-key schema changes (e.g. adding a server-shard token).
+ */
 public final class TileId {
 	private final int z,x,y;
 	private final String style, ext;

@@ -15,8 +15,19 @@ import java.util.concurrent.Executor;
 import de.sos.gv.geo.tiles.chain.Cancellation.CancellationToken;
 
 /**
- * Source-only web stage using java.net.URL (Java 8).
- * Provides ENCODED bytes; accepts nothing.
+ * Source stage — downloads tile bytes from an HTTP tile server.
+ *
+ * <p>This is always the last stage in the pipeline: it {@link TileStage#provides() provides}
+ * {@link TilePayload.Kind#ENCODED} bytes but {@link TileStage#accepts() accepts} nothing,
+ * so {@link TileChain} never tries to write to it.
+ *
+ * <p>The URL template supports {@code {z}}, {@code {x}}, {@code {y}}, {@code {ext}},
+ * and {@code {style}} placeholders. Requests run on the {@code ioExecutor}
+ * (always use {@link TileExecutors#diskIO}) and are retried up to {@code attempts} times
+ * on timeout. Failed downloads return an empty optional (no exception propagated).
+ *
+ * <p>Touch this class to add HTTP headers (e.g. API keys), switch from {@code java.net.URL}
+ * to a proper HTTP client, or add exponential back-off between retries.
  */
 public class StageWeb implements TileStage {
 	private final String baseUrl;   // e.g. "https://tile.server/{z}/{x}/{y}.{ext}" or with {style}

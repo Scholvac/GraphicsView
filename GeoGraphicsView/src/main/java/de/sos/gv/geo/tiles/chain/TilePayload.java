@@ -2,7 +2,20 @@ package de.sos.gv.geo.tiles.chain;
 
 import java.awt.image.BufferedImage;
 
+/**
+ * Discriminated union of the two data forms a tile can take as it moves through the pipeline.
+ *
+ * <ul>
+ *   <li>{@link Image}   — a decoded {@link java.awt.image.BufferedImage}; ready to paint, costly in memory.</li>
+ *   <li>{@link Encoded} — raw compressed bytes (PNG/JPEG); cheap to store, needs decoding before use.</li>
+ * </ul>
+ *
+ * {@link TileChain} converts between the two forms via {@link ImageIOTranscoder} whenever a stage
+ * requires a different format than the one available.
+ * Touch this if a third payload form (e.g. GPU texture) is ever needed.
+ */
 public interface TilePayload {
+	/** Discriminator used by {@link TileStage#provides()} and {@link TileStage#accepts()}. */
 	enum Kind { IMAGE, ENCODED }
 	Kind kind();
 
