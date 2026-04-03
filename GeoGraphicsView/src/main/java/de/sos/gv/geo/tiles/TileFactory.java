@@ -1,6 +1,8 @@
 package de.sos.gv.geo.tiles;
 
 import java.awt.image.BufferedImage;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 
 import org.slf4j.Logger;
@@ -27,6 +29,7 @@ public class TileFactory implements ITileFactory {
 	private final Supplier<BufferedImage>		mLoadingImageSupplier;
 	private final Supplier<BufferedImage>		mErrorImageSupplier;
 	private final PriorityJobScheduler			mScheduler;
+	private final Map<String, TileJob>			mRunningJobs = new ConcurrentHashMap<>();
 
 	private ITileImageProvider					mImageProvider;
 	private IZOrderProvider						mZOrderProvider;
@@ -97,7 +100,11 @@ public class TileFactory implements ITileFactory {
 	}
 	@Override
 	public void release(final TileItem item) {
-		mScheduler.remove(item.getInfo().getHash());
+		final String hash = item.getInfo().getHash();
+		mScheduler.remove(hash);
+		final TileJob running = mRunningJobs.get(hash);
+		if (running != null)
+			running.cancel();
 	}
 
 
@@ -106,6 +113,7 @@ public class TileFactory implements ITileFactory {
 	class TileJob implements IJob {
 		private final TileItem 						mItem;
 		private final long							mCreationTime;//used for priority
+		private volatile boolean					mCancelled = false;
 
 
 		public TileJob(final TileItem item) {
@@ -113,13 +121,26 @@ public class TileFactory implements ITileFactory {
 			mCreationTime = System.currentTimeMillis();
 		}
 
+		public void cancel() {
+			mCancelled = true;
+			if (mImageProvider instanceof ICancellableTileImageProvider)
+				((ICancellableTileImageProvider) mImageProvider).cancel(mItem.getInfo());
+		}
+
 		@Override
 		public void run() {
-			final BufferedImage img = mImageProvider.load(mItem.getInfo());
-			if (img != null)
-				mItem.setImage(TileStatus.FINISHED, img);
-			else {
-				mItem.setImage(TileStatus.ERROR, mErrorImageSupplier.get());
+			mRunningJobs.put(getHash(), this);
+			try {
+				final BufferedImage img = mImageProvider.load(mItem.getInfo());
+				if (mCancelled)
+					return;
+				if (img != null)
+					mItem.setImage(TileStatus.FINISHED, img);
+				else {
+					mItem.setImage(TileStatus.ERROR, mErrorImageSupplier.get());
+				}
+			} finally {
+				mRunningJobs.remove(getHash(), this);
 			}
 		}
 		@Override
