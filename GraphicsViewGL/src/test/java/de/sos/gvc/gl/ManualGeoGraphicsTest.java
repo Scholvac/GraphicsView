@@ -106,10 +106,18 @@ public class ManualGeoGraphicsTest {
 		return view.getBufferedImage(true);
 	}
 
-	private static void applyRenderHints(final GraphicsView view) {
+	static void applyRenderHints(final GraphicsView view) {
 		view.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 		view.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
 		view.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_PURE);
+	}
+
+	static void configureGeoView(final GraphicsView view, final double scale, final double offsetXMeters, final double offsetYMeters) {
+		applyRenderHints(view);
+		addTiles(view.getScene(), view);
+		addItems(view.getScene());
+		view.setCenter(view.getCenterX() + offsetXMeters, view.getCenterY() + offsetYMeters);
+		view.setScale(scale);
 	}
 
 	private static List<Scenario> scenarios() {
@@ -147,7 +155,7 @@ public class ManualGeoGraphicsTest {
 		ImageIO.write(image, "png", TEST_RESULT_DIR.resolve(scenario.name + "_candidate.png").toFile());
 	}
 
-	private static void addTiles(final GraphicsScene scene, final GraphicsView view) {
+	static void addTiles(final GraphicsScene scene, final GraphicsView view) {
 		final TileHandler tileHandler = new TileHandler(new TileFactory(new DeterministicTileImageProvider(), 1));
 		tileHandler.waitForAllTiles(true);
 		view.addHandler(tileHandler);
@@ -192,7 +200,7 @@ public class ManualGeoGraphicsTest {
 	private static final Point2D ppCenter = new Point2D.Double(962189.31192, 7080209.04912);
 
 
-	private static void addItems(final GraphicsScene scene) {
+	static void addItems(final GraphicsScene scene) {
 
 		addItem(scene, p1, pp1);
 		addItem(scene, p2, pp2);
