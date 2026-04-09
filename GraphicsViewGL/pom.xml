@@ -1,0 +1,77 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<parent>
+		<groupId>io.gitlab.scholvac</groupId>
+		<artifactId>GraphicsView</artifactId>
+		<version>2.2.0-SNAPSHOT</version>
+	</parent>
+	<artifactId>GraphicsViewGL</artifactId>
+
+	<name>GraphicsViewGL</name>
+	<description>OpenGL-accelerated rendering backend for GraphicsView using JOGL/GLJPanel</description>
+
+	<properties>
+		<jogl.version>2.6.0</jogl.version>
+		<slf4j.version>2.0.13</slf4j.version>
+	</properties>
+
+	<dependencies>
+		<!-- GraphicsView core -->
+		<dependency>
+			<groupId>io.gitlab.scholvac</groupId>
+			<artifactId>GeoGraphicsView</artifactId>
+			<version>2.2.0-SNAPSHOT</version>
+		</dependency>
+		<dependency>
+			<groupId>io.gitlab.scholvac</groupId>
+			<artifactId>GraphicsViewTests</artifactId>
+			<version>2.2.0-SNAPSHOT</version>
+			<scope>test</scope>
+		</dependency>
+
+		<!-- JOGL: Java OpenGL bindings -->
+		<dependency>
+			<groupId>org.jogamp.jogl</groupId>
+			<artifactId>jogl-all</artifactId>
+			<version>${jogl.version}</version>
+		</dependency>
+		<!-- JOGL natives for Windows amd64 -->
+		<dependency>
+			<groupId>org.jogamp.jogl</groupId>
+			<artifactId>jogl-all</artifactId>
+			<version>${jogl.version}</version>
+			<classifier>natives-windows-amd64</classifier>
+		</dependency>
+
+		<!-- GlueGen runtime (required by JOGL) -->
+		<dependency>
+			<groupId>org.jogamp.gluegen</groupId>
+			<artifactId>gluegen-rt</artifactId>
+			<version>${jogl.version}</version>
+		</dependency>
+		<!-- GlueGen natives for Windows amd64 -->
+		<dependency>
+			<groupId>org.jogamp.gluegen</groupId>
+			<artifactId>gluegen-rt</artifactId>
+			<version>${jogl.version}</version>
+			<classifier>natives-windows-amd64</classifier>
+		</dependency>
+
+		<!-- Logging -->
+		<dependency>
+			<groupId>org.slf4j</groupId>
+			<artifactId>slf4j-api</artifactId>
+			<version>${slf4j.version}</version>
+		</dependency>
+
+		<!-- Logging implementation for tests / demo -->
+		<dependency>
+			<groupId>org.apache.logging.log4j</groupId>
+			<artifactId>log4j-slf4j2-impl</artifactId>
+			<version>2.24.3</version>
+			<scope>runtime</scope>
+		</dependency>
+	</dependencies>
+</project>

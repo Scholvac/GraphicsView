@@ -299,5 +299,6 @@
 		<module>GeometryEditor</module>
 		<module>GeotoolsAdapter</module>
 		<module>GraphicsViewTests</module>
+		<module>GraphicsViewGL</module>
 	</modules>
 </project>
