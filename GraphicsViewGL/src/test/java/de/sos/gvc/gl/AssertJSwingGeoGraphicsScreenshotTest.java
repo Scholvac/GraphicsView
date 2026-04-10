@@ -42,6 +42,8 @@ public class AssertJSwingGeoGraphicsScreenshotTest {
 	private static final Path REFERENCE_SOURCE = MODULE_BASEDIR.resolve(Paths.get("src", "test", "resources", "de", "sos", "gvc", "gl", "reference", "window", "window_zoom_3_0_east_200m.png"));
 	private static final Path TEST_RESULT_DIR = MODULE_BASEDIR.resolve(Paths.get("target", "test-results", "assertj-swing"));
 	private static final boolean UPDATE_REFERENCES = Boolean.getBoolean(REFERENCE_PROPERTY);
+	/** Allowed percentage of differing pixels between GL and software render. */
+	private static final double GL_TOLERANCE = 5.0;
 
 	private FrameFixture mWindow;
 
@@ -105,6 +107,47 @@ public class AssertJSwingGeoGraphicsScreenshotTest {
 			return new Rectangle(screen.x, screen.y, component.getWidth(), component.getHeight());
 		});
 		return new java.awt.Robot().createScreenCapture(bounds);
+	}
+
+	/**
+	 * Renders the same geo scene offscreen with both {@link GLRenderTarget}
+	 * and the software render target, comparing the two.  This test does not
+	 * require a display and validates the GL pipeline independently of the
+	 * on-screen screenshot test.
+	 */
+	@Test
+	public void offscreenGLMatchesSoftwareRender() throws Exception {
+		GLRenderTarget glRT = null;
+		try {
+			glRT = GLRenderTarget.createOffscreen(800, 800);
+		} catch (final Exception e) {
+			Assumptions.assumeTrue(false, "OpenGL context not available — skipping GL test");
+		}
+		try {
+			// software reference via TestGraphicsView
+			final de.sos.gvc.TestGraphicsView swView = de.sos.gvc.TestGraphicsView.create(800, 800);
+			ManualGeoGraphicsTest.configureGeoView(swView, 3.0, 200, 0);
+			final BufferedImage expected = swView.getBufferedImage(true);
+
+			// GL render
+			glRT.setClearColor(java.awt.Color.BLACK);
+			final GraphicsScene scene = new GraphicsScene();
+			final GraphicsView glView = new GraphicsView(scene, glRT);
+			glView.enableRepaintTrigger(false);
+			ManualGeoGraphicsTest.configureGeoView(glView, 3.0, 200, 0);
+			glRT.requestRepaint();
+			final BufferedImage actual = glRT.getResultImage();
+
+			if (actual == null)
+				fail("GLRenderTarget produced no image");
+
+			ImageCompareUtil.assertEquals(
+					"assertj_swing_offscreen_gl_vs_sw", expected, actual, GL_TOLERANCE,
+					"Offscreen GL output differs from software render",
+					TEST_RESULT_DIR.toString());
+		} finally {
+			glRT.dispose();
+		}
 	}
 
 	private static BufferedImage loadReference() throws IOException {

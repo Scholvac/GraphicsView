@@ -11,6 +11,7 @@ import java.awt.LinearGradientPaint;
 import java.awt.RenderingHints;
 import java.awt.geom.Point2D;
 import java.awt.image.BufferedImage;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -30,7 +31,9 @@ import org.junit.jupiter.api.function.Executable;
 
 import de.sos.gv.geo.GeoUtils;
 import de.sos.gv.geo.LatLonPoint;
+import de.sos.gv.geo.tiles.ITileFactory;
 import de.sos.gv.geo.tiles.ITileImageProvider;
+import de.sos.gv.geo.tiles.SizeUnit;
 import de.sos.gv.geo.tiles.TileFactory;
 import de.sos.gv.geo.tiles.TileHandler;
 import de.sos.gv.geo.tiles.TileInfo;
@@ -42,6 +45,7 @@ import de.sos.gvc.TestGraphicsView;
 import de.sos.gvc.Utils;
 import de.sos.gvc.handler.DefaultViewDragHandler;
 import de.sos.gvc.handler.MouseDelegateHandler;
+import de.sos.gvc.rt.ImageRenderTarget.BufferedImageRenderTarget;
 import de.sos.gvc.styles.DrawableStyle;
 
 
@@ -56,20 +60,22 @@ public class ManualGeoGraphicsTest {
 	private static final Path REFERENCE_SOURCE_DIR = MODULE_BASEDIR.resolve(Paths.get("src", "test", "resources", "de", "sos", "gvc", "gl", "reference"));
 	private static final Path TEST_RESULT_DIR = MODULE_BASEDIR.resolve(Paths.get("target", "test-results", "manual-geo-graphics"));
 	private static final boolean UPDATE_REFERENCES = Boolean.getBoolean(REFERENCE_PROPERTY);
+	/** Allowed percentage of differing pixels between GL sprite rendering and software reference. */
+	private static final double GL_TOLERANCE = 5.0;
 
 	public static void main(final String[] args) throws IOException {
 
 		// Create a new Scene and a new View
 		final GraphicsScene scene = new GraphicsScene();
-		final GraphicsView view = new GraphicsView(scene);
+		final GraphicsView view = new GraphicsView(scene,new GLRenderTarget(800, 800));
 
 		// Standard Handler
 		view.addHandler(new MouseDelegateHandler());
 		view.addHandler(new DefaultViewDragHandler());
 
 		view.setScale(3);
-
-		addTiles(scene, view);
+		final ITileImageProvider cache = ITileFactory.buildCache(ITileImageProvider.OSM, 10, SizeUnit.MegaByte, new File("./.cache"), 100, SizeUnit.MegaByte);
+		addTiles(scene, view, cache);
 		addItems(scene);
 		buildAndShowFrame(view);
 	}
@@ -78,6 +84,58 @@ public class ManualGeoGraphicsTest {
 	public void rendersDeterministicGeoSnapshots() {
 		assertAll("geo image regression",
 				scenarios().stream().map(scenario -> (Executable)() -> assertScenario(scenario)));
+	}
+
+	/**
+	 * Renders the same deterministic geo scenarios with the {@link GLRenderTarget}
+	 * and compares each against the software reference produced by
+	 * {@link BufferedImageRenderTarget}.
+	 */
+	@Test
+	public void rendersDeterministicGeoSnapshots_GL() {
+		GLRenderTarget glRT = null;
+		try {
+			glRT = GLRenderTarget.createOffscreen(VIEW_WIDTH, VIEW_HEIGHT);
+		} catch (final Exception e) {
+			org.junit.jupiter.api.Assumptions.assumeTrue(false, "OpenGL context not available — skipping GL test");
+		}
+		final GLRenderTarget glTarget = glRT;
+		try {
+			assertAll("geo GL vs software regression",
+					scenarios().stream().map(scenario -> (Executable) () -> assertScenarioGL(scenario, glTarget)));
+		} finally {
+			glTarget.dispose();
+		}
+	}
+
+	private void assertScenarioGL(final Scenario scenario, final GLRenderTarget glTemplate) throws IOException {
+		// software reference
+		final BufferedImage expected = renderScenario(scenario);
+
+		// GL render
+		final GLRenderTarget glRT = GLRenderTarget.createOffscreen(VIEW_WIDTH, VIEW_HEIGHT);
+		try {
+			glRT.setClearColor(java.awt.Color.BLACK);
+			final GraphicsScene scene = new GraphicsScene();
+			final GraphicsView glView = new GraphicsView(scene, glRT);
+			glView.enableRepaintTrigger(false);
+			applyRenderHints(glView);
+			addTiles(scene, glView, new DeterministicTileImageProvider());
+			addItems(scene);
+			glView.setCenter(glView.getCenterX() + scenario.offsetXMeters, glView.getCenterY() + scenario.offsetYMeters);
+			glView.setScale(scenario.scale);
+			glRT.requestRepaint();
+			final BufferedImage actual = glRT.getResultImage();
+
+			if (actual == null)
+				fail("GLRenderTarget produced no image for scenario " + scenario.name);
+
+			ImageCompareUtil.assertEquals("gl_" + scenario.name, expected, actual, GL_TOLERANCE,
+					"GL output differs from software for " + scenario.name,
+					TEST_RESULT_DIR.resolve("gl").toString());
+		} finally {
+			glRT.dispose();
+		}
 	}
 
 	private void assertScenario(final Scenario scenario) throws IOException {
@@ -99,7 +157,7 @@ public class ManualGeoGraphicsTest {
 	private BufferedImage renderScenario(final Scenario scenario) {
 		final TestGraphicsView view = TestGraphicsView.create(VIEW_WIDTH, VIEW_HEIGHT);
 		applyRenderHints(view);
-		addTiles(view.getScene(), view);
+		addTiles(view.getScene(), view, new DeterministicTileImageProvider());
 		addItems(view.getScene());
 		view.setCenter(view.getCenterX() + scenario.offsetXMeters, view.getCenterY() + scenario.offsetYMeters);
 		view.setScale(scenario.scale);
@@ -114,7 +172,7 @@ public class ManualGeoGraphicsTest {
 
 	static void configureGeoView(final GraphicsView view, final double scale, final double offsetXMeters, final double offsetYMeters) {
 		applyRenderHints(view);
-		addTiles(view.getScene(), view);
+		addTiles(view.getScene(), view, new DeterministicTileImageProvider());
 		addItems(view.getScene());
 		view.setCenter(view.getCenterX() + offsetXMeters, view.getCenterY() + offsetYMeters);
 		view.setScale(scale);
@@ -155,8 +213,8 @@ public class ManualGeoGraphicsTest {
 		ImageIO.write(image, "png", TEST_RESULT_DIR.resolve(scenario.name + "_candidate.png").toFile());
 	}
 
-	static void addTiles(final GraphicsScene scene, final GraphicsView view) {
-		final TileHandler tileHandler = new TileHandler(new TileFactory(new DeterministicTileImageProvider(), 1));
+	static void addTiles(final GraphicsScene scene, final GraphicsView view, final ITileImageProvider th) {
+		final TileHandler tileHandler = new TileHandler(new TileFactory(th, 1));
 		tileHandler.waitForAllTiles(true);
 		view.addHandler(tileHandler);
 
