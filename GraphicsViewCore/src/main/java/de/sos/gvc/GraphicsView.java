@@ -86,6 +86,7 @@ public class GraphicsView {
 
 	private DoubleSummaryStatistics				mOverallStatitic = new DoubleSummaryStatistics();
 	private WindowStat							mWindowStatistic = new WindowStat(20);
+	private long								mFrameProfileStartNanos = -1L;
 
 	private final IRenderTarget					mRenderTarget;
 	/** Whether the GraphicsView shall trigger repaints, if a change in the scene or the view has been detected.
@@ -315,14 +316,12 @@ public class GraphicsView {
 			mRenderTarget.requestRepaint();
 	}
 	public void doPaint(final Graphics2D g2d) {
-		final long profile_time_start = System.currentTimeMillis();
+		final long profileTimeStart = System.nanoTime();
 
 		internalPaint(g2d);
 
-		final long profile_time_end = System.currentTimeMillis();
-		final double profile_time_sec = (profile_time_end - profile_time_start) / 1000.0;
-		mOverallStatitic.accept(profile_time_sec);
-		mWindowStatistic.accept(profile_time_sec);
+		final long profileTimeEnd = System.nanoTime();
+		acceptPaintDuration((profileTimeEnd - profileTimeStart) / 1_000_000_000.0);
 	}
 	private synchronized void internalPaint(final Graphics2D g2d) {
 		// Reset dirty state before painting so updates occurring during the current
@@ -433,6 +432,7 @@ public class GraphicsView {
 	 * @see #endFrame()
 	 */
 	public synchronized List<GraphicsItem> beginFrame() {
+		mFrameProfileStartNanos = System.nanoTime();
 		mScene.markClean();
 		markViewAsClean();
 		mRenderExceptions.clear();
@@ -459,6 +459,15 @@ public class GraphicsView {
 		notifyPostPaintListener(null);
 		if (mScene.isDirty() && mRequestCounter.get() == mUpdateCounter.get())
 			markViewAsDirty();
+		if (mFrameProfileStartNanos >= 0L) {
+			acceptPaintDuration((System.nanoTime() - mFrameProfileStartNanos) / 1_000_000_000.0);
+			mFrameProfileStartNanos = -1L;
+		}
+	}
+
+	private void acceptPaintDuration(final double durationSeconds) {
+		mOverallStatitic.accept(durationSeconds);
+		mWindowStatistic.accept(durationSeconds);
 	}
 
 	/**

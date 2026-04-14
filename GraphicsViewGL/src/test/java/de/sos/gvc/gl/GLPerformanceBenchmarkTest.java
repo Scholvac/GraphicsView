@@ -46,7 +46,7 @@ public class GLPerformanceBenchmarkTest {
 	private static final int VIEW_HEIGHT = 800;
 
 	/** Number of items in the scene. */
-	private static final int ITEM_COUNT = 3000;
+	private static final int ITEM_COUNT = 30000;
 	/** Number of frames to render for the benchmark. */
 	private static final int FRAME_COUNT = 500;
 	/** Number of warm-up frames (not counted). */

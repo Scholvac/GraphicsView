@@ -1,6 +1,7 @@
 package de.sos.gvc.gl;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import java.awt.Color;
@@ -188,6 +189,26 @@ public class GLRenderTargetTest {
 				"gl_vs_software_scaled", expected, actual, MAX_DIFF_PERCENT,
 				"GL output with scale differs from software render",
 				TEST_RESULT_DIR.toString());
+	}
+
+	@Test
+	void glRenderTarget_updatesPaintDurationStatistics() {
+		assumeTrue(mGLTarget != null, "OpenGL context not available â€” skipping");
+
+		final GraphicsScene scene = createTestScene();
+		final GraphicsView view = new GraphicsView(scene, mGLTarget);
+
+		mGLTarget.requestRepaint();
+		mGLTarget.requestRepaint();
+
+		assertTrue(view.getPaintDurationStatistic().getCount() >= 2,
+				"GL render target should contribute paint duration samples");
+		assertTrue(view.getPaintDurationStatistic().getAverage() > 0.0,
+				"GL render target should record positive overall paint durations");
+		assertTrue(view.getMovingWindowDurationStatistic().count() >= 2,
+				"GL render target should contribute moving-window duration samples");
+		assertTrue(view.getMovingWindowDurationStatistic().avg() > 0.0,
+				"GL render target should record positive moving-window paint durations");
 	}
 
 	// -----------------------------------------------------------------------

@@ -132,12 +132,14 @@ final class GLSpriteInstancingPipeline {
 		mViewportUniform = gl.glGetUniformLocation(mProgram, "uViewport");
 		mTextureUniform = gl.glGetUniformLocation(mProgram, "uTexture");
 
-		final IntBuffer ids = GLBuffers.newDirectIntBuffer(3);
-		gl.glGenVertexArrays(1, ids);
-		mVertexArrayObject = ids.get(0);
-		gl.glGenBuffers(2, (IntBuffer) ids.position(1));
-		mCornerBufferObject = ids.get(1);
-		mInstanceBufferObject = ids.get(2);
+		final IntBuffer vertexArrayIds = GLBuffers.newDirectIntBuffer(1);
+		gl.glGenVertexArrays(1, vertexArrayIds);
+		mVertexArrayObject = vertexArrayIds.get(0);
+
+		final IntBuffer bufferIds = GLBuffers.newDirectIntBuffer(2);
+		gl.glGenBuffers(2, bufferIds);
+		mCornerBufferObject = bufferIds.get(0);
+		mInstanceBufferObject = bufferIds.get(1);
 
 		gl.glBindVertexArray(mVertexArrayObject);
 
