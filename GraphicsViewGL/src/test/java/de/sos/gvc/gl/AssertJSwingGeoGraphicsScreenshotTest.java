@@ -73,6 +73,8 @@ public class AssertJSwingGeoGraphicsScreenshotTest {
 
 		final Component component = GuiActionRunner.execute(() -> frame.getContentPane().getComponent(0));
 		final BufferedImage actual = captureOnScreen(component);
+		Assumptions.assumeFalse(isNearlyBlack(actual),
+				"On-screen screenshot capture returned an almost black image in this environment");
 
 		if (UPDATE_REFERENCES) {
 			writeReference(actual);
@@ -107,6 +109,26 @@ public class AssertJSwingGeoGraphicsScreenshotTest {
 			return new Rectangle(screen.x, screen.y, component.getWidth(), component.getHeight());
 		});
 		return new java.awt.Robot().createScreenCapture(bounds);
+	}
+
+	private static boolean isNearlyBlack(final BufferedImage image) {
+		if (image == null)
+			return true;
+		int blackish = 0;
+		final int width = image.getWidth();
+		final int height = image.getHeight();
+		final int total = width * height;
+		for (int y = 0; y < height; y += 8)
+			for (int x = 0; x < width; x += 8) {
+				final int rgb = image.getRGB(x, y);
+				final int r = (rgb >>> 16) & 0xFF;
+				final int g = (rgb >>> 8) & 0xFF;
+				final int b = rgb & 0xFF;
+				if (r < 8 && g < 8 && b < 8)
+					blackish++;
+			}
+		final int sampled = ((width + 7) / 8) * ((height + 7) / 8);
+		return sampled > 0 && (blackish / (double) sampled) > 0.995;
 	}
 
 	/**

@@ -418,6 +418,50 @@ public class GraphicsView {
 		mRTHeight.set(mRenderTarget.getHeight());
 	}
 	/**
+	 * Begins a render frame for use by alternative (non-Java2D) render backends.
+	 * <p>
+	 * Resets dirty state, validates the view, notifies pre-paint listeners and
+	 * returns the sorted list of visible items. The caller <b>must</b> invoke
+	 * {@link #endFrame()} after rendering is complete.
+	 * </p>
+	 * <p><b>Note:</b> Pre-paint listeners receive {@code null} as their
+	 * {@link Graphics2D} argument.  Listeners that only use the
+	 * {@link IDrawContext} (such as the tile handler) work correctly;
+	 * listeners that draw on the Graphics2D must guard against {@code null}.</p>
+	 *
+	 * @return sorted list of visible items to render
+	 * @see #endFrame()
+	 */
+	public synchronized List<GraphicsItem> beginFrame() {
+		mScene.markClean();
+		markViewAsClean();
+		mRenderExceptions.clear();
+		validateView();
+		notifyViewTransformListener();
+		notifyPrePaintListener(null);
+
+		final Rectangle2D rect = getVisibleSceneRect();
+		final List<GraphicsItem> itemList = mScene.getItems(rect, mItemFilter);
+		itemList.sort(Comparator.comparing(GraphicsItem::getZOrder));
+		return itemList;
+	}
+
+	/**
+	 * Completes a render frame started by {@link #beginFrame()}.
+	 * <p>
+	 * Notifies post-paint listeners and schedules a follow-up repaint if the
+	 * scene became dirty during rendering.
+	 * </p>
+	 *
+	 * @see #beginFrame()
+	 */
+	public synchronized void endFrame() {
+		notifyPostPaintListener(null);
+		if (mScene.isDirty() && mRequestCounter.get() == mUpdateCounter.get())
+			markViewAsDirty();
+	}
+
+	/**
 	 * Requests the GraphicsView to repaint it's content.
 	 *
 	 * The request is forwarded to the underlying RenderTarget.

@@ -1,5 +1,5 @@
-package de.sos.gv.geo.examples;
 
+package de.sos.gvc.gl.example;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.geom.Path2D;
@@ -20,6 +20,7 @@ import de.sos.gv.geo.tiles.TileHandler;
 import de.sos.gvc.GraphicsItem;
 import de.sos.gvc.GraphicsScene;
 import de.sos.gvc.GraphicsView;
+import de.sos.gvc.gl.GLRenderTarget;
 import de.sos.gvc.handler.DefaultViewDragHandler;
 import de.sos.gvc.handler.MouseDelegateHandler;
 import de.sos.gvc.storage.ListStorage;
@@ -30,7 +31,7 @@ import de.sos.gvc.styles.DrawableStyle;
  * @author scholvac
  *
  */
-public class MovingItemsExampleWithOSMBackground {
+public class MovingExampleGL {
 
 	public static Random mRandom = new Random(42);
 
@@ -113,7 +114,7 @@ public class MovingItemsExampleWithOSMBackground {
 		// Advanced: Try out different Storage strategies (QuadTree or List Storage)
 		// GraphicsScene scene = new GraphicsScene(new QuadTreeStorage());
 		final GraphicsScene scene = new GraphicsScene(new ListStorage());
-		final GraphicsView view = new GraphicsView(scene);
+		final GraphicsView view = new GraphicsView(scene, new GLRenderTarget(800, 800));
 		view.setMaximumFPS(60);
 
 		// Standard Handler
@@ -173,7 +174,7 @@ public class MovingItemsExampleWithOSMBackground {
 		t.setDaemon(true);
 		t.start();
 
-		final JFrame frame = new JFrame("Moving Items with OSM Background");
+		final JFrame frame = new JFrame("Moving Example GL");
 		frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
 		frame.setSize(800, 800);
 		frame.setLayout(new BorderLayout());

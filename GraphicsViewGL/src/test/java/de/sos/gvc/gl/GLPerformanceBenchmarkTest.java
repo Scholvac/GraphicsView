@@ -48,9 +48,9 @@ public class GLPerformanceBenchmarkTest {
 	/** Number of items in the scene. */
 	private static final int ITEM_COUNT = 3000;
 	/** Number of frames to render for the benchmark. */
-	private static final int FRAME_COUNT = 50;
+	private static final int FRAME_COUNT = 500;
 	/** Number of warm-up frames (not counted). */
-	private static final int WARMUP_FRAMES = 5;
+	private static final int WARMUP_FRAMES = 50;
 
 	/** Random seed for reproducibility. */
 	private static final long SEED = 42L;
@@ -222,11 +222,11 @@ public class GLPerformanceBenchmarkTest {
 
 		// complex shapes with many vertices — expensive to rasterize in Java2D
 		final String[] shapes = {
-			"POLYGON ((0 50, 5 40, 15 30, 10 15, 25 10, 50 0, 25 -10, 10 -15, 15 -30, 5 -40, 0 -50, -5 -40, -15 -30, -10 -15, -25 -10, -50 0, -25 10, -10 15, -15 30, -5 40, 0 50))",
-			"POLYGON ((-20 -20, -10 -25, 0 -20, 10 -25, 20 -20, 25 -10, 20 0, 25 10, 20 20, 10 25, 0 20, -10 25, -20 20, -25 10, -20 0, -25 -10, -20 -20))",
-			"POLYGON ((0 30, 8 25, 14 18, 18 10, 20 0, 18 -10, 14 -18, 8 -25, 0 -30, -8 -25, -14 -18, -18 -10, -20 0, -18 10, -14 18, -8 25, 0 30))",
-			"POLYGON ((-25 0, -20 -15, -10 -22, 0 -25, 10 -22, 20 -15, 25 0, 20 15, 10 22, 0 25, -10 22, -20 15, -25 0))",
-			"POLYGON ((-15 -30, 0 -35, 15 -30, 25 -18, 30 0, 25 18, 15 30, 0 35, -15 30, -25 18, -30 0, -25 -18, -15 -30))"
+				"POLYGON ((0 50, 5 40, 15 30, 10 15, 25 10, 50 0, 25 -10, 10 -15, 15 -30, 5 -40, 0 -50, -5 -40, -15 -30, -10 -15, -25 -10, -50 0, -25 10, -10 15, -15 30, -5 40, 0 50))",
+				"POLYGON ((-20 -20, -10 -25, 0 -20, 10 -25, 20 -20, 25 -10, 20 0, 25 10, 20 20, 10 25, 0 20, -10 25, -20 20, -25 10, -20 0, -25 -10, -20 -20))",
+				"POLYGON ((0 30, 8 25, 14 18, 18 10, 20 0, 18 -10, 14 -18, 8 -25, 0 -30, -8 -25, -14 -18, -18 -10, -20 0, -18 10, -14 18, -8 25, 0 30))",
+				"POLYGON ((-25 0, -20 -15, -10 -22, 0 -25, 10 -22, 20 -15, 25 0, 20 15, 10 22, 0 25, -10 22, -20 15, -25 0))",
+				"POLYGON ((-15 -30, 0 -35, 15 -30, 25 -18, 30 0, 25 18, 15 30, 0 35, -15 30, -25 18, -30 0, -25 -18, -15 -30))"
 		};
 
 		final Point2D gpStart = new Point2D.Float(-20, -20);

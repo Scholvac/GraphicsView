@@ -4,6 +4,7 @@ import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
+import java.awt.EventQueue;
 import java.awt.Graphics2D;
 import java.awt.Rectangle;
 import java.awt.RenderingHints;
@@ -15,17 +16,20 @@ import java.awt.geom.AffineTransform;
 import java.awt.geom.NoninvertibleTransformException;
 import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;
+import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeListener;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.nio.FloatBuffer;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.slf4j.Logger;
 
 import com.jogamp.opengl.GL;
-import com.jogamp.opengl.GL2;
 import com.jogamp.opengl.GLAutoDrawable;
 import com.jogamp.opengl.GLCapabilities;
 import com.jogamp.opengl.GLContext;
@@ -33,13 +37,17 @@ import com.jogamp.opengl.GLDrawableFactory;
 import com.jogamp.opengl.GLEventListener;
 import com.jogamp.opengl.GLOffscreenAutoDrawable;
 import com.jogamp.opengl.GLProfile;
-import com.jogamp.opengl.awt.GLJPanel;
+import com.jogamp.opengl.GL3;
+import com.jogamp.opengl.awt.GLCanvas;
+import com.jogamp.opengl.util.GLBuffers;
 import com.jogamp.opengl.util.awt.AWTGLReadBufferUtil;
 import com.jogamp.opengl.util.texture.Texture;
 import com.jogamp.opengl.util.texture.TextureCoords;
+import com.jogamp.opengl.util.texture.TextureData;
 import com.jogamp.opengl.util.texture.awt.AWTTextureIO;
 
 import de.sos.gvc.GraphicsItem;
+import de.sos.gvc.GraphicsScene;
 import de.sos.gvc.GraphicsView;
 import de.sos.gvc.IDrawContext;
 import de.sos.gvc.IDrawable;
@@ -57,9 +65,12 @@ import de.sos.gvc.styles.DrawableStyle;
  * applying the item's world transform and the view transform in GL.</p>
  *
  * <h3>Headful mode (default)</h3>
- * <p>Provides a {@link GLJPanel} Swing component for on-screen rendering.
- * The component can be embedded in any Swing layout.  Mouse events, resizing
- * and all standard GraphicsView interactions work unchanged.</p>
+ * <p>Provides a {@link GLCanvas} AWT component for on-screen rendering.
+ * The canvas renders directly into the native window framebuffer without
+ * readback, providing much better throughput than GLJPanel.  It can be
+ * embedded in Swing layouts via {@code frame.add(view.getComponent())}.
+ * Mouse events, resizing and all standard GraphicsView interactions work
+ * unchanged.</p>
  * <pre>{@code
  * GLRenderTarget rt = new GLRenderTarget(800, 600);
  * GraphicsView view = new GraphicsView(scene, rt);
@@ -85,6 +96,12 @@ public class GLRenderTarget implements IRenderTarget {
 	private static final int SPRITE_PADDING = 4;
 	/** Maximum sprite texture dimension (pixels). */
 	private static final int MAX_SPRITE_SIZE = 2048;
+	/** Default atlas page size in pixels. */
+	private static final int DEFAULT_ATLAS_SIZE = 2048;
+	/** Transparent guard band around atlas entries to reduce linear-filter bleeding. */
+	private static final int ATLAS_GAP = 1;
+	/** Custom property fired by {@link GraphicsItem#markDirty()}. */
+	private static final String MANUAL_REPAINT_PROPERTY = "ManualRepaint";
 
 	// ---- core state ----
 	private GraphicsView				mView;
@@ -95,16 +112,25 @@ public class GLRenderTarget implements IRenderTarget {
 
 	// ---- GL resources ----
 	private final GLProfile				mProfile;
-	private GLJPanel					mPanel;       // headful
+	private GLCanvas					mCanvas;      // headful
 	private GLOffscreenAutoDrawable		mOffscreen;   // offscreen
+	private final AtomicBoolean			mHeadfulDisplayQueued = new AtomicBoolean(false);
+	private final AtomicBoolean			mHeadfulDisplayRequested = new AtomicBoolean(false);
+	private final GLSpriteInstancingPipeline mPipeline = new GLSpriteInstancingPipeline();
 
 	// ---- sprite cache ----
 	private final Map<GraphicsItem, SpriteEntry> mSpriteCache = new HashMap<>();
+	private final List<AtlasPage>		mAtlasPages = new ArrayList<>();
 	/** Textures pending destruction (from invalidation between frames). */
 	private final List<Texture>			mStaleTextures = new ArrayList<>();
-	/** View scale at which sprites were rasterized. */
-	private double						mCachedScaleX = Double.NaN;
-	private double						mCachedScaleY = Double.NaN;
+	private int							mAtlasWidth = DEFAULT_ATLAS_SIZE;
+	private int							mAtlasHeight = DEFAULT_ATLAS_SIZE;
+
+	// ---- event-based sprite invalidation ----
+	/** Listener that invalidates a single sprite when its drawable, style or shape changes. */
+	private final PropertyChangeListener mItemSpriteListener = this::onItemPropertyChanged;
+	/** Listener that handles items being added to or removed from the scene. */
+	private final PropertyChangeListener mSceneItemListener  = this::onSceneItemListChanged;
 
 	// ---- result image (offscreen readback) ----
 	private BufferedImage				mResultImage;
@@ -113,14 +139,158 @@ public class GLRenderTarget implements IRenderTarget {
 	//  Inner types
 	// -----------------------------------------------------------------------
 
-	/** Cached sprite: GL texture + quad bounds in item-local coordinates. */
+	private static final class AtlasSlot {
+		final AtlasPage	page;
+		final int		outerX;
+		final int		outerY;
+		final int		outerWidth;
+		final int		outerHeight;
+		final int		x;
+		final int		y;
+		final int		width;
+		final int		height;
+
+		AtlasSlot(final AtlasPage page, final int outerX, final int outerY,
+				final int outerWidth, final int outerHeight,
+				final int x, final int y, final int width, final int height) {
+			this.page = page;
+			this.outerX = outerX;
+			this.outerY = outerY;
+			this.outerWidth = outerWidth;
+			this.outerHeight = outerHeight;
+			this.x = x;
+			this.y = y;
+			this.width = width;
+			this.height = height;
+		}
+	}
+
+	private static final class AtlasPage {
+		final Texture texture;
+		final int width;
+		final int height;
+		final List<AtlasSlot> freeSlots = new ArrayList<>();
+		int cursorX;
+		int cursorY;
+		int rowHeight;
+
+		AtlasPage(final Texture texture, final int width, final int height) {
+			this.texture = texture;
+			this.width = width;
+			this.height = height;
+		}
+
+		AtlasSlot allocate(final int spriteWidth, final int spriteHeight) {
+			final int requiredWidth = spriteWidth + 2 * ATLAS_GAP;
+			final int requiredHeight = spriteHeight + 2 * ATLAS_GAP;
+			if (requiredWidth > width || requiredHeight > height)
+				return null;
+
+			for (int i = 0; i < freeSlots.size(); i++) {
+				final AtlasSlot slot = freeSlots.get(i);
+				if (slot.outerWidth >= requiredWidth && slot.outerHeight >= requiredHeight) {
+					freeSlots.remove(i);
+					return new AtlasSlot(this, slot.outerX, slot.outerY, slot.outerWidth, slot.outerHeight,
+							slot.outerX + ATLAS_GAP, slot.outerY + ATLAS_GAP, spriteWidth, spriteHeight);
+				}
+			}
+
+			if (cursorX + requiredWidth > width) {
+				cursorX = 0;
+				cursorY += rowHeight;
+				rowHeight = 0;
+			}
+			if (cursorY + requiredHeight > height)
+				return null;
+
+			final int outerX = cursorX;
+			final int outerY = cursorY;
+			cursorX += requiredWidth;
+			rowHeight = Math.max(rowHeight, requiredHeight);
+			return new AtlasSlot(this, outerX, outerY, requiredWidth, requiredHeight,
+					outerX + ATLAS_GAP, outerY + ATLAS_GAP, spriteWidth, spriteHeight);
+		}
+
+		void release(final AtlasSlot slot) {
+			freeSlots.add(slot);
+		}
+	}
+
+	/** Cached sprite: texture region + quad bounds in item-local coordinates. */
 	private static final class SpriteEntry {
 		final Texture				texture;
+		final TextureCoords			texCoords;
 		final Rectangle2D.Double	localBounds;
+		final AtlasSlot				atlasSlot;
 
-		SpriteEntry(final Texture texture, final Rectangle2D.Double localBounds) {
+		SpriteEntry(final Texture texture, final TextureCoords texCoords,
+				final Rectangle2D.Double localBounds, final AtlasSlot atlasSlot) {
 			this.texture = texture;
+			this.texCoords = texCoords;
 			this.localBounds = localBounds;
+			this.atlasSlot = atlasSlot;
+		}
+
+		boolean isAtlasBacked() {
+			return atlasSlot != null;
+		}
+	}
+
+	private static final class InstanceBatch {
+		private Texture texture;
+		private FloatBuffer vertexBuffer = GLBuffers.newDirectFloatBuffer(32);
+		private int instanceCount;
+
+		void clear() {
+			texture = null;
+			vertexBuffer.clear();
+			instanceCount = 0;
+		}
+
+		boolean isEmpty() {
+			return instanceCount == 0;
+		}
+
+		boolean accepts(final Texture nextTexture) {
+			return isEmpty() || texture == nextTexture;
+		}
+
+		Texture getTexture() {
+			return texture;
+		}
+
+		int getInstanceCount() {
+			return instanceCount;
+		}
+
+		FloatBuffer prepareForDraw() {
+			vertexBuffer.flip();
+			return vertexBuffer;
+		}
+
+		void appendQuad(final Texture texture, final double[] pts, final TextureCoords texCoords) {
+			if (this.texture == null)
+				this.texture = texture;
+			ensureCapacity(instanceCount + 1);
+			vertexBuffer.put((float) pts[0]).put((float) pts[1]);
+			vertexBuffer.put((float) (pts[2] - pts[0])).put((float) (pts[3] - pts[1]));
+			vertexBuffer.put((float) (pts[6] - pts[0])).put((float) (pts[7] - pts[1]));
+			vertexBuffer.put(texCoords.left()).put(texCoords.top())
+					.put(texCoords.right()).put(texCoords.bottom());
+			instanceCount++;
+		}
+
+		private void ensureCapacity(final int requiredInstanceCount) {
+			final int requiredFloats = requiredInstanceCount * 10;
+			if (vertexBuffer.capacity() < requiredFloats)
+				vertexBuffer = grow(vertexBuffer, requiredFloats);
+		}
+
+		private FloatBuffer grow(final FloatBuffer oldBuffer, final int requiredFloats) {
+			final FloatBuffer grown = GLBuffers.newDirectFloatBuffer(Math.max(requiredFloats, oldBuffer.capacity() * 2));
+			oldBuffer.flip();
+			grown.put(oldBuffer);
+			return grown;
 		}
 	}
 
@@ -129,43 +299,75 @@ public class GLRenderTarget implements IRenderTarget {
 	// -----------------------------------------------------------------------
 
 	/**
-	 * Creates a <b>headful</b> GL render target backed by a {@link GLJPanel}.
-	 * The panel is available via {@link #getComponent()} and can be embedded
-	 * in any Swing container.
+	 * Creates a <b>headful</b> GL render target backed by a {@link GLCanvas}.
+	 * The canvas is available via {@link #getComponent()} and can be embedded
+	 * in any Swing/AWT container.  Unlike GLJPanel, GLCanvas renders directly
+	 * into the native framebuffer without a per-frame {@code glReadPixels}
+	 * readback, resulting in significantly lower CPU usage.
+	 *
+	 * <p>The {@code GLCanvas} is a heavyweight AWT component.  Lightweight
+	 * Swing popups/menus may not overlap it correctly on all platforms; for
+	 * map-style applications this is usually not a problem.</p>
 	 *
 	 * @param width  initial preferred width
 	 * @param height initial preferred height
 	 */
 	public GLRenderTarget(final int width, final int height) {
+		this(width, height, DEFAULT_ATLAS_SIZE, DEFAULT_ATLAS_SIZE);
+	}
+
+	public GLRenderTarget(final int width, final int height, final int atlasSize) {
+		this(width, height, atlasSize, atlasSize);
+	}
+
+	public GLRenderTarget(final int width, final int height, final int atlasWidth, final int atlasHeight) {
 		mWidth  = Math.max(1, width);
 		mHeight = Math.max(1, height);
-		mProfile = GLProfile.get(GLProfile.GL2);
+		mAtlasWidth = Math.max(0, atlasWidth);
+		mAtlasHeight = Math.max(0, atlasHeight);
+		mProfile = selectProfile();
 
 		final GLCapabilities caps = new GLCapabilities(mProfile);
 		caps.setAlphaBits(8);
 		caps.setHardwareAccelerated(true);
+		caps.setDoubleBuffered(true);
 
-		mPanel = new GLJPanel(caps);
-		mPanel.setPreferredSize(new Dimension(mWidth, mHeight));
-		mPanel.addGLEventListener(new GLRenderListener());
-		mPanel.addComponentListener(new ComponentAdapter() {
+		mCanvas = createGLCanvas(caps);
+		mCanvas.addGLEventListener(new GLRenderListener());
+		mCanvas.addComponentListener(new ComponentAdapter() {
 			@Override
 			public void componentResized(final ComponentEvent e) {
-				mWidth  = Math.max(1, mPanel.getSurfaceWidth());
-				mHeight = Math.max(1, mPanel.getSurfaceHeight());
+				mWidth  = Math.max(1, mCanvas.getSurfaceWidth());
+				mHeight = Math.max(1, mCanvas.getSurfaceHeight());
 				mRectangle = null;
-				markAllSpritesStale();
 			}
 		});
+	}
+
+	/**
+	 * Creates the GLCanvas.  GLCanvas is a heavyweight AWT component that
+	 * renders directly into the native window surface — no readback overhead.
+	 */
+	private GLCanvas createGLCanvas(final GLCapabilities caps) {
+		final GLCanvas canvas = new GLCanvas(caps);
+		canvas.setPreferredSize(new Dimension(mWidth, mHeight));
+		return canvas;
 	}
 
 	/**
 	 * Private constructor for offscreen mode.
 	 */
 	private GLRenderTarget(final int width, final int height, @SuppressWarnings("unused") final boolean offscreen) {
+		this(width, height, DEFAULT_ATLAS_SIZE, DEFAULT_ATLAS_SIZE, true);
+	}
+
+	private GLRenderTarget(final int width, final int height, final int atlasWidth, final int atlasHeight,
+			@SuppressWarnings("unused") final boolean offscreen) {
 		mWidth  = Math.max(1, width);
 		mHeight = Math.max(1, height);
-		mProfile = GLProfile.get(GLProfile.GL2);
+		mAtlasWidth = Math.max(0, atlasWidth);
+		mAtlasHeight = Math.max(0, atlasHeight);
+		mProfile = selectProfile();
 
 		final GLCapabilities caps = new GLCapabilities(mProfile);
 		caps.setOnscreen(false);
@@ -177,6 +379,14 @@ public class GLRenderTarget implements IRenderTarget {
 		mOffscreen = factory.createOffscreenAutoDrawable(
 				factory.getDefaultDevice(), caps, null, mWidth, mHeight);
 		mOffscreen.display(); // force context creation
+	}
+
+	private static GLProfile selectProfile() {
+		try {
+			return GLProfile.getMaxProgrammableCore(true);
+		} catch (final Exception e) {
+			return GLProfile.getMaxProgrammable(true);
+		}
 	}
 
 	/**
@@ -191,25 +401,72 @@ public class GLRenderTarget implements IRenderTarget {
 		return new GLRenderTarget(width, height, true);
 	}
 
+	public static GLRenderTarget createOffscreen(final int width, final int height, final int atlasSize) {
+		return new GLRenderTarget(width, height, atlasSize, atlasSize, true);
+	}
+
+	public static GLRenderTarget createOffscreen(final int width, final int height,
+			final int atlasWidth, final int atlasHeight) {
+		return new GLRenderTarget(width, height, atlasWidth, atlasHeight, true);
+	}
+
 	// -----------------------------------------------------------------------
 	//  IRenderTarget
 	// -----------------------------------------------------------------------
 
 	@Override
 	public void setGraphicsView(final GraphicsView view) {
+		// unregister from previous scene
+		if (mView != null) {
+			final GraphicsScene oldScene = mView.getScene();
+			if (oldScene != null) {
+				unregisterSceneListeners(oldScene);
+			}
+		}
 		mView = view;
+		// register on new scene
+		if (mView != null) {
+			final GraphicsScene newScene = mView.getScene();
+			if (newScene != null) {
+				registerSceneListeners(newScene);
+			}
+		}
 	}
 
 	@Override
 	public synchronized void requestRepaint() {
 		if (mView == null)
 			return;
-		if (mPanel != null) {
-			// headful: trigger GLJPanel display cycle
-			mPanel.display();
+		if (mCanvas != null) {
+			queueHeadfulDisplay();
 		} else if (mOffscreen != null) {
 			// offscreen: render directly
 			renderOffscreen();
+		}
+	}
+
+	private void queueHeadfulDisplay() {
+		mHeadfulDisplayRequested.set(true);
+		if (!mHeadfulDisplayQueued.compareAndSet(false, true))
+			return;
+		EventQueue.invokeLater(this::drainHeadfulDisplayQueue);
+	}
+
+	private void drainHeadfulDisplayQueue() {
+		try {
+			mHeadfulDisplayRequested.set(false);
+			final GLCanvas canvas = mCanvas;
+			if (canvas == null)
+				return;
+			if (!canvas.isDisplayable() || !canvas.isShowing()) {
+				canvas.repaint();
+				return;
+			}
+			canvas.display();
+		} finally {
+			mHeadfulDisplayQueued.set(false);
+			if (mHeadfulDisplayRequested.get())
+				queueHeadfulDisplay();
 		}
 	}
 
@@ -222,8 +479,8 @@ public class GLRenderTarget implements IRenderTarget {
 
 	@Override
 	public int getWidth() {
-		if (mPanel != null) {
-			final int sw = mPanel.getSurfaceWidth();
+		if (mCanvas != null) {
+			final int sw = mCanvas.getSurfaceWidth();
 			if (sw > 0) return sw;
 		}
 		return mWidth;
@@ -231,8 +488,8 @@ public class GLRenderTarget implements IRenderTarget {
 
 	@Override
 	public int getHeight() {
-		if (mPanel != null) {
-			final int sh = mPanel.getSurfaceHeight();
+		if (mCanvas != null) {
+			final int sh = mCanvas.getSurfaceHeight();
 			if (sh > 0) return sh;
 		}
 		return mHeight;
@@ -240,7 +497,7 @@ public class GLRenderTarget implements IRenderTarget {
 
 	@Override
 	public Component getComponent() {
-		return mPanel;
+		return mCanvas;
 	}
 
 	// -----------------------------------------------------------------------
@@ -257,10 +514,37 @@ public class GLRenderTarget implements IRenderTarget {
 		return mResultImage;
 	}
 
+	public void setAtlasPageSize(final int size) {
+		setAtlasPageSize(size, size);
+	}
+
+	public synchronized void setAtlasPageSize(final int width, final int height) {
+		final int newWidth = Math.max(0, width);
+		final int newHeight = Math.max(0, height);
+		if (mAtlasWidth == newWidth && mAtlasHeight == newHeight)
+			return;
+		mAtlasWidth = newWidth;
+		mAtlasHeight = newHeight;
+		invalidateAllSprites();
+		requestRepaint();
+	}
+
+	public int getAtlasPageWidth() {
+		return mAtlasWidth;
+	}
+
+	public int getAtlasPageHeight() {
+		return mAtlasHeight;
+	}
+
 	/** Invalidates the sprite cache for a specific item. */
 	public void invalidateSprite(final GraphicsItem item) {
 		final SpriteEntry removed = mSpriteCache.remove(item);
-		if (removed != null)
+		if (removed == null)
+			return;
+		if (removed.isAtlasBacked())
+			removed.atlasSlot.page.release(removed.atlasSlot);
+		else
 			mStaleTextures.add(removed.texture);
 	}
 
@@ -271,12 +555,20 @@ public class GLRenderTarget implements IRenderTarget {
 
 	/** Releases all GL resources.  Call when this target is no longer needed. */
 	public void dispose() {
+		mHeadfulDisplayRequested.set(false);
+		mHeadfulDisplayQueued.set(false);
+		// unregister listeners
+		if (mView != null) {
+			final GraphicsScene scene = mView.getScene();
+			if (scene != null)
+				unregisterSceneListeners(scene);
+		}
 		// destroy textures if possible
 		if (mOffscreen != null) {
 			final GLContext ctx = mOffscreen.getContext();
 			if (ctx.makeCurrent() != GLContext.CONTEXT_NOT_CURRENT) {
 				try {
-					final GL2 gl = ctx.getGL().getGL2();
+					final GL3 gl = ctx.getGL().getGL3();
 					destroyAllTextures(gl);
 				} finally {
 					ctx.release();
@@ -287,9 +579,9 @@ public class GLRenderTarget implements IRenderTarget {
 		}
 		mSpriteCache.clear();
 		mStaleTextures.clear();
-		if (mPanel != null) {
-			mPanel.destroy();
-			mPanel = null;
+		if (mCanvas != null) {
+			mCanvas.destroy();
+			mCanvas = null;
 		}
 	}
 
@@ -319,7 +611,7 @@ public class GLRenderTarget implements IRenderTarget {
 		try {
 			final GL gl0 = ctx.getGL();
 			if (gl0 == null) return;
-			final GL2 gl = gl0.getGL2();
+			final GL3 gl = gl0.getGL3();
 
 			final List<GraphicsItem> items = mView.beginFrame();
 			try {
@@ -347,7 +639,7 @@ public class GLRenderTarget implements IRenderTarget {
 
 		@Override
 		public void dispose(final GLAutoDrawable drawable) {
-			final GL2 gl = drawable.getGL().getGL2();
+			final GL3 gl = drawable.getGL().getGL3();
 			destroyAllTextures(gl);
 		}
 
@@ -356,13 +648,12 @@ public class GLRenderTarget implements IRenderTarget {
 			mWidth  = Math.max(1, w);
 			mHeight = Math.max(1, h);
 			mRectangle = null;
-			markAllSpritesStale();
 		}
 
 		@Override
 		public void display(final GLAutoDrawable drawable) {
 			if (mView == null) return;
-			final GL2 gl = drawable.getGL().getGL2();
+			final GL3 gl = drawable.getGL().getGL3();
 
 			final List<GraphicsItem> items = mView.beginFrame();
 			try {
@@ -377,21 +668,17 @@ public class GLRenderTarget implements IRenderTarget {
 	//  Shared GL rendering
 	// -----------------------------------------------------------------------
 
-	private void doRender(final GL2 gl, final List<GraphicsItem> items) {
+	/** Reusable buffer for transforming quad vertices on the CPU. */
+	private final double[] mQuadPts = new double[8];
+	private final InstanceBatch mSpriteBatch = new InstanceBatch();
+
+	private void doRender(final GL3 gl, final List<GraphicsItem> items) {
 		final int w = getWidth(), h = getHeight();
 		if (w <= 1 || h <= 1) return;
+		mSpriteBatch.clear();
 
 		// -- cleanup stale textures --
 		cleanupStaleTextures(gl);
-
-		// -- invalidate sprites if view scale changed --
-		final double sx = mView.getScaleX(), sy = mView.getScaleY();
-		if (sx != mCachedScaleX || sy != mCachedScaleY) {
-			markAllSpritesStale();
-			cleanupStaleTextures(gl);
-			mCachedScaleX = sx;
-			mCachedScaleY = sy;
-		}
 
 		// -- clear --
 		final float cr = mClearColor.getRed()   / 255f;
@@ -400,62 +687,55 @@ public class GLRenderTarget implements IRenderTarget {
 		gl.glClearColor(cr, cg, cb, 1f);
 		gl.glClear(GL.GL_COLOR_BUFFER_BIT);
 
-		// -- projection: Y-down like Java2D --
-		gl.glMatrixMode(GL2.GL_PROJECTION);
-		gl.glLoadIdentity();
-		gl.glOrtho(0, w, h, 0, -1, 1);
+		// -- precompute view transform (applied to every quad on CPU) --
+		final AffineTransform viewTx = computeViewTransform();
 
-		// -- modelview: apply view transform --
-		gl.glMatrixMode(GL2.GL_MODELVIEW);
-		gl.glLoadIdentity();
-		final AffineTransform viewTransform = computeViewTransform();
-		if (viewTransform != null)
-			applyTransform(gl, viewTransform);
-
-		// -- blending for alpha sprites --
-		gl.glEnable(GL.GL_TEXTURE_2D);
+		// -- set GL state once for the entire frame --
+		gl.glViewport(0, 0, w, h);
 		gl.glEnable(GL.GL_BLEND);
 		gl.glBlendFunc(GL.GL_SRC_ALPHA, GL.GL_ONE_MINUS_SRC_ALPHA);
 
 		// -- draw items --
 		for (final GraphicsItem item : items)
 			if (item.isVisible())
-				renderItem(gl, item);
+				renderItem(gl, item, viewTx, mSpriteBatch);
+		flushBatch(gl, mSpriteBatch, w, h);
 
 		// -- cleanup --
 		gl.glDisable(GL.GL_BLEND);
-		gl.glDisable(GL.GL_TEXTURE_2D);
-		gl.glFlush();
 	}
 
 	/**
 	 * Renders a single item (and its children) as a textured sprite quad.
+	 * <p>
+	 * All vertex positions are computed on the CPU by concatenating the
+	 * view and world transforms.  This avoids per-item GL matrix stack
+	 * operations ({@code glPushMatrix/glPopMatrix/glMultMatrixd}) that
+	 * cause expensive driver round-trips.
+	 * </p>
 	 */
-	private void renderItem(final GL2 gl, final GraphicsItem item) {
+	private void renderItem(final GL3 gl, final GraphicsItem item,
+			final AffineTransform viewTx, final InstanceBatch batch) {
 		final SpriteEntry sprite = getOrCreateSprite(gl, item);
 		if (sprite != null) {
-			gl.glPushMatrix();
-			applyTransform(gl, item.getWorldTransform());
+			final double x1 = sprite.localBounds.x;
+			final double y1 = sprite.localBounds.y;
+			final double x2 = x1 + sprite.localBounds.width;
+			final double y2 = y1 + sprite.localBounds.height;
 
-			sprite.texture.enable(gl);
-			sprite.texture.bind(gl);
+			// transform quad corners: worldTransform then viewTransform
+			final double[] pts = mQuadPts;
+			pts[0] = x1; pts[1] = y1;   // top-left
+			pts[2] = x2; pts[3] = y1;   // top-right
+			pts[4] = x2; pts[5] = y2;   // bottom-right
+			pts[6] = x1; pts[7] = y2;   // bottom-left
+			item.getWorldTransform().transform(pts, 0, pts, 0, 4);
+			if (viewTx != null)
+				viewTx.transform(pts, 0, pts, 0, 4);
 
-			final TextureCoords tc = sprite.texture.getImageTexCoords();
-			final float x1 = (float) sprite.localBounds.x;
-			final float y1 = (float) sprite.localBounds.y;
-			final float x2 = x1 + (float) sprite.localBounds.width;
-			final float y2 = y1 + (float) sprite.localBounds.height;
-
-			gl.glColor4f(1f, 1f, 1f, 1f);
-			gl.glBegin(GL2.GL_QUADS);
-			gl.glTexCoord2f(tc.left(),  tc.top());    gl.glVertex2f(x1, y1);
-			gl.glTexCoord2f(tc.right(), tc.top());    gl.glVertex2f(x2, y1);
-			gl.glTexCoord2f(tc.right(), tc.bottom()); gl.glVertex2f(x2, y2);
-			gl.glTexCoord2f(tc.left(),  tc.bottom()); gl.glVertex2f(x1, y2);
-			gl.glEnd();
-
-			sprite.texture.disable(gl);
-			gl.glPopMatrix();
+			if (!batch.accepts(sprite.texture))
+				flushBatch(gl, batch, getWidth(), getHeight());
+			batch.appendQuad(sprite.texture, pts, sprite.texCoords);
 		}
 
 		// -- children --
@@ -464,15 +744,22 @@ public class GLRenderTarget implements IRenderTarget {
 			Collections.sort(children, Comparator.comparing(GraphicsItem::getZOrder));
 			for (final GraphicsItem child : children)
 				if (child.isVisible())
-					renderItem(gl, child);
+					renderItem(gl, child, viewTx, batch);
 		}
+	}
+
+	private void flushBatch(final GL3 gl, final InstanceBatch batch, final int width, final int height) {
+		if (batch.isEmpty())
+			return;
+		mPipeline.render(gl, batch.getTexture(), batch.prepareForDraw(), batch.getInstanceCount(), width, height);
+		batch.clear();
 	}
 
 	// -----------------------------------------------------------------------
 	//  Sprite creation & caching
 	// -----------------------------------------------------------------------
 
-	private SpriteEntry getOrCreateSprite(final GL2 gl, final GraphicsItem item) {
+	private SpriteEntry getOrCreateSprite(final GL3 gl, final GraphicsItem item) {
 		SpriteEntry entry = mSpriteCache.get(item);
 		if (entry != null)
 			return entry;
@@ -530,11 +817,6 @@ public class GLRenderTarget implements IRenderTarget {
 			g2d.dispose();
 		}
 
-		// -- upload texture --
-		final Texture texture = AWTTextureIO.newTexture(mProfile, spriteImg, true);
-		texture.setTexParameteri(gl, GL.GL_TEXTURE_MIN_FILTER, GL.GL_LINEAR);
-		texture.setTexParameteri(gl, GL.GL_TEXTURE_MAG_FILTER, GL.GL_LINEAR);
-
 		// -- quad bounds in item-local coordinates (original shape units) --
 		final double padScene = pad / Math.max(scaleToPixelX, scaleToPixelY);
 		final Rectangle2D.Double localBounds = new Rectangle2D.Double(
@@ -543,7 +825,7 @@ public class GLRenderTarget implements IRenderTarget {
 				shapeW + 2 * padScene,
 				shapeH + 2 * padScene);
 
-		entry = new SpriteEntry(texture, localBounds);
+		entry = uploadSprite(gl, spriteImg, spriteW, spriteH, localBounds);
 		mSpriteCache.put(item, entry);
 		return entry;
 	}
@@ -559,36 +841,166 @@ public class GLRenderTarget implements IRenderTarget {
 		return SPRITE_PADDING;
 	}
 
+	private SpriteEntry uploadSprite(final GL gl, final BufferedImage spriteImg,
+			final int spriteW, final int spriteH, final Rectangle2D.Double localBounds) {
+		final AtlasSlot slot = allocateAtlasSlot(gl, spriteW, spriteH);
+		if (slot != null) {
+			final TextureData data = AWTTextureIO.newTextureData(mProfile, spriteImg, false);
+			try {
+				final int dstY = slot.page.height - slot.y - spriteH;
+				slot.page.texture.updateSubImage(gl, data, 0, slot.x, dstY);
+			} finally {
+				data.flush();
+			}
+			final Texture texture = slot.page.texture;
+			final TextureCoords texCoords = texture.getSubImageTexCoords(
+					slot.x, slot.y, slot.x + spriteW, slot.y + spriteH);
+			return new SpriteEntry(texture, texCoords, localBounds, slot);
+		}
+
+		final Texture texture = AWTTextureIO.newTexture(mProfile, spriteImg, false);
+		configureSpriteTexture(gl, texture);
+		return new SpriteEntry(texture, texture.getImageTexCoords(), localBounds, null);
+	}
+
+	private AtlasSlot allocateAtlasSlot(final GL gl, final int spriteW, final int spriteH) {
+		if (mAtlasWidth <= 0 || mAtlasHeight <= 0)
+			return null;
+		for (final AtlasPage page : mAtlasPages) {
+			final AtlasSlot slot = page.allocate(spriteW, spriteH);
+			if (slot != null)
+				return slot;
+		}
+
+		final AtlasPage page = createAtlasPage(gl);
+		if (page == null)
+			return null;
+		mAtlasPages.add(page);
+		return page.allocate(spriteW, spriteH);
+	}
+
+	private AtlasPage createAtlasPage(final GL gl) {
+		if (mAtlasWidth <= 0 || mAtlasHeight <= 0)
+			return null;
+		final BufferedImage atlasImage = new BufferedImage(mAtlasWidth, mAtlasHeight, BufferedImage.TYPE_INT_ARGB);
+		final Texture texture = AWTTextureIO.newTexture(mProfile, atlasImage, false);
+		configureSpriteTexture(gl, texture);
+		return new AtlasPage(texture, mAtlasWidth, mAtlasHeight);
+	}
+
+	private void configureSpriteTexture(final GL gl, final Texture texture) {
+		texture.setTexParameteri(gl, GL.GL_TEXTURE_MIN_FILTER, GL.GL_LINEAR);
+		texture.setTexParameteri(gl, GL.GL_TEXTURE_MAG_FILTER, GL.GL_LINEAR);
+		texture.setTexParameteri(gl, GL.GL_TEXTURE_WRAP_S, GL.GL_CLAMP_TO_EDGE);
+		texture.setTexParameteri(gl, GL.GL_TEXTURE_WRAP_T, GL.GL_CLAMP_TO_EDGE);
+	}
+
 	// -----------------------------------------------------------------------
 	//  Sprite cache management
 	// -----------------------------------------------------------------------
 
 	private void markAllSpritesStale() {
 		for (final SpriteEntry e : mSpriteCache.values())
-			mStaleTextures.add(e.texture);
+			if (!e.isAtlasBacked())
+				mStaleTextures.add(e.texture);
 		mSpriteCache.clear();
+		queueAtlasPagesForDestroy();
 	}
 
-	private void cleanupStaleTextures(final GL2 gl) {
+	private void cleanupStaleTextures(final GL gl) {
 		if (!mStaleTextures.isEmpty()) {
-			for (final Texture t : mStaleTextures)
+			for (final Texture t : mStaleTextures) {
 				t.destroy(gl);
+			}
 			mStaleTextures.clear();
 		}
 	}
 
-	private void destroyAllTextures(final GL2 gl) {
+	private void destroyAllTextures(final GL3 gl) {
 		for (final SpriteEntry e : mSpriteCache.values())
-			e.texture.destroy(gl);
+			if (!e.isAtlasBacked())
+				e.texture.destroy(gl);
 		mSpriteCache.clear();
+		mPipeline.dispose(gl);
+		destroyAtlasPages(gl);
 		cleanupStaleTextures(gl);
+	}
+
+	private void queueAtlasPagesForDestroy() {
+		for (final AtlasPage page : mAtlasPages)
+			mStaleTextures.add(page.texture);
+		mAtlasPages.clear();
+	}
+
+	private void destroyAtlasPages(final GL gl) {
+		for (final AtlasPage page : mAtlasPages)
+			page.texture.destroy(gl);
+		mAtlasPages.clear();
+	}
+
+	// -----------------------------------------------------------------------
+	//  Event-based sprite invalidation
+	// -----------------------------------------------------------------------
+
+	/**
+	 * Registers listeners on the scene and all its current items so that
+	 * sprite textures are invalidated automatically when drawables, styles
+	 * or shapes change, or when items are added/removed.
+	 */
+	private void registerSceneListeners(final GraphicsScene scene) {
+		scene.addPropertyListener(GraphicsScene.ITEM_LIST_PROPERTY, mSceneItemListener);
+		for (final GraphicsItem item : scene.getItems())
+			registerItemListener(item);
+	}
+
+	private void unregisterSceneListeners(final GraphicsScene scene) {
+		scene.removePropertyListener(GraphicsScene.ITEM_LIST_PROPERTY, mSceneItemListener);
+		for (final GraphicsItem item : scene.getItems())
+			unregisterItemListener(item);
+	}
+
+	private void registerItemListener(final GraphicsItem item) {
+		item.addPropertyChangeListener(GraphicsItem.PROP_DRAWABLE, mItemSpriteListener);
+		item.addPropertyChangeListener(GraphicsItem.PROP_STYLE, mItemSpriteListener);
+		item.addPropertyChangeListener(GraphicsItem.PROP_SHAPE, mItemSpriteListener);
+		item.addPropertyChangeListener(MANUAL_REPAINT_PROPERTY, mItemSpriteListener);
+	}
+
+	private void unregisterItemListener(final GraphicsItem item) {
+		item.removePropertyChangeListener(GraphicsItem.PROP_DRAWABLE, mItemSpriteListener);
+		item.removePropertyChangeListener(GraphicsItem.PROP_STYLE, mItemSpriteListener);
+		item.removePropertyChangeListener(GraphicsItem.PROP_SHAPE, mItemSpriteListener);
+		item.removePropertyChangeListener(MANUAL_REPAINT_PROPERTY, mItemSpriteListener);
+	}
+
+	/** Called when an item's drawable, style or shape changes. */
+	private void onItemPropertyChanged(final PropertyChangeEvent evt) {
+		final Object source = evt.getSource();
+		if (source instanceof GraphicsItem)
+			invalidateSprite((GraphicsItem) source);
+	}
+
+	/** Called when items are added to or removed from the scene. */
+	private void onSceneItemListChanged(final PropertyChangeEvent evt) {
+		final GraphicsItem added   = (evt.getNewValue() instanceof GraphicsItem)
+				? (GraphicsItem) evt.getNewValue() : null;
+		final GraphicsItem removed = (evt.getOldValue() instanceof GraphicsItem)
+				? (GraphicsItem) evt.getOldValue() : null;
+
+		if (removed != null) {
+			unregisterItemListener(removed);
+			invalidateSprite(removed);
+		}
+		if (added != null) {
+			registerItemListener(added);
+		}
 	}
 
 	// -----------------------------------------------------------------------
 	//  Framebuffer readback (offscreen)
 	// -----------------------------------------------------------------------
 
-	private void readback(final GL2 gl) {
+	private void readback(final GL gl) {
 		final AWTGLReadBufferUtil reader = new AWTGLReadBufferUtil(mProfile, false);
 		mResultImage = reader.readPixelsToBufferedImage(gl, true);
 	}
@@ -647,15 +1059,4 @@ public class GLRenderTarget implements IRenderTarget {
 	/**
 	 * Multiplies the current GL matrix by the given {@link AffineTransform}.
 	 */
-	private static void applyTransform(final GL2 gl, final AffineTransform at) {
-		final double[] m = new double[6];
-		at.getMatrix(m); // [m00, m10, m01, m11, m02, m12]
-		final double[] gl4x4 = {
-				m[0], m[1], 0, 0,   // column 0
-				m[2], m[3], 0, 0,   // column 1
-				0,    0,    1, 0,   // column 2
-				m[4], m[5], 0, 1    // column 3
-		};
-		gl.glMultMatrixd(gl4x4, 0);
-	}
 }
