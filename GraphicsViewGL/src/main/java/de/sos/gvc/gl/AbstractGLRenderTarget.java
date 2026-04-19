@@ -54,6 +54,17 @@ abstract class AbstractGLRenderTarget implements IRenderTarget {
 	protected static final int ATLAS_GAP = 1;
 	protected static final String MANUAL_REPAINT_PROPERTY = "ManualRepaint";
 
+	/** Oversampling factor applied to sprite rasterisation.  A value of 1.0
+	 * keeps the previous behaviour (sprite matches current screen size); values
+	 * &gt; 1 produce crisper sprites during moderate zoom-in at the cost of
+	 * higher texture memory.  Callers can override via
+	 * {@link #setSpriteOversample(double)}. */
+	protected static final double DEFAULT_SPRITE_OVERSAMPLE = 1.0;
+	/** Relative change of the view scale before cached sprites are invalidated
+	 * (e.g. 2.0 means: invalidate when the current view scale is more than 2x
+	 *  larger or smaller than the scale that was used for sprite creation). */
+	protected static final double SPRITE_SCALE_INVALIDATE_RATIO = 2.0;
+
 	private GraphicsView mView;
 	private int mWidth;
 	private int mHeight;
@@ -68,6 +79,8 @@ abstract class AbstractGLRenderTarget implements IRenderTarget {
 	private final List<Texture> mStaleTextures = new ArrayList<>();
 	private int mAtlasWidth = DEFAULT_ATLAS_SIZE;
 	private int mAtlasHeight = DEFAULT_ATLAS_SIZE;
+	private double mSpriteOversample = DEFAULT_SPRITE_OVERSAMPLE;
+	private double mLastViewScale = 0.0;
 
 	private final PropertyChangeListener mItemSpriteListener = this::onItemPropertyChanged;
 	private final PropertyChangeListener mSceneItemListener = this::onSceneItemListChanged;
@@ -169,6 +182,52 @@ abstract class AbstractGLRenderTarget implements IRenderTarget {
 		return mAtlasHeight;
 	}
 
+	/** Oversampling factor applied to sprite rasterisation (default: 2.0).
+	 * Values &gt; 1 increase sprite texture resolution relative to the current
+	 * screen size, improving visual quality when zooming in without needing
+	 * sprite re-generation on every scale change.
+	 *
+	 * <p>Must be &ge; 1.0; values below 1.0 are clamped.</p>
+	 */
+	public void setSpriteOversample(final double factor) {
+		final double clamped = Math.max(1.0, factor);
+		if (Math.abs(clamped - mSpriteOversample) < 1e-6)
+			return;
+		mSpriteOversample = clamped;
+		invalidateAllSprites();
+		requestRepaint();
+	}
+
+	public double getSpriteOversample() {
+		return mSpriteOversample;
+	}
+
+	/** Checks whether the current view scale differs from the scale at which
+	 * the sprite cache was populated by more than {@link #SPRITE_SCALE_INVALIDATE_RATIO}.
+	 * If so, all sprites are marked stale so they get re-rasterised at the
+	 * new scale — otherwise zoom-in makes sprites blurry. */
+	private void maybeInvalidateSpritesForScale() {
+		if (mView == null)
+			return;
+		final double scaleX = Math.abs(mView.getScaleX());
+		final double scaleY = Math.abs(mView.getScaleY());
+		if (scaleX <= 0 || scaleY <= 0)
+			return;
+		// GraphicsView.getScaleX is the scene->screen reciprocal, so a smaller
+		// scale value means "zoomed in more" (pixels cover less scene space).
+		// We invert here to work with a pixel-density-like metric.
+		final double density = 1.0 / Math.max(scaleX, scaleY);
+		if (mLastViewScale <= 0.0) {
+			mLastViewScale = density;
+			return;
+		}
+		final double ratio = density / mLastViewScale;
+		if (ratio >= SPRITE_SCALE_INVALIDATE_RATIO || ratio <= 1.0 / SPRITE_SCALE_INVALIDATE_RATIO) {
+			invalidateAllSprites();
+			mLastViewScale = density;
+		}
+	}
+
 	public void invalidateSprite(final GraphicsItem item) {
 		final SpriteEntry removed = mSpriteCache.remove(item);
 		if (removed == null)
@@ -244,6 +303,7 @@ abstract class AbstractGLRenderTarget implements IRenderTarget {
 		if (width <= 1 || height <= 1)
 			return;
 
+		maybeInvalidateSpritesForScale();
 		mSpriteBatch.clear();
 		cleanupStaleTextures(gl);
 
@@ -326,8 +386,15 @@ abstract class AbstractGLRenderTarget implements IRenderTarget {
 		final AffineTransform viewTx = computeViewTransform();
 		final AffineTransform combined = new AffineTransform(viewTx);
 		combined.concatenate(worldTx);
-		final double pxW = Math.abs(shapeW * combined.getScaleX());
-		final double pxH = Math.abs(shapeH * combined.getScaleY());
+		// Derive real axis-magnitudes from the full matrix, i.e. the length of
+		// the transformed X/Y basis vectors. This is invariant under rotation —
+		// getScaleX()/getScaleY() alone are incorrect for rotated transforms
+		// (m00 = cos(angle) → sprite becomes pad-sized for 90° rotations).
+		final double axisXLen = Math.hypot(combined.getScaleX(), combined.getShearY());
+		final double axisYLen = Math.hypot(combined.getShearX(), combined.getScaleY());
+		final double oversample = Math.max(1.0, mSpriteOversample);
+		final double pxW = shapeW * axisXLen * oversample;
+		final double pxH = shapeH * axisYLen * oversample;
 
 		final int pad = computePadding(item.getStyle());
 		int spriteW = (int) Math.ceil(pxW) + 2 * pad;

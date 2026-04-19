@@ -73,20 +73,28 @@ public class GLOffscreenRenderTarget extends GLRenderTarget {
 
 	@Override
 	void renderOffscreen(final boolean doReadback) {
-		if (mOffscreen == null)
+		if (mOffscreen == null) {
+			System.err.println("[DIAG] renderOffscreen: mOffscreen==null");
 			return;
+		}
 
 		final GLContext ctx = mOffscreen.getContext();
-		if (ctx.makeCurrent() == GLContext.CONTEXT_NOT_CURRENT) {
+		final int mc = ctx.makeCurrent();
+		System.err.println("[DIAG] renderOffscreen: makeCurrent=" + mc + ", view=" + getGraphicsView());
+		if (mc == GLContext.CONTEXT_NOT_CURRENT) {
 			LOG.debug("Could not make offscreen GL context current, skipping repaint");
 			return;
 		}
 
 		try {
 			final GL gl0 = ctx.getGL();
-			if (gl0 == null)
+			if (gl0 == null) {
+				System.err.println("[DIAG] renderOffscreen: gl0==null");
 				return;
+			}
+			System.err.println("[DIAG] renderOffscreen: calling renderCurrentFrame");
 			renderCurrentFrame(gl0.getGL3(), doReadback);
+			System.err.println("[DIAG] renderOffscreen: back from renderCurrentFrame");
 		} catch (final Exception e) {
 			LOG.error("Offscreen GL render failed: {}", e.getMessage(), e);
 		} finally {
